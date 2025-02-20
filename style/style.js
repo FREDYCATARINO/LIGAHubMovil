@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import RecuperarContra from '../screens/RecuperarContra';
-<style>@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');</style>
+<style>@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200..700;700&display=swap");</style>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -154,6 +155,9 @@ const styles = StyleSheet.create({
     height: 110,
     marginBottom: 20,
   },
+  Titles: {
+    fontFamily: 'Nunito',
+  }
 });
 
 
