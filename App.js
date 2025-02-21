@@ -6,6 +6,6 @@ import AdminNavigator from './navigation/AdminNavigator';
 
 export default function App() {
   return (
-    <AdminNavigator />
+    <AdminNavigator/>
   );
 };

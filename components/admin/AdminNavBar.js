@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions } from "@react-navigation/native";
 import LoginScreen from "../../screens/Login";
+import colores from "../../style/colors";
 
 const AdminAppBar = ({ navigation, title, isRoot }) => {
   function ProfileStack() {
@@ -31,17 +32,17 @@ const AdminAppBar = ({ navigation, title, isRoot }) => {
   }
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.appBar}>
+      {title === "Equipos" ? "" : <View style={styles.appBar}>
         <TouchableOpacity
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())
-            /*isRoot
+          onPress={() => /*navigation.dispatch(DrawerActions.openDrawer())*/
+            isRoot
               ? navigation.dispatch(DrawerActions.openDrawer())
-              : navigation.goBack()*/
+              : navigation.goBack()
           }
         >
           <Ionicons
-            name={"menu"}
-            //name={isRoot ? "menu" : "arrow-back"}
+            //name={"menu"}
+            name={isRoot ? "menu" : "arrow-back"}
             size={24}
             color="white"
           />
@@ -55,19 +56,19 @@ const AdminAppBar = ({ navigation, title, isRoot }) => {
           style={{
             width: 50,
             height: 50,
-            backgroundColor: "#e9e9e9",
+            backgroundColor: colores.base_1_1,
             borderRadius: 100,
             resizeMode: "stretch",
           }}
         />
     </TouchableOpacity>
-      </View>
+      </View> }
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: "#333333"},
+  safeArea: { backgroundColor: colores.base_3_1},
   appBar: { flexDirection: "row", alignItems: "center", padding: 15, justifyContent: 'space-between', marginTop: "5%"  },
   title: { color: "white", fontSize: 18, marginLeft: 15 },
 });

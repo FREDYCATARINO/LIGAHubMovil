@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   createDrawerNavigator,
   DrawerItemList,
-  DrawerItem
+  DrawerItem,
 } from "@react-navigation/drawer";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
@@ -11,12 +11,16 @@ import Admin2 from "../components/admin/Admin2";
 import Admin3 from "../components/admin/Admin3";
 import Admin4 from "../components/admin/Admin4";
 import Admin5 from "../components/admin/Admin5";
-import LoginScreen from "../screens/Login";
-import { StyleSheet, Image, View, Text } from "react-native";
+import EquiposScreen from "../components/admin/DetallesEquipo";
+import { useNavigation } from '@react-navigation/native';
+import { StyleSheet, Image, View, Text, TouchableOpacity } from "react-native";
 import AdminAppBar from "../components/admin/AdminNavBar";
 import { Ionicons } from "@expo/vector-icons";
 import myStyles from "../style/style";
 import { WebView } from "react-native-webview";
+import { DrawerActions } from "@react-navigation/native";
+import colores from "../style/colors";
+import FONTS from "../style/fonts";
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -56,7 +60,31 @@ function ProfileStack() {
         ),
       })}
     >
-      <Stack.Screen name="Perfil" component={LoginScreen} />
+      <Stack.Screen name="Perfil" component={EquiposScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function EquiposStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={({ navigation, route }) => ({
+        header: () => (
+          <AdminAppBar
+            navigation={navigation}
+            title={route.name}
+            isRoot={route.name === "Menú de equipos"}
+          />
+        ),
+        //headerShown: false
+      })}
+    >
+      <Stack.Screen name="Menú de equipos" component={Admin2} />
+      <Stack.Screen
+        name="Ver equipo"
+        options={{ title: "Detalles de equipo" }}
+        component={EquiposScreen}
+      />
     </Stack.Navigator>
   );
 }
@@ -85,14 +113,23 @@ const LordiconExample = () => {
 };
 
 const CustomDrawerContent = (props) => {
+  const navigation = useNavigation();
+  console.log(DrawerActions)
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colores.base_1_1}}>
       <View style={styles.header}>
+        <View style={styles.leave}>
+        <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.closeDrawer())}>
+        <Ionicons name="close" size={30} color="white" />
+        </TouchableOpacity>
+        </View>
+        <View style={styles.imgTitle}>
         <Image
           source={require("../components/logo.png")}
           style={styles.image}
         />
         <Text style={[myStyles.Titles, styles.title]}>Menú</Text>
+        </View>
       </View>
       <DrawerItemList {...props} />
       {/*<LordiconExample/>
@@ -115,18 +152,20 @@ function AdminDrawerNavigator() {
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        headerShown: true,
-        drawerActiveTintColor: "#FFCA6B",
+        headerShown: true, // Controla la visibilidad del header dinámicamente
+        drawerActiveTintColor: colores.acento_1_5,
         drawerItemStyle: { marginVertical: 5, marginHorizontal: 5 },
-        drawerContentStyle: { backgroundColor: "#D6D6D6" },
-        drawerActiveBackgroundColor: "#FF1111",
-        header: ({ navigation, route }) => (
-          <AdminAppBar
-            navigation={navigation}
-            title={route.name}
-            isRoot={route.name === "Home"}
-          />
-        ),
+        drawerContentStyle: { backgroundColor: colores.base_3_5 },
+        drawerActiveBackgroundColor: colores.domin_1_4,
+        header: ({ navigation, route }) => {
+          return (
+            <AdminAppBar
+              navigation={navigation}
+              title={route.name}
+              isRoot={route.name !== "Equipos"}
+            />
+          );
+        },
       }}
     >
       <Drawer.Screen
@@ -140,7 +179,7 @@ function AdminDrawerNavigator() {
       />
       <Drawer.Screen
         name="Equipos"
-        component={Admin2}
+        component={EquiposStack}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="shield" size={size} color={color} />
@@ -189,14 +228,14 @@ export default function AdminNavigator() {
 const styles = StyleSheet.create({
   header: {
     height: 150,
-    backgroundColor: "#6D6D6D",
+    backgroundColor: colores.domin_1_2,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 30,
+    paddingTop: 10,
     marginBottom: 10,
     width: "auto",
     display: "flex",
-    flexDirection: "row",
+    flexDirection: "col",
     gap: 5,
   },
   image: {
@@ -213,14 +252,26 @@ const styles = StyleSheet.create({
     margin: 40,
   },
   webview: {
-    width:60,
+    width: 60,
     backgroundColor: "transparent",
     margin: 20,
   },
-    containerL: {
+  containerL: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     alignItems: "center",
-    height: 50
+    height: 50,
   },
+  icon:{
+    alignItems: 'flex-start'
+  },
+  leave: {
+    alignItems: 'flex-end',
+    width: '95%'
+  },
+  imgTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  }
 });
