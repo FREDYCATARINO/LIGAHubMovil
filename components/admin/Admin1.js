@@ -395,7 +395,7 @@ const Admin1 = ({ navigation }) => {
               console.log("Selected day", day);
               alert("Hola " + day.day);
             }}
-            monthFormat={"yyyy MM"}
+            monthFormat={"MMM yyyy"}
             markedDates={{
               "2025-02-19": {
                 selected: true,
@@ -419,9 +419,14 @@ const Admin1 = ({ navigation }) => {
               monthTextColor: colores.domin_2_1, // Color del texto del mes
               arrowColor: colores.domin_2_1, // Color de las flechas del calendario
               // Aplicar la fuente en todos los textos del calendario
+              textDayFontSize: 16,
               textDayFontFamily: "Nunito_400Regular", // Aplicar Nunito en los días
               textMonthFontFamily: "Nunito_400Regular", // Aplicar Nunito en el mes
               textDayHeaderFontFamily: "Nunito_400Regular", // Aplicar Nunito en el encabezado
+              textDayStyle: {
+                minWidth: 30, // Ajusta el tamaño mínimo de la celda para evitar recortes
+                textAlign: "center",
+              }
             }}
           />
         </View>
@@ -445,6 +450,7 @@ const styless = StyleSheet.create({
     alignItems: "flex-start",
     width: "95%",
     marginBlock: 5,
+    paddingVertical: 3
   },
   title2: {
     fontSize: 25,
@@ -456,6 +462,7 @@ const styless = StyleSheet.create({
     opacity: 0.75,
     borderRadius: 5,
     paddingHorizontal: 10,
+    paddingVertical: 3
   },
   title3: {
     fontSize: 25,
@@ -471,6 +478,7 @@ const styless = StyleSheet.create({
     marginLeft: 5,
     marginTop: 5,
     paddingHorizontal: 10,
+    paddingVertical: 3
   },
   grid: {
     flex: 2,

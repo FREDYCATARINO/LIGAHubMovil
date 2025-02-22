@@ -11,8 +11,10 @@ import Admin2 from "../components/admin/Admin2";
 import Admin3 from "../components/admin/Admin3";
 import Admin4 from "../components/admin/Admin4";
 import Admin5 from "../components/admin/Admin5";
+import Admin6 from "../components/admin/Admin6";
+import Admin7 from "../components/admin/Admin7";
 import EquiposScreen from "../components/admin/DetallesEquipo";
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from "@react-navigation/native";
 import { StyleSheet, Image, View, Text, TouchableOpacity } from "react-native";
 import AdminAppBar from "../components/admin/AdminNavBar";
 import { Ionicons } from "@expo/vector-icons";
@@ -114,21 +116,23 @@ const LordiconExample = () => {
 
 const CustomDrawerContent = (props) => {
   const navigation = useNavigation();
-  console.log(DrawerActions)
+  console.log(DrawerActions);
   return (
-    <View style={{ flex: 1, backgroundColor: colores.base_1_1}}>
+    <View style={{ flex: 1, backgroundColor: colores.base_1_1 }}>
       <View style={styles.header}>
         <View style={styles.leave}>
-        <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.closeDrawer())}>
-        <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.dispatch(DrawerActions.closeDrawer())}
+          >
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
         </View>
         <View style={styles.imgTitle}>
-        <Image
-          source={require("../components/logo.png")}
-          style={styles.image}
-        />
-        <Text style={[myStyles.Titles, styles.title]}>Menú</Text>
+          <Image
+            source={require("../components/logo.png")}
+            style={styles.image}
+          />
+          <Text style={[myStyles.Titles, styles.title]}>Menú</Text>
         </View>
       </View>
       <DrawerItemList {...props} />
@@ -213,6 +217,24 @@ function AdminDrawerNavigator() {
           ),
         }}
       />
+      <Drawer.Screen
+        name="Pagos"
+        component={Admin6}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="wallet" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Convocatorias"
+        component={Admin7}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="newspaper" size={size} color={color} />
+          ),
+        }}
+      />
     </Drawer.Navigator>
   );
 }
@@ -262,16 +284,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 50,
   },
-  icon:{
-    alignItems: 'flex-start'
+  icon: {
+    alignItems: "flex-start",
   },
   leave: {
-    alignItems: 'flex-end',
-    width: '95%'
+    alignItems: "flex-end",
+    width: "95%",
   },
   imgTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4
-  }
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
 });

@@ -5,17 +5,24 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Image
 } from "react-native";
 
 const EqiposScreen = ({ navigation, route }) => {
-  const { equipoId, nombre } = route.params;
+  const { team } = route.params;
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text>Detalles del equipo {nombre}</Text>
-        <Text>id: {equipoId}</Text>
+        <Image
+          source={{ uri: team.image, alt: team.nombre }}
+          style={{ width: 125, height: 125, resizeMode: "contain" }}
+        />
+        <Text>Detalles del equipo {team.nombre}:</Text>
+        <Text>id: {team.id}</Text>
+        <Text>DT: {team.dueno}</Text>
+        <Text>jugadores: {team.jugadores.length}</Text>
         <Button
-          title="Ir a Detalles de equipos"
+          title="Volver"
           onPress={() => navigation.navigate("Menú de equipos")}
         />
       </ScrollView>
