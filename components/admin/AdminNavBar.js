@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions } from "@react-navigation/native";
 import LoginScreen from "../../screens/Login";
 import colores from "../../style/colors";
+import FONTS from "../../style/fonts";
 
 const AdminAppBar = ({ navigation, title, isRoot }) => {
   function ProfileStack() {
@@ -47,7 +48,7 @@ const AdminAppBar = ({ navigation, title, isRoot }) => {
             color="white"
           />
         </TouchableOpacity>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, FONTS.nunitoNegrita]}>{title}</Text>
         <TouchableOpacity onPress={() => /*navigation.navigate("Perfil")*/ alert("En proceso...")}>
         <Image
           source={{

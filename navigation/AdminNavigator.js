@@ -23,6 +23,20 @@ import { WebView } from "react-native-webview";
 import { DrawerActions } from "@react-navigation/native";
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
+import { useFonts } from "@expo-google-fonts/oswald";
+
+import {
+  Oswald_400Regular,
+  Oswald_700Bold,
+  Oswald_400Italic,
+  Oswald_700BoldItalic,
+} from "@expo-google-fonts/oswald"; // Cargar Oswald
+import {
+  Nunito_400Regular,
+  Nunito_700Bold,
+  Nunito_400Italic,
+  Nunito_700BoldItalic,
+} from "@expo-google-fonts/nunito"; // Cargar Nunito
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -132,7 +146,7 @@ const CustomDrawerContent = (props) => {
             source={require("../components/logo.png")}
             style={styles.image}
           />
-          <Text style={[myStyles.Titles, styles.title]}>Menú</Text>
+          <Text style={[myStyles.Titles, styles.title, FONTS.nunitoNegrita]}>Menú</Text>
         </View>
       </View>
       <DrawerItemList {...props} />
@@ -152,6 +166,16 @@ const CustomDrawerContent = (props) => {
 };
 
 function AdminDrawerNavigator() {
+    const [fontsLoaded] = useFonts({
+      Oswald_400Regular,
+      Oswald_700Bold,
+      Oswald_400Italic,
+      Oswald_700BoldItalic,
+      Nunito_400Regular,
+      Nunito_700Bold,
+      Nunito_400Italic,
+      Nunito_700BoldItalic,
+    });
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -179,6 +203,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
       <Drawer.Screen
@@ -188,6 +213,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="shield" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
       <Drawer.Screen
@@ -197,6 +223,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="trophy" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
       <Drawer.Screen
@@ -206,6 +233,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="football" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
       <Drawer.Screen
@@ -215,6 +243,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="id-card" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
       <Drawer.Screen
@@ -224,6 +253,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="wallet" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
       <Drawer.Screen
@@ -233,6 +263,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="newspaper" size={size} color={color} />
           ),
+          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
         }}
       />
     </Drawer.Navigator>
