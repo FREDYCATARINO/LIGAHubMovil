@@ -49,6 +49,6 @@ const colores = {
 
     blanco: "#ffffff",
     negro: "000000"
-};
+}; //f3f6f8 lordIcon
 
 export default colores;

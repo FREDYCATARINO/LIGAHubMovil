@@ -30,15 +30,25 @@ import colores from "../../style/colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import axios from "axios";
 
+const jugadoresPrueba = [
+  { id: 1, nombre: 'Jugador #001', goles: 9, partidos: 5, fallas: 0, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: true },
+  { id: 2, nombre: 'Jugador #002', goles: 3, partidos: 8, fallas: 0, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: true  },
+  { id: 3, nombre: 'Jugador #003', goles: 6, partidos: 1, fallas: 0, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: true  },
+  { id: 4, nombre: 'Jugador #004', goles: 10, partidos: 3, fallas: 0, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: false  },
+  { id: 5, nombre: 'Jugador #005', goles: 9, partidos: 2, fallas: 0, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: false  },
+  { id: 6, nombre: 'Jugador #006', goles: 2, partidos: 1, fallas: 1, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: true  },
+  { id: 7, nombre: 'Jugador #007', goles: 0, partidos: 50, fallas: 50, img: 'https://lindamood.net/wp-content/uploads/2019/09/Blank-profile-image.jpg', activo: true  }
+]
+
 const equipos = [
-  { equipoId: 1, nombre: "Chivas", dt: "Juan Peréz", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1-FOLUn9u4T-D5ggneCO0nZm4jOOVXItI' },
-  { equipoId: 2, nombre: "Cruz Azul", dt: "Mauro Bahena", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1L4y6YuAZuIYWEOlWr0sBKmoutcMFyG54' },
-  { equipoId: 3, nombre: "Monterrey", dt: "Nick Fury", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1L_u5cuRI6pI78YOb-0PIt_vovmV8SLLX' },
-  { equipoId: 4, nombre: "Necaxa", dt: "Don Ramón", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1_bDUfg2szuTCPy6onk37wSbzOoZGyhWW' },
-  { equipoId: 5, nombre: "Pumas", dt: "Francisco Pulido", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1IdFsp723ipbBX95PWsXwpURsO5L4jGei' },
-  { equipoId: 6, nombre: "America", dt: "Daniel Aguilar", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1hLeMo386b05HrRd2mruNXZZqlWJ_EbSC' },
-  { equipoId: 7, nombre: "Atlas", dt: "El piojo Herrera", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1yeIzWN8Wl6TvIrEtqci874SU7MT6E8cg' },
-  { equipoId: 6, nombre: "Tigres", dt: "Tigre Toño", jugadores: [], img: 'https://drive.google.com/uc?export=view&id=1HMF63odQw9WzQdVmfFbSP1H3_F8qY-uV' },
+  { equipoId: 1, nombre: "Chivas", dt: {id:1, nombre: "Juan Peréz", correo: 'juanperez@hotmail.com', img: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1-FOLUn9u4T-D5ggneCO0nZm4jOOVXItI' },
+  { equipoId: 2, nombre: "Cruz Azul", dt: {id:2, nombre: "Mauro Bahena", correo: 'maurodfr@hotmail.com', img: "https://i.pinimg.com/originals/55/45/e2/5545e27dd7441dc888fa6e4669421bdc.png"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1L4y6YuAZuIYWEOlWr0sBKmoutcMFyG54' },
+  { equipoId: 3, nombre: "Monterrey", dt: {id:1, nombre: "Nick Fury", correo: 'vengadores@hotmail.com', img: "https://th.bing.com/th/id/OIP.YoIWYEmDFaQof1wx6j8xBQHaKp?w=132&h=190&c=7&pcl=1b1a19&r=0&o=5&dpr=1.5&pid=1.7"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1L_u5cuRI6pI78YOb-0PIt_vovmV8SLLX' },
+  { equipoId: 4, nombre: "Necaxa", dt: {id:1, nombre: "Don Ramón", correo: 'mochito@gmail.com', img: "https://th.bing.com/th/id/OIP.iox5J2IefKpTqQ3A0PovKwAAAA?rs=1&pid=ImgDetMain"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1_bDUfg2szuTCPy6onk37wSbzOoZGyhWW' },
+  { equipoId: 5, nombre: "Pumas", dt: {id:1, nombre: "Francisco Pulido", correo: 'camarapaino@utez.edu.mx', img: "https://th.bing.com/th/id/OIP.crgqPqen60BHAPwu_jzyAgHaNK?rs=1&pid=ImgDetMain"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1IdFsp723ipbBX95PWsXwpURsO5L4jGei' },
+  { equipoId: 6, nombre: "America", dt: {id:1, nombre: "Daniel Aguilar", correo: 'daniel@aguilar.com', img: "https://th.bing.com/th/id/OIP.9Uh0RFprWijPzuoxR2tcBQHaNL?w=115&h=181&c=7&pcl=1b1a19&r=0&o=5&dpr=1.5&pid=1.7"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1hLeMo386b05HrRd2mruNXZZqlWJ_EbSC' },
+  { equipoId: 7, nombre: "Atlas", dt: {id:1, nombre: "El piojo Herrera", correo: 'elpiojitoxd@gmail.com', img: "https://th.bing.com/th/id/OIP.vEf5l5SjcnsD1mhWGM2uRAAAAA?rs=1&pid=ImgDetMain"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1yeIzWN8Wl6TvIrEtqci874SU7MT6E8cg' },
+  { equipoId: 8, nombre: "Tigres", dt: {id:1, nombre: "Tigre Toño", correo: 'grrriquisimas@hotmail.com', img: "https://tecolotito.elsiglodetorreon.com.mx/i/2010/05/204363.jpeg"}, jugadores: jugadoresPrueba, img: 'https://drive.google.com/uc?export=view&id=1HMF63odQw9WzQdVmfFbSP1H3_F8qY-uV' },
 ];
 
 const Admin2 = ({ navigation }) => {
@@ -48,9 +58,9 @@ const Admin2 = ({ navigation }) => {
     const team = {
       id: id,
       nombre: name,
-      dueno: dt,
       jugadores: jugadores,
       image: img,
+      dueno: dt
     };
     navigation.navigate("Ver equipo", {team});
   }
@@ -79,7 +89,6 @@ const Admin2 = ({ navigation }) => {
 
   setTimeout(() => {
     if (!fontsLoaded) {
-      console.log("Cargando...");
       return (
         <View
           style={{
@@ -113,9 +122,9 @@ const Admin2 = ({ navigation }) => {
             data={equipos}
             keyExtractor={(item) => item.equipoId.toString()} // Usar equipoId en lugar de id
             numColumns={2}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles3.prod}
+            renderItem={({ item }) => {
+              return (<TouchableOpacity
+                style={[styles3.prod]}
                 onPress={() =>
                   sendData(
                     item.equipoId,
@@ -128,9 +137,9 @@ const Admin2 = ({ navigation }) => {
               >
                 <Image source={{uri: item.img, alt: item.nombre}} style={styles3.image}/>
                 <Text style={[styles3.aligned1, FONTS.oswaldNegrita]}>{item.nombre}</Text>
-                <Text style={[styles3.aligned2, FONTS.oswald]}>DT: {item.dt}</Text>
-              </TouchableOpacity>
-            )}
+                <Text style={[styles3.aligned2, FONTS.oswald]}>DT: {item.dt.nombre}</Text>
+              </TouchableOpacity>);
+            }}
           />
         </ScrollView>
       </SafeAreaView>
@@ -208,9 +217,9 @@ const styles3 = StyleSheet.create({
     paddingBottom: 10
   },
   prod: {
+    backgroundColor: colores.base_2_4,
     flexGrow: 1,
     flexBasis: "45%",
-    backgroundColor: colores.base_2_4,
     margin: 5,
     gap: 5,
     // iOS
@@ -224,6 +233,12 @@ const styles3 = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 10,
+  },
+  prodUnpressed: {
+    backgroundColor: colores.base_2_4,
+  },
+  prodActive: {
+    backgroundColor: colores.domin_2_5,
   },
   box: {
     margin: 10,
