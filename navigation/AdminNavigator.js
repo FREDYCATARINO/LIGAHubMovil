@@ -130,7 +130,6 @@ const LordiconExample = () => {
 
 const CustomDrawerContent = (props) => {
   const navigation = useNavigation();
-  console.log(DrawerActions);
   return (
     <View style={{ flex: 1, backgroundColor: colores.base_1_1 }}>
       <View style={styles.header}>
