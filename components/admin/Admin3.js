@@ -128,7 +128,7 @@ const equipos = [
     equipoId: 3,
     nombre: "Monterrey",
     dt: {
-      id: 1,
+      id: 3,
       nombre: "Nick Fury",
       correo: "vengadores@hotmail.com",
       img: "https://th.bing.com/th/id/OIP.YoIWYEmDFaQof1wx6j8xBQHaKp?w=132&h=190&c=7&pcl=1b1a19&r=0&o=5&dpr=1.5&pid=1.7",
@@ -140,7 +140,7 @@ const equipos = [
     equipoId: 4,
     nombre: "Necaxa",
     dt: {
-      id: 1,
+      id: 4,
       nombre: "Don Ramón",
       correo: "mochito@gmail.com",
       img: "https://th.bing.com/th/id/OIP.iox5J2IefKpTqQ3A0PovKwAAAA?rs=1&pid=ImgDetMain",
@@ -152,7 +152,7 @@ const equipos = [
     equipoId: 5,
     nombre: "Pumas",
     dt: {
-      id: 1,
+      id: 5,
       nombre: "Francisco Pulido",
       correo: "camarapaino@utez.edu.mx",
       img: "https://th.bing.com/th/id/OIP.crgqPqen60BHAPwu_jzyAgHaNK?rs=1&pid=ImgDetMain",
@@ -164,7 +164,7 @@ const equipos = [
     equipoId: 6,
     nombre: "America",
     dt: {
-      id: 1,
+      id: 6,
       nombre: "Daniel Aguilar",
       correo: "daniel@aguilar.com",
       img: "https://th.bing.com/th/id/OIP.9Uh0RFprWijPzuoxR2tcBQHaNL?w=115&h=181&c=7&pcl=1b1a19&r=0&o=5&dpr=1.5&pid=1.7",
@@ -176,7 +176,7 @@ const equipos = [
     equipoId: 7,
     nombre: "Atlas",
     dt: {
-      id: 1,
+      id: 7,
       nombre: "El piojo Herrera",
       correo: "elpiojitoxd@gmail.com",
       img: "https://th.bing.com/th/id/OIP.vEf5l5SjcnsD1mhWGM2uRAAAAA?rs=1&pid=ImgDetMain",
@@ -188,7 +188,7 @@ const equipos = [
     equipoId: 8,
     nombre: "Tigres",
     dt: {
-      id: 1,
+      id: 8,
       nombre: "Tigre Toño",
       correo: "grrriquisimas@hotmail.com",
       img: "https://tecolotito.elsiglodetorreon.com.mx/i/2010/05/204363.jpeg",
