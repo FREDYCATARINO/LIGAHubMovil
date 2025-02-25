@@ -13,6 +13,7 @@ import Admin4 from "../components/admin/Admin4";
 import Admin5 from "../components/admin/Admin5";
 import Admin6 from "../components/admin/Admin6";
 import Admin7 from "../components/admin/Admin7";
+import PerfilScreen from "../screens/Perfil";
 import EquiposScreen from "../components/admin/DetallesEquipo";
 import { useNavigation } from "@react-navigation/native";
 import { StyleSheet, Image, View, Text, TouchableOpacity } from "react-native";
@@ -71,12 +72,12 @@ function ProfileStack() {
           <AdminAppBar
             navigation={navigation}
             title={route.name}
-            isRoot={route.name === "Profile"}
+            isRoot={route.name !== "Perfil"}
           />
         ),
       })}
     >
-      <Stack.Screen name="Perfil" component={EquiposScreen} />
+      <Stack.Screen name="Perfil" component={PerfilScreen} />
     </Stack.Navigator>
   );
 }
@@ -145,7 +146,9 @@ const CustomDrawerContent = (props) => {
             source={require("../components/logo.png")}
             style={styles.image}
           />
-          <Text style={[myStyles.Titles, styles.title, FONTS.nunitoNegrita]}>Menú</Text>
+          <Text style={[myStyles.Titles, styles.title, FONTS.nunitoNegrita]}>
+            Menú
+          </Text>
         </View>
       </View>
       <DrawerItemList {...props} />
@@ -165,16 +168,16 @@ const CustomDrawerContent = (props) => {
 };
 
 function AdminDrawerNavigator() {
-    const [fontsLoaded] = useFonts({
-      Oswald_400Regular,
-      Oswald_700Bold,
-      Oswald_400Italic,
-      Oswald_700BoldItalic,
-      Nunito_400Regular,
-      Nunito_700Bold,
-      Nunito_400Italic,
-      Nunito_700BoldItalic,
-    });
+  const [fontsLoaded] = useFonts({
+    Oswald_400Regular,
+    Oswald_700Bold,
+    Oswald_400Italic,
+    Oswald_700BoldItalic,
+    Nunito_400Regular,
+    Nunito_700Bold,
+    Nunito_400Italic,
+    Nunito_700BoldItalic,
+  });
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -189,7 +192,7 @@ function AdminDrawerNavigator() {
             <AdminAppBar
               navigation={navigation}
               title={route.name}
-              isRoot={route.name !== "Equipos"}
+              isRoot={route.name !== "Equipos" && route.name !== "Perfil"}
             />
           );
         },
@@ -202,7 +205,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
       <Drawer.Screen
@@ -212,7 +215,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="shield" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
       <Drawer.Screen
@@ -222,7 +225,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="trophy" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
       <Drawer.Screen
@@ -232,7 +235,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="football" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
       <Drawer.Screen
@@ -242,7 +245,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="id-card" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
       <Drawer.Screen
@@ -252,7 +255,7 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="wallet" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
       <Drawer.Screen
@@ -262,8 +265,13 @@ function AdminDrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="newspaper" size={size} color={color} />
           ),
-          drawerLabelStyle: { fontFamily: 'Oswald_400Regular' },
+          drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
+      />
+      <Drawer.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={{ drawerItemStyle: { display: "none" } }}
       />
     </Drawer.Navigator>
   );
