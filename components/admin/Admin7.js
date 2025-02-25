@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
   title2: { fontSize: 22, marginBottom: 20 },
   banner: { width: "100%", height: 100, resizeMode: "contain", marginBottom: 20 },
   formContainer: { 
-    flexDirection: "row", 
     backgroundColor: "#fff", 
     padding: 10, 
     borderRadius: 10, 
@@ -144,7 +143,7 @@ const styles = StyleSheet.create({
     flex: 1, 
     alignItems: "center", 
     justifyContent: "center", 
-    marginRight: 20 
+    margin: 20
   },
   torneoImage: { width: 150, height: 200, resizeMode: "contain" },
   formFields: { flex: 2 },

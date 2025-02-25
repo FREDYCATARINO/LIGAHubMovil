@@ -7,6 +7,6 @@ import ArbitroNavigator from './navigation/ArbitroNavigator'
 
 export default function App() {
   return (
-    <AdminNavigator/>
+    <ArbitroNavigator/>
   );
 };

@@ -20,13 +20,14 @@ import { ScrollView } from "react-native-gesture-handler";
 
 const PerfilScreen = ({ navigation, route }) => {
   const [color, setColor] = useState('')
+  const [page, setPage] = useState('')
   const { usuario, rol } = route.params || {}; 
 
   const getColor = () => {
     switch (rol) {
-      case "Árbitro": setColor(colores.acento_3_1); break;
-      case "Dueño": setColor(colores.acento_2_2); break;
-      case "Admin": setColor(colores.domin_1_1); break;
+      case "Árbitro": setColor(colores.acento_3_1); setPage('Inicio'); break;
+      case "Dueño": setColor(colores.acento_2_2); setPage('Home'); break;
+      case "Admin": setColor(colores.domin_1_1); setPage('Home'); break;
       default: setColor(colores.base_1_5); break;
     }
   }
@@ -128,7 +129,7 @@ const PerfilScreen = ({ navigation, route }) => {
           </View>
           <TouchableOpacity
             style={{ backgroundColor: colores.domin_1_1, paddingVertical: 10, borderRadius: 5, width: '90%', alignSelf: 'center', justifyContent: 'center'}}
-            onPress={() => navigation.navigate("Home")}
+            onPress={() => navigation.navigate(page)}
           >
             <Text style={[FONTS.oswald, {color: colores.blanco, alignSelf: 'center', fontSize: 20}]}>Volver</Text>
           </TouchableOpacity>

@@ -13,6 +13,7 @@
     "@expo-google-fonts/nunito": "^0.2.3",
     "@expo-google-fonts/oswald": "^0.2.3",
     "@expo/metro-runtime": "~4.0.1",
+    "@lottiefiles/dotlottie-react": "^0.6.5",
     "@react-native-community/checkbox": "^0.5.17",
     "@react-native-community/datetimepicker": "^3.0.0",
     "@react-native-picker/picker": "^2.11.0",
@@ -44,6 +45,7 @@
     "react-native-screens": "~4.4.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
+    "react-native-web-maps": "^0.3.0",
     "react-native-webview": "^13.13.2"
   },
   "devDependencies": {

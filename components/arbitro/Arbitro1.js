@@ -259,7 +259,7 @@ const Arbitro1 = ({ navigation }) => {
           style={{ gap: 10, width: '100%' }}
           renderItem={({ item: par }) => (
             <TouchableOpacity
-              onPress={() => navigation.navigate("Detalles de partido")}
+              onPress={() => navigation.navigate("Detalles de partido",{partido: par})}
               style={[
                 stylesArbitro1.card,
                 par.estado === "Nuevo"

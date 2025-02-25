@@ -378,11 +378,11 @@ const Admin1 = ({ navigation }) => {
             </View>
           </ScrollView>
         </View>
-        <View style={styless.card2}>
+        {/*<View style={styless.card2}>
           <Text style={[FONTS.oswaldNegrita, styless.title2]}>
             Gestión de pagos
           </Text>
-        </View>
+        </View>*/}
         <View style={styless.card3}>
           <Text style={[FONTS.oswaldNegrita, styless.title3]}>
             Calendario de partidos
