@@ -36,7 +36,7 @@ const AdminAppBar = ({ navigation, title, isRoot }) => {
           />
         </TouchableOpacity>
         <Text style={[styles.title, FONTS.nunitoNegrita]}>{title}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate(title == "Perfil" ? "Home" : "Perfil")}>
+        <TouchableOpacity onPress={() => navigation.navigate(title == "Perfil" ? "Home" : "Perfil", { usuario: "José José", rol: "Admin" })}>
         <Image
           source={{
             uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",

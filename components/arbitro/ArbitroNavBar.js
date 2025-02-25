@@ -16,29 +16,29 @@ import Arbito1 from "./Arbitro1";
 
 const ArbitroAppBar = ({ navigation, title, isRoot }) => {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <View style={styles.appBar}>
         <TouchableOpacity
           onPress={() =>
             /*navigation.dispatch(DrawerActions.openDrawer())*/
-            isRoot ? null : navigation.goBack()
+            isRoot ? null : navigation.navigate("Inicio")
           }
         >
-          {isRoot ? (
+          {title === "Inicio" ? (
             <Image
               source={require('../../assets/icon.png')}
               style={{
-                width: 24,
-                height: 24,
-                backgroundColor: colores.base_1_1,
-                resizeMode: "stretch",
+                width: 50,
+                height: 50,
+                backgroundColor: "transparent",
+                resizeMode: "cover",
                 borderRadius: 5
               }}
             />
           ) : (
             <Ionicons
               //name={"menu"}
-              name={isRoot ? "menu" : "arrow-back"}
+              name={"arrow-back"}
               size={24}
               color="white"
             />
@@ -47,7 +47,7 @@ const ArbitroAppBar = ({ navigation, title, isRoot }) => {
         <Text style={[styles.title, FONTS.nunitoNegrita]}>{title}</Text>
         <TouchableOpacity
           onPress={() =>
-            /*navigation.navigate("Perfil")*/ alert("En proceso...")
+            navigation.navigate("Mi perfil", { usuario: "Juan Pérez", rol: "Árbitro" })
           }
         >
           <Image
@@ -64,7 +64,7 @@ const ArbitroAppBar = ({ navigation, title, isRoot }) => {
           />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 15,
     justifyContent: "space-between",
-    marginTop: "5%",
+    marginTop: '5%'
   },
   title: { color: "white", fontSize: 18, marginLeft: 15 },
 });

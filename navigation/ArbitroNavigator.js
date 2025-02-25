@@ -6,8 +6,6 @@ import {
 } from "@react-navigation/drawer";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
-import Arbitro1 from "../components/arbitro/Arbitro1";
-import Arbitro2 from "../components/arbitro/Arbitro2";
 import LoginScreen from "../screens/Login";
 import { useNavigation } from "@react-navigation/native";
 import { StyleSheet, Image, View, Text, TouchableOpacity } from "react-native";
@@ -34,20 +32,62 @@ import {
 } from "@expo-google-fonts/nunito"; // Cargar Nunito
 import Arbitro1 from "../components/arbitro/Arbitro1";
 import Arbitro2 from "../components/arbitro/Arbitro2";
+import ArbitroAppBar from "../components/arbitro/ArbitroNavBar";
 import PerfilScreen from "../screens/Perfil";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
-const ArbitroNavigator = () => {
+import { Feather } from "@expo/vector-icons";
 
+const Tab = createBottomTabNavigator();
+
+const ArbitroNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home" component={Arbitro1} />
-        <Stack.Screen name="Partido" component={Arbitro2} />
-        <Stack.Screen name="Perfilo" component={PerfilScreen} />
-      </Stack.Navigator>
+      <Tab.Navigator
+        screenOptions={{
+          header: ({ navigation, route }) => {
+            return (
+              <ArbitroAppBar
+                navigation={navigation}
+                title={route.name}
+                isRoot={route.name !== "Detalles de partido" && route.name !== "Mi perfil"}
+              />
+            );
+          },
+          tabBarStyle: { display: "none" }
+        }}
+      >
+        <Tab.Screen
+          name="Inicio"
+          component={Arbitro1}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <Feather name="home" size={24} color={color} />
+            ),
+            tabBarItemStyle: { display: "none" }
+          }}
+        />
+        <Tab.Screen
+          name="Detalles de partido"
+          component={Arbitro2}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <Feather name="book-open" size={24} color={color} />
+            ),
+            tabBarItemStyle: { display: "none" }
+          }}
+        />
+        <Tab.Screen
+          name="Mi perfil"
+          component={PerfilScreen}
+          options={{ tabBarItemStyle: { display: "none" } }}
+        />
+      </Tab.Navigator>
     </NavigationContainer>
   );
 };
+
+export default ArbitroNavigator;

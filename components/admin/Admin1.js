@@ -50,7 +50,6 @@ const Admin1 = ({ navigation }) => {
 
   setTimeout(() => {
     if (!fontsLoaded) {
-    console.log("Cargando...")
     return (
       <View style={{ alignItems: "center", justifyContent: "center", marginTop: '10%' }}>
         <ActivityIndicator color={colores.domin_1_1}/>
