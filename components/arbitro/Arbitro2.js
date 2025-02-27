@@ -290,10 +290,11 @@ const stylesArbitro2 = StyleSheet.create({
     borderColor: colores.domin_2_2,
     borderWidth: 3,
     borderRadius: 5,
-    color: colores.negro,
+    color: colores.domin_2_2,
     backgroundColor: colores.base_2_5,
     width: 30,
-    height: 30,
+    height: 45,
+    padding: 0
   },
   input2: {
     borderColor: colores.domin_2_2,
