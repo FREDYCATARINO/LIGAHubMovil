@@ -317,7 +317,6 @@ const Admin3 = ({ navigation }) => {
       ...prevState,
       [id]: !prevState[id],
     }));
-    console.log(id, checkedState);
   };
 
   //Borrar despues

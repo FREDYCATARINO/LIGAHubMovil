@@ -120,7 +120,6 @@ const Arbitro2 = ({ navigation, route }) => {
               onPress={() => {
                 setChecked1(!checked1);
                 setChecked2(false);
-                console.log(checked1);
                 setTeamName(partido.equipo1.nombre);
               }}
               color={colores.acento_1_1}
@@ -165,7 +164,6 @@ const Arbitro2 = ({ navigation, route }) => {
               onPress={() => {
                 setChecked2(!checked2);
                 setChecked1(false);
-                console.log(checked1);
                 setTeamName(partido.equipo2.nombre);
               }}
               color={colores.acento_1_1}

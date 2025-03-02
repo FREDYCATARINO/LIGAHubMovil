@@ -40,8 +40,6 @@ const Admin4 = ({ navigation }) => {
       duration: 500,
       useNativeDriver: true,
     }).start();
-
-    console.log(Animated, place);
   };
 
   // Función para cerrar la card
@@ -180,14 +178,12 @@ const Admin4 = ({ navigation }) => {
   };
 
   const getPlaceName = async (latitude, longitude) => {
-    console.log("Ay", latitude, longitude);
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
       );
       const data = await response.json();
       setLugar(data.display_name);
-      console.log(lugar);
       return data.display_name; // Devuelve el nombre del lugar
     } catch (error) {
       console.error("Error al obtener el nombre del lugar", error);

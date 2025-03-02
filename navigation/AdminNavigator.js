@@ -167,7 +167,7 @@ const CustomDrawerContent = (props) => {
   );
 };
 
-function AdminDrawerNavigator() {
+function AdminDrawerNavigator({navigation}) {
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
     Oswald_700Bold,
@@ -279,9 +279,7 @@ function AdminDrawerNavigator() {
 
 export default function AdminNavigator() {
   return (
-    <NavigationContainer>
       <AdminDrawerNavigator />
-    </NavigationContainer>
   );
 }
 

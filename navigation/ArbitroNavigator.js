@@ -45,7 +45,6 @@ const Tab = createBottomTabNavigator();
 
 const ArbitroNavigator = () => {
   return (
-    <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
           header: ({ navigation, route }) => {
@@ -86,7 +85,6 @@ const ArbitroNavigator = () => {
           options={{ tabBarItemStyle: { display: "none" } }}
         />
       </Tab.Navigator>
-    </NavigationContainer>
   );
 };
 

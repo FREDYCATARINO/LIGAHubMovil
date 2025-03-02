@@ -1,22 +1,41 @@
-// AppNavigator.js
-import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import Login from '../screens/Login';
-import RecuperarContra from '../screens/RecuperarContra';
-import RegistroDueño from '../screens/RegistroDueño'
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useContext } from "react";
+import { AuthContext, AuthProvider } from "../context/AuthContext";
+import DueñoNavigator from "./DueñoDrawerNavigator";
+import UserNavigator from "./UserDrawerNavigator";
+import AdminNavigator from "./AdminNavigator";
+import ArbitroNavigator from "./ArbitroNavigator";
+import Login from "./AuthStackNavigator";
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
-export default function AuthStack() {
+const MainNavigator = () => {
+  const { user } = useContext(AuthContext);
+
+  console.log(user)
+
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false, // Oculta la cabecera por defecto
-      }}
-    >
-      <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="RecuperarContra" component={RecuperarContra} />
-      <Stack.Screen name='RegistroDueño'component={RegistroDueño}/>
-    </Stack.Navigator>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          {
+            dueno: <Stack.Screen name="DueñoStack" component={DueñoNavigator} />,
+            admin: <Stack.Screen name="AdminStack" component={AdminNavigator} />,
+            arbitro: <Stack.Screen name="ArbitroStack" component={ArbitroNavigator} />,
+          }[user.role] || <Stack.Screen name="UserStack" component={UserNavigator} />
+        ) : (
+          <Stack.Screen name="UserStack" component={UserNavigator} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainNavigator />
+    </AuthProvider>
   );
 }

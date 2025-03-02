@@ -391,7 +391,6 @@ const Admin1 = ({ navigation }) => {
             style={[FONTS.nunito, styless.calendar]} // Aplica la fuente en el estilo principal (si es necesario)
             // Configuración básica
             onDayPress={(day) => {
-              console.log("Selected day", day);
               alert("Hola " + day.day);
             }}
             monthFormat={"MMM yyyy"}

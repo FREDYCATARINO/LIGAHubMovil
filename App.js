@@ -1,12 +1,13 @@
-// App.js
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import AuthStack from './navigation/AppNavigator';
-import AdminNavigator from './navigation/AdminNavigator';
-import ArbitroNavigator from './navigation/ArbitroNavigator'
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { AuthProvider } from "./context/AuthContext";
+import MainNavigator from "./navigation/AppNavigator"; // Asegúrate de que MainNavigator no esté envolviendo NavigationContainer
 
 export default function App() {
   return (
-    <ArbitroNavigator/>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+    <AuthProvider>
+      <MainNavigator />
+    </AuthProvider>
+  </GestureHandlerRootView>
   );
-};
+}
