@@ -16,7 +16,14 @@ import Admin7 from "../components/admin/Admin7";
 import PerfilScreen from "../screens/Perfil";
 import EquiposScreen from "../components/admin/DetallesEquipo";
 import { useNavigation } from "@react-navigation/native";
-import { StyleSheet, Image, View, Text, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  Image,
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import AdminAppBar from "../components/admin/AdminNavBar";
 import { Ionicons } from "@expo/vector-icons";
 import myStyles from "../style/style";
@@ -41,6 +48,8 @@ import {
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
+import { useContext } from "react";
+import { AuthContext, AuthProvider } from "../context/AuthContext";
 
 function HomeStack() {
   return (
@@ -167,7 +176,26 @@ const CustomDrawerContent = (props) => {
   );
 };
 
-function AdminDrawerNavigator({navigation}) {
+function AdminDrawerNavigator({ navigation }) {
+  const [loadData, setLoadData] = useState(false);
+  const [noData, setNoData] = useState(false);
+  const [tokenData, setTokenData] = useState("");
+  const [switcht, setSwitcht] = useState(false);
+
+  const { getToken } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      setLoadData(true);
+      const token = await getToken();
+      setTokenData(token);
+      setLoadData(false);
+      setNoData(token === "" ? true : false);
+    };
+  
+    fetchToken();
+  }, [switcht]);  
+
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
     Oswald_700Bold,
@@ -178,24 +206,38 @@ function AdminDrawerNavigator({navigation}) {
     Nunito_400Italic,
     Nunito_700BoldItalic,
   });
+
+  if (loadData) {
+    return <ActivityIndicator size="large" color="green" />;
+  }
+
+  if (noData) {
+    return (
+      <View>
+        <Text>Algo salió mal, inténtalo nuevamente</Text>
+        <TouchableOpacity onPress={() => setSwitcht(!switcht)}>
+          <Text>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        headerShown: true, // Controla la visibilidad del header dinámicamente
+        headerShown: true,
         drawerActiveTintColor: colores.acento_1_5,
         drawerItemStyle: { marginVertical: 5, marginHorizontal: 5 },
         drawerContentStyle: { backgroundColor: colores.base_3_5 },
         drawerActiveBackgroundColor: colores.domin_1_4,
-        header: ({ navigation, route }) => {
-          return (
-            <AdminAppBar
-              navigation={navigation}
-              title={route.name}
-              isRoot={route.name !== "Equipos" && route.name !== "Perfil"}
-            />
-          );
-        },
+        header: ({ navigation, route }) => (
+          <AdminAppBar
+            navigation={navigation}
+            title={route.name}
+            isRoot={route.name !== "Equipos" && route.name !== "Perfil"}
+          />
+        ),
       }}
     >
       <Drawer.Screen
@@ -278,9 +320,7 @@ function AdminDrawerNavigator({navigation}) {
 }
 
 export default function AdminNavigator() {
-  return (
-      <AdminDrawerNavigator />
-  );
+  return <AdminDrawerNavigator />;
 }
 
 const styles = StyleSheet.create({

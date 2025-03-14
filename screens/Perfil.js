@@ -20,7 +20,7 @@ import { ScrollView } from "react-native-gesture-handler";
 import { AuthContext } from "../context/AuthContext";
 
 const PerfilScreen = ({ navigation, route }) => {
-  const { logout } = useContext(AuthContext);
+  const { logout, removeToken } = useContext(AuthContext);
   const [color, setColor] = useState('')
   const [page, setPage] = useState('')
   const { usuario, rol } = route.params || {}; 
@@ -131,7 +131,7 @@ const PerfilScreen = ({ navigation, route }) => {
           </View>
           <TouchableOpacity
             style={{ backgroundColor: colores.domin_1_1, paddingVertical: 10, borderRadius: 5, width: '90%', alignSelf: 'center', justifyContent: 'center'}}
-            onPress={() => /*navigation.navigate(page)*/ logout()}
+            onPress={() => /*navigation.navigate(page)*/ {logout(); removeToken()}}
           >
             <Text style={[FONTS.oswald, {color: colores.blanco, alignSelf: 'center', fontSize: 20}]}>Cerrar sesión</Text>
           </TouchableOpacity>

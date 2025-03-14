@@ -1,13 +1,27 @@
-import React, { useState ,useContext} from "react";
-import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
+import React, { useState, useContext } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import logo from '../components/logo.png';
+import logo from "../components/logo.png";
 import styles from "../style/style";
 import { AuthContext } from "../context/AuthContext";
 
-
-const Login = ({navigation}) => {
-  const { login } = useContext(AuthContext);
+const Login = ({ navigation }) => {
+  const {
+    login,
+    isLoading,
+    setIsLoading,
+    failure,
+    saveToken,
+    getToken,
+    removeToken,
+  } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -35,26 +49,41 @@ const Login = ({navigation}) => {
             placeholder="Contraseña"
             secureTextEntry
             value={password}
+            keyboardType="password"
             onChangeText={setPassword}
           />
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate("RecuperarContra")}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("RecuperarContra")}
+        >
           <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-  style={styles.loginButton}
-  onPress={() => login(email, password)} // Pasar email y password a login
->
-  <Text style={styles.loginText}>Iniciar sesión</Text>
-</TouchableOpacity>
+        {isLoading ? (
+          <ActivityIndicator size='large' color='green' />
+        ) : (
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => login(email, password)} // Pasar email y password a login
+          >
+            <Text style={styles.loginText}>Iniciar sesión</Text>
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity onPress={() => navigation.navigate("RegistroDueño")} style={styles.regisButton}>
-          <MaterialCommunityIcons name="account-multiple-plus" size={20} color={"white"} />
+        <TouchableOpacity
+          onPress={() => navigation.navigate("RegistroDueño")}
+          style={styles.regisButton}
+        >
+          <MaterialCommunityIcons
+            name="account-multiple-plus"
+            size={20}
+            color={"white"}
+          />
           <Text style={styles.regisText}>Registrate</Text>
         </TouchableOpacity>
       </View>
+      {failure ? <Text>Algo salió mal, intentalo nuevamente</Text> : null}
     </View>
   );
 };

@@ -44,47 +44,95 @@ import { Feather } from "@expo/vector-icons";
 const Tab = createBottomTabNavigator();
 
 const ArbitroNavigator = () => {
+  const [loadData, setLoadData] = useState(false);
+  const [noData, setNoData] = useState(false);
+  const [tokenData, setTokenData] = useState("");
+  const [switcht, setSwitcht] = useState(false);
+
+  const { getToken } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      setLoadData(true);
+      const token = await getToken();
+      setTokenData(token);
+      setLoadData(false);
+      setNoData(token === "" ? true : false);
+    };
+
+    fetchToken();
+  }, [switcht]);
+
+  const [fontsLoaded] = useFonts({
+    Oswald_400Regular,
+    Oswald_700Bold,
+    Oswald_400Italic,
+    Oswald_700BoldItalic,
+    Nunito_400Regular,
+    Nunito_700Bold,
+    Nunito_400Italic,
+    Nunito_700BoldItalic,
+  });
+
+  if (loadData) {
+    return <ActivityIndicator size="large" color="green" />;
+  }
+
+  if (noData) {
+    return (
+      <View>
+        <Text>Algo salió mal, inténtalo nuevamente</Text>
+        <TouchableOpacity onPress={() => setSwitcht(!switcht)}>
+          <Text>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
   return (
-      <Tab.Navigator
-        screenOptions={{
-          header: ({ navigation, route }) => {
-            return (
-              <ArbitroAppBar
-                navigation={navigation}
-                title={route.name}
-                isRoot={route.name !== "Detalles de partido" && route.name !== "Mi perfil"}
-              />
-            );
-          },
-          tabBarStyle: { display: "none" }
+    <Tab.Navigator
+      screenOptions={{
+        header: ({ navigation, route }) => {
+          return (
+            <ArbitroAppBar
+              navigation={navigation}
+              title={route.name}
+              isRoot={
+                route.name !== "Detalles de partido" &&
+                route.name !== "Mi perfil"
+              }
+            />
+          );
+        },
+        tabBarStyle: { display: "none" },
+      }}
+    >
+      <Tab.Screen
+        name="Inicio"
+        component={Arbitro1}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Feather name="home" size={24} color={color} />
+          ),
+          tabBarItemStyle: { display: "none" },
         }}
-      >
-        <Tab.Screen
-          name="Inicio"
-          component={Arbitro1}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <Feather name="home" size={24} color={color} />
-            ),
-            tabBarItemStyle: { display: "none" }
-          }}
-        />
-        <Tab.Screen
-          name="Detalles de partido"
-          component={Arbitro2}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <Feather name="book-open" size={24} color={color} />
-            ),
-            tabBarItemStyle: { display: "none" }
-          }}
-        />
-        <Tab.Screen
-          name="Mi perfil"
-          component={PerfilScreen}
-          options={{ tabBarItemStyle: { display: "none" } }}
-        />
-      </Tab.Navigator>
+      />
+      <Tab.Screen
+        name="Detalles de partido"
+        component={Arbitro2}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Feather name="book-open" size={24} color={color} />
+          ),
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tab.Screen
+        name="Mi perfil"
+        component={PerfilScreen}
+        options={{ tabBarItemStyle: { display: "none" } }}
+      />
+    </Tab.Navigator>
   );
 };
 
