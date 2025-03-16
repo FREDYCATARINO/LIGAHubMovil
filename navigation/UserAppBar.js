@@ -1,10 +1,15 @@
 import React from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import colores from "../style/colors";
 import LoginStack from "../navigation/AuthStackNavigator";
 const UserAppBar = ({ navigation, title }) => {
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.appBar}>
@@ -17,10 +22,12 @@ const UserAppBar = ({ navigation, title }) => {
         <Text style={styles.encabezado}>{title}</Text>
 
         {/* Botón para ir al Login */}
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("LoginStack")}>
-        <Text style={styles.buttonText}>Iniciar sesión</Text>
-</TouchableOpacity>
-
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("LoginStack")}
+        >
+          <Text style={styles.buttonText}>Iniciar sesión</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

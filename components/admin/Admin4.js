@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Animated,
   TextInput,
-  Image
+  Image,
 } from "react-native";
 import { useState } from "react";
 import MapView from "react-native-maps";
@@ -20,11 +20,11 @@ import { Marker } from "react-native-maps";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import colores from "../../style/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 const Admin4 = ({ navigation }) => {
   const [lugar, setLugar] = useState("");
   const [elecc, setElecc] = useState("");
+  const [address, setAddress] = useState("");
 
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [slideAnim] = useState(new Animated.Value(-400));
@@ -93,7 +93,7 @@ const Admin4 = ({ navigation }) => {
     },
   ]);
 
-  const [direccionUri, setDireccionUri] = useState('')
+  const [direccionUri, setDireccionUri] = useState("");
 
   const [direccion2, setDireccion2] = useState([
     {
@@ -115,7 +115,7 @@ const Admin4 = ({ navigation }) => {
       },
     ]);
     const placeName = await getPlaceName(latitude, longitude);
-    setDireccionUri(getOSMStaticImage(latitude, longitude))
+    setDireccionUri(getOSMStaticImage(latitude, longitude));
     setLugar(placeName);
     handleMarkerPress(placeName);
   };
@@ -146,7 +146,7 @@ const Admin4 = ({ navigation }) => {
       },
     ]);
     const placeName = await getPlaceName(lat, lon);
-    setDireccionUri(getOSMStaticImage(lat, lon))
+    setDireccionUri(getOSMStaticImage(lat, lon));
     setLugar(placeName);
     handleMarkerPress(placeName);
   };
@@ -183,7 +183,16 @@ const Admin4 = ({ navigation }) => {
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
       );
       const data = await response.json();
-      setLugar(data.display_name);
+      //setLugar(data.display_name);
+      setLugar(
+        data.address.road ||
+          data.address.neighbourhood ||
+          data.address.village ||
+          data.address.city ||
+          data.address.town ||
+          "Lugar desconocido"
+      );
+      setAddress(`${data.address[0].road} ${data.address[0].city}`);
       return data.display_name; // Devuelve el nombre del lugar
     } catch (error) {
       console.error("Error al obtener el nombre del lugar", error);
@@ -337,7 +346,9 @@ const Admin4 = ({ navigation }) => {
                       </Text>
                       <TouchableOpacity
                         style={stylesAdmin4.button}
-                        onPress={() => handlePress(item.lat, item.lon, item.name)}
+                        onPress={() =>
+                          handlePress(item.lat, item.lon, item.name)
+                        }
                       >
                         <Ionicons name="map" size={24} color={colores.blanco} />
                       </TouchableOpacity>
@@ -365,56 +376,58 @@ const Admin4 = ({ navigation }) => {
               </View>
             </View>
           </ScrollView>
-          <View
-            style={{
-              width: "100%",
-              height: 350,
-              borderRadius: 5,
-            }}
-          >
-            <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-              Explorar
-            </Text>
-            <MapView
-              provider={MapView.PROVIDER_DEFAULT}
-              style={{ flex: 1, width: "100%", height: "100%" }}
-              region={region}
-              onRegionChangeComplete={setRegion}
-              onPress={handleLongPress}
-              mapType="hybrid"
-            >
-              {markers.map((marker) => (
-                <Marker
-                  key={marker.id}
-                  coordinate={{
-                    latitude: marker.latitude,
-                    longitude: marker.longitude,
-                  }}
-                  title={marker.title}
-                  onPress={() => handleMarkerPress(marker.title)}
-                />
-              ))}
-            </MapView>
-            <TouchableOpacity
-              onPress={resetMarkers}
+          {Platform.OS !== "web" && (
+            <View
               style={{
-                width: "50%",
-                backgroundColor: colores.domin_1_4,
-                alignSelf: "center",
-                alignItems: "center",
-                padding: 10,
-                margin: 5,
-                borderRadius: 10,
-                marginTop: -50,
+                width: "100%",
+                height: 350,
+                borderRadius: 5,
               }}
             >
-              <Text
-                style={[FONTS.oswald, { fontSize: 15, color: colores.blanco }]}
+              <MapView
+                provider={MapView.PROVIDER_DEFAULT}
+                style={{ flex: 1, width: "100%", height: "100%" }}
+                region={region}
+                onRegionChangeComplete={setRegion}
+                onPress={handleLongPress}
+                mapType="hybrid"
               >
-                Reiniciar mapa
-              </Text>
-            </TouchableOpacity>
-          </View>
+                {markers.map((marker) => (
+                  <Marker
+                    key={marker.id}
+                    coordinate={{
+                      latitude: marker.latitude,
+                      longitude: marker.longitude,
+                    }}
+                    title={marker.title}
+                    onPress={() => handleMarkerPress(marker.title)}
+                  />
+                ))}
+              </MapView>
+              <TouchableOpacity
+                onPress={resetMarkers}
+                style={{
+                  width: "50%",
+                  backgroundColor: colores.domin_1_4,
+                  alignSelf: "center",
+                  alignItems: "center",
+                  padding: 10,
+                  margin: 5,
+                  borderRadius: 10,
+                  marginTop: -50,
+                }}
+              >
+                <Text
+                  style={[
+                    FONTS.oswald,
+                    { fontSize: 15, color: colores.blanco },
+                  ]}
+                >
+                  Reiniciar mapa
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {selectedPlace && (
             <Animated.View
               style={[
@@ -429,8 +442,8 @@ const Admin4 = ({ navigation }) => {
               <View style={styles.cardContent}>
                 {/*Poner una imagen?*/}
                 <Image
-                  source={{ uri: direccionUri, alt: 'Lugar' }}
-                  style={{ width: 300, height: 150, resizeMode: 'cover' }}
+                  source={{ uri: direccionUri, alt: "Lugar" }}
+                  style={{ width: 300, height: 150, resizeMode: "cover" }}
                 />
                 <Text style={[FONTS.oswaldNegrita, { fontSize: 18 }]}>
                   {selectedPlace}
@@ -476,57 +489,59 @@ const Admin4 = ({ navigation }) => {
             <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
               Elege buscando el lugar o en el mapa
             </Text>
-            <View
-              style={{
-                width: "100%",
-                height: 200,
-                borderColor: colores.acento_3_1,
-                borderRadius: 5,
-                borderWidth: 2,
-              }}
-            >
-              <MapView
-                provider={MapView.PROVIDER_DEFAULT}
-                style={{ flex: 1, width: "100%", height: "100%" }}
-                onLongPress={handleLongPress2}
-                region={region2}
-                onRegionChangeComplete={setRegion2}
-                mapType="hybrid"
-              >
-                {markers2.map((marker) => (
-                  <Marker
-                    key={marker.id}
-                    coordinate={{
-                      latitude: marker.latitude,
-                      longitude: marker.longitude,
-                    }}
-                    title={marker.title}
-                  />
-                ))}
-              </MapView>
-              <TouchableOpacity
-                onPress={resetMarkers2}
+            {Platform.OS !== "web" && (
+              <View
                 style={{
-                  width: "30%",
-                  backgroundColor: colores.domin_1_4,
-                  alignSelf: "flex-end",
-                  alignItems: "center",
-                  padding: 10,
-                  margin: 5,
-                  borderRadius: 10,
-                  marginTop: -50,
+                  width: "100%",
+                  height: 200,
+                  borderColor: colores.acento_3_1,
+                  borderRadius: 5,
+                  borderWidth: 2,
                 }}
               >
-                <Text
-                  style={[
-                    FONTS.oswald,
-                    { fontSize: 15, color: colores.blanco },
-                  ]}
+                <MapView
+                  provider={MapView.PROVIDER_DEFAULT}
+                  style={{ flex: 1, width: "100%", height: "100%" }}
+                  onLongPress={handleLongPress2}
+                  region={region2}
+                  onRegionChangeComplete={setRegion2}
+                  mapType="hybrid"
                 >
-                  Reestablecer
-                </Text>
-              </TouchableOpacity>
-            </View>
+                  {markers2.map((marker) => (
+                    <Marker
+                      key={marker.id}
+                      coordinate={{
+                        latitude: marker.latitude,
+                        longitude: marker.longitude,
+                      }}
+                      title={marker.title}
+                    />
+                  ))}
+                </MapView>
+                <TouchableOpacity
+                  onPress={resetMarkers2}
+                  style={{
+                    width: "30%",
+                    backgroundColor: colores.domin_1_4,
+                    alignSelf: "flex-end",
+                    alignItems: "center",
+                    padding: 10,
+                    margin: 5,
+                    borderRadius: 10,
+                    marginTop: -50,
+                  }}
+                >
+                  <Text
+                    style={[
+                      FONTS.oswald,
+                      { fontSize: 15, color: colores.blanco },
+                    ]}
+                  >
+                    Reestablecer
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <TextInput
               style={[FONTS.oswald, stylesAdmin4.input]}
               placeholderTextColor={colores.domin_2_2}
@@ -537,11 +552,7 @@ const Admin4 = ({ navigation }) => {
               style={[FONTS.oswald, stylesAdmin4.input]}
               placeholderTextColor={colores.domin_2_2}
               placeholder="Dirección"
-              value={
-                direccion[0].lat === 0 && direccion[0].long === 0
-                  ? ""
-                  : `${direccion[0].lat} ${direccion[0].long}`
-              }
+              value={address === "" ? "" : address}
             />
             <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
               Asignación de canchas

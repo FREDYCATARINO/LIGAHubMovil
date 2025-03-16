@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import styles from "../style/style";
+import FONTS from "../style/fonts";
 
 // Usa require() si es una imagen local
 const imgRecuContra = require("../assets/RecuperarContra.png");
@@ -20,10 +21,10 @@ const RecuperarContra = () => {
     <View style={styles.container}>
       <View style={styles.cardBody}>
         {/* Título */}
-        <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
+        <Text style={[styles.title, FONTS.nunitoNegrita]}>¿Olvidaste tu contraseña?</Text>
 
         {/* Texto descriptivo */}
-        <Text style={styles.TextField}>
+        <Text style={[styles.TextField, FONTS.oswald]}>
           Lo entendemos, las cosas pasan. Simplemente ingresa tu dirección de correo electrónico a continuación y te enviaremos un enlace para restablecer tu contraseña.
         </Text>
 
@@ -35,11 +36,11 @@ const RecuperarContra = () => {
           <MaterialCommunityIcons
             name="email-outline"
             size={24}
-            color="#666"
+            color="#667"
             style={styles.icon}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, FONTS.oswald]}
             placeholder="Correo electrónico"
             keyboardType="email-address"
             value={email}
@@ -49,12 +50,12 @@ const RecuperarContra = () => {
 
         {/* Botón de enviar enlace */}
         <TouchableOpacity style={styles.button} onPress={handleRecovery}>
-          <Text style={styles.buttonText}>Enviar enlace de recuperación</Text>
+          <Text style={[styles.buttonText, FONTS.oswald]}>Enviar enlace de recuperación</Text>
         </TouchableOpacity>
 
         {/* Enlace para volver al inicio de sesión */}
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.forgotText}>Volver al inicio de sesión</Text>
+          <Text style={[styles.forgotText, FONTS.oswaldNegrita]}>Volver al inicio de sesión</Text>
         </TouchableOpacity>
       </View>
     </View>

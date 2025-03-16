@@ -1,0 +1,31 @@
+npm install @lottiefiles/dotlottie-react@^0.6.5
+npm install lottie-ios@3.1.8 --save
+npm install lottie-react-native
+npm install @react-native-community/checkbox@^0.5.17    
+npm install @react-native-community/datetimepicker@^3.0.0
+npm install @react-native-picker/picker@^2.11.0 
+npm install @react-navigation/native @react-navigation/native-stack @react-navigation/drawer react-native-screens react-native-safe-area-context react-native-gesture-handler react-native-reanimated react-native-vector-icons
+npm i axios 
+>npm install lottie-ios@^4.5.1  
+npm install react-native-calendars@^1.1309.1 
+npm install react-native-dotenv@^3.4.11   
+npm install react-native-gesture-handler@~2.20.2  
+npm install react-native-image-picker@^8.1.0    
+npm install react-native-maps@^1.20.1     
+npm install react-native-paper@^5.13.1
+npm install react-native-picker-select@^9.3.1                          
+npm install react-native-progress@^5.0.1 
+npm install react-native-reanimated@~3.16.1  
+npm install react-native-safe-area-context@4.12.0  
+npm install react-native-screens@~4.4.0 
+npm install react-hook-form @hookform/resolvers  
+npm install yup 
+npx expo install react-native-web @expo/metro-runtime
+npm i @react-navigation/native-stack
+npm install @react-navigation/stack
+npm install @expo-google-fonts/nunito
+npm install @expo-google-fonts/oswald
+npx expo install @react-navigation/native-stack @react-navigation/bottom-tabs
+npx expo install expo-font
+npx expo install @expo-google-fonts/oswald
+npx expo install @expo-google-fonts/nunito

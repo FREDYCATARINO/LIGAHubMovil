@@ -5,7 +5,6 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { createStackNavigator } from "@react-navigation/stack";
-import { NavigationContainer } from "@react-navigation/native";
 import Admin1 from "../components/admin/Admin1";
 import Admin2 from "../components/admin/Admin2";
 import Admin3 from "../components/admin/Admin3";
@@ -50,6 +49,7 @@ const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 import { useContext } from "react";
 import { AuthContext, AuthProvider } from "../context/AuthContext";
+import { TokenContext, TokenProvider } from "../context/TokenContext";
 
 function HomeStack() {
   return (
@@ -161,40 +161,49 @@ const CustomDrawerContent = (props) => {
         </View>
       </View>
       <DrawerItemList {...props} />
-      {/*<LordiconExample/>
-      <DrawerItem
-          label="Salir"
-          icon={({ color, size }) => <Ionicons name="log-out" size={size} color={color} />}
-          onPress={() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "LoginScreen" }],
-            });
-          }}
-        />*/}
     </View>
   );
 };
 
 function AdminDrawerNavigator({ navigation }) {
+  const { setToken } = useContext(TokenContext);
   const [loadData, setLoadData] = useState(false);
   const [noData, setNoData] = useState(false);
   const [tokenData, setTokenData] = useState("");
   const [switcht, setSwitcht] = useState(false);
+  const [expire, setExpire] = useState(false);
 
-  const { getToken } = useContext(AuthContext);
+  const { getToken, decodeToken } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchToken = async () => {
-      setLoadData(true);
-      const token = await getToken();
-      setTokenData(token);
-      setLoadData(false);
-      setNoData(token === "" ? true : false);
+      try {
+        const token = await getToken(); // Esperamos a que getToken devuelva el valor
+        if (token && token !== "") {
+          // Verificamos que el token sea válido
+          setToken(token);
+          console.log(token, "obtenido");
+          validateToken(token);
+        } else {
+          console.log("Token no encontrado o está vacío.");
+        }
+      } catch (error) {
+        console.log("Error al obtener el token:", error);
+      }
     };
-  
+
+    const validateToken = (token) => {
+      if (!noData) {
+        if (decodeToken(token) === null) {
+          setExpire(true);
+        } else {
+          setExpire(false);
+        }
+      }
+    };
+
     fetchToken();
-  }, [switcht]);  
+  }, [switcht]);
 
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
@@ -242,7 +251,8 @@ function AdminDrawerNavigator({ navigation }) {
     >
       <Drawer.Screen
         name="Home"
-        component={Admin1}
+        component={Admin1} // Pasa el componente directamente
+        initialParams={{ tokenData }} // Pasa tokenData como parámetro inicial
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
@@ -250,6 +260,7 @@ function AdminDrawerNavigator({ navigation }) {
           drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
+
       <Drawer.Screen
         name="Equipos"
         component={EquiposStack}

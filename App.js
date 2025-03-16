@@ -1,13 +1,16 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "./context/AuthContext";
 import MainNavigator from "./navigation/AppNavigator"; // Asegúrate de que MainNavigator no esté envolviendo NavigationContainer
+import { TokenProvider } from "./context/TokenContext";
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <AuthProvider>
-      <MainNavigator />
-    </AuthProvider>
-  </GestureHandlerRootView>
+      <AuthProvider>
+        <TokenProvider>
+          <MainNavigator />
+        </TokenProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

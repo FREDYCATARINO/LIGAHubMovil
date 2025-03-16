@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Text,
   Button,
@@ -17,6 +17,7 @@ import colores from "../../style/colors";
 import * as Progress from "react-native-progress";
 import FONTS from "../../style/fonts";
 import { useFonts } from "expo-font";
+import api from "../../config/api";
 import {
   Oswald_400Regular,
   Oswald_700Bold,
@@ -29,9 +30,21 @@ import {
   Nunito_400Italic,
   Nunito_700BoldItalic,
 } from "@expo-google-fonts/nunito"; // Cargar Nunito
+import axios from "axios";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+import { TokenContext } from "../../context/TokenContext";
 
-const Admin1 = ({ navigation }) => {
+const Admin1 = ({ navigation, route }) => {
+  const { tokenData } = route.params;
   const [progress, setProgress] = useState(0.25);
+  const {
+    getUserId,
+    getUserRole
+  } = useContext(AuthContext);
+  const {
+    token
+  } = useContext(TokenContext);
 
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
@@ -50,13 +63,53 @@ const Admin1 = ({ navigation }) => {
 
   setTimeout(() => {
     if (!fontsLoaded) {
-    return (
-      <View style={{ alignItems: "center", justifyContent: "center", marginTop: '10%' }}>
-        <ActivityIndicator color={colores.domin_1_1}/>
-        <Text> Loading Fonts... </Text>
-      </View>
-    );
-  }},1000);
+      return (
+        <View
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: "10%",
+          }}
+        >
+          <ActivityIndicator color={colores.domin_1_1} />
+          <Text> Loading Fonts... </Text>
+        </View>
+      );
+    }
+  }, 1000);
+
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [loadSolids, setLoadSolids] = useState(false);
+  const [fallo, setFallo] = useState("");
+  const [tokData, setTokData] = useState("");
+
+  useEffect(() => {
+    const getUserAll = async () => {
+      const id = await getUserRole()
+      const rolo = await getUserId()
+      const tok = await token()
+      setTokData(tok)
+
+      console.log(id,rolo,tok)
+    }
+    setLoadSolids(true);
+    axios
+      .get(`http://192.168.1.68:8080/api/solicitudes/admin`, {
+        headers: {
+          Authorization: `Bearer ${tokData}`,
+        },
+      })
+      .then((res) => {
+        setSolicitudes(res.data);
+      })
+      .catch((e) => {
+        console.error(e);
+        setFallo("Error al obtener solicitudes");
+      })
+      .finally(() => setLoadSolids(false));
+    
+    getUserAll()
+  }, []);
 
   return (
     <SafeAreaView style={[styless.scrollContent]}>
@@ -142,247 +195,51 @@ const Admin1 = ({ navigation }) => {
             Solicitudes pendientes
           </Text>
           <ScrollView style={styless.list}>
-            <View style={styless.solid}>
-              <View style={styless.row1}>
-                <Image
-                  source={{
-                    uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: colores.base_1_1,
-                    borderRadius: 100,
-                    resizeMode: "stretch",
-                    alignSelf: "center",
-                  }}
-                />
-                <Text style={[styless.nombre]}>Francisco Pulido</Text>
-              </View>
-              <View style={styless.row2}>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.acento_3_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Aceptar
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.domin_1_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Rechazar
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styless.myBorder}></View>
-            <View style={styless.solid}>
-              <View style={styless.row1}>
-                <Image
-                  source={{
-                    uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: colores.base_1_1,
-                    borderRadius: 100,
-                    resizeMode: "stretch",
-                    alignSelf: "center",
-                  }}
-                />
-                <Text style={styless.nombre}>Francisco Pulido</Text>
-              </View>
-              <View style={styless.row2}>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.acento_3_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Aceptar
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.domin_1_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Rechazar
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styless.myBorder}></View>
-            <View style={styless.solid}>
-              <View style={styless.row1}>
-                <Image
-                  source={{
-                    uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: colores.base_1_1,
-                    borderRadius: 100,
-                    resizeMode: "stretch",
-                    alignSelf: "center",
-                  }}
-                />
-                <Text style={styless.nombre}>Francisco Pulido</Text>
-              </View>
-              <View style={styless.row2}>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.acento_3_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Aceptar
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.domin_1_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Rechazar
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styless.myBorder}></View>
-            <View style={styless.solid}>
-              <View style={styless.row1}>
-                <Image
-                  source={{
-                    uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: colores.base_1_1,
-                    borderRadius: 100,
-                    resizeMode: "stretch",
-                    alignSelf: "center",
-                  }}
-                />
-                <Text style={styless.nombre}>Francisco Pulido</Text>
-              </View>
-              <View style={styless.row2}>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.acento_3_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Aceptar
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.domin_1_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Rechazar
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styless.myBorder}></View>
-            <View style={styless.solid}>
-              <View style={styless.row1}>
-                <Image
-                  source={{
-                    uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: colores.base_1_1,
-                    borderRadius: 100,
-                    resizeMode: "stretch",
-                    alignSelf: "center",
-                  }}
-                />
-                <Text style={[styless.nombre]}>Francisco Pulido</Text>
-              </View>
-              <View style={styless.row2}>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.acento_3_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Aceptar
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colores.domin_1_1 },
-                    styless.boton,
-                  ]}
-                >
-                  <Text
-                    style={[FONTS.oswald, { color: "white", fontSize: 18 }]}
-                  >
-                    Rechazar
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            {loadSolids ? (
+              <ActivityIndicator
+                size="large"
+                color={colores.domin_1_1}
+                style={{ marginTop: 20 }}
+              />
+            ) : fallo === "" ? (
+              solicitudes.map((s) => {
+                return (
+                  <View style={styless.solid}>
+                    <View style={styless.row1}>
+                      <Image
+                        source={{
+                          uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
+                        }}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          backgroundColor: colores.base_1_1,
+                          borderRadius: 100,
+                          resizeMode: "stretch",
+                          alignSelf: "center",
+                        }}
+                      />
+                      <Text style={[styless.nombre, FONTS.oswald]}>
+                        {s.nombreEquipo}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <Text
+                style={[FONTS.oswald, styles.errMessCenter, { marginTop: 10 }]}
+              >
+                {fallo}
+              </Text>
+            )}
           </ScrollView>
         </View>
-        {/*<View style={styless.card2}>
+        <View style={styless.card2}>
           <Text style={[FONTS.oswaldNegrita, styless.title2]}>
-            Gestión de pagos
+            Equipos registrados
           </Text>
-        </View>*/}
+        </View>
         <View style={styless.card3}>
           <Text style={[FONTS.oswaldNegrita, styless.title3]}>
             Calendario de partidos
@@ -424,7 +281,7 @@ const Admin1 = ({ navigation }) => {
               textDayStyle: {
                 minWidth: 30, // Ajusta el tamaño mínimo de la celda para evitar recortes
                 textAlign: "center",
-              }
+              },
             }}
           />
         </View>
@@ -448,7 +305,8 @@ const styless = StyleSheet.create({
     alignItems: "flex-start",
     width: "95%",
     marginBlock: 5,
-    paddingVertical: 3
+    paddingVertical: 3,
+    color: "black",
   },
   title2: {
     fontSize: 25,
@@ -460,7 +318,8 @@ const styless = StyleSheet.create({
     opacity: 0.75,
     borderRadius: 5,
     paddingHorizontal: 10,
-    paddingVertical: 3
+    paddingVertical: 3,
+    color: "white",
   },
   title3: {
     fontSize: 25,
@@ -476,7 +335,8 @@ const styless = StyleSheet.create({
     marginTop: 5,
     marginBottom: 0,
     paddingHorizontal: 10,
-    paddingVertical: 3
+    paddingVertical: 3,
+    color: "white",
   },
   grid: {
     flex: 2,
@@ -592,7 +452,7 @@ const styless = StyleSheet.create({
     paddingHorizontal: 5,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 3
+    paddingBottom: 3,
   },
 });
 

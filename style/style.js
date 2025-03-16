@@ -47,15 +47,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  errMessCenter: {
+    fontSize: 22,
+    alignSelf: 'center',
+    justifyContent: 'center'
+  },
   
   logo: {
     width: 150,
     height: 150,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   title: {
     fontSize: 22,
-    fontWeight: "bold",
     marginBottom: 20,
     textAlign: 'center', // Añadido para centrar el texto
   },
@@ -109,8 +113,6 @@ const styles = StyleSheet.create({
   loginText: {
     color: "#FFF",
     fontSize: 18,
-    fontWeight: "bold",
-
   },
   header: {
     backgroundColor: '#a40000',
