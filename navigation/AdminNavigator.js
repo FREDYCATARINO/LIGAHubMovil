@@ -167,43 +167,61 @@ const CustomDrawerContent = (props) => {
 
 function AdminDrawerNavigator({ navigation }) {
   const { setToken } = useContext(TokenContext);
-  const [loadData, setLoadData] = useState(false);
-  const [noData, setNoData] = useState(false);
-  const [tokenData, setTokenData] = useState("");
-  const [switcht, setSwitcht] = useState(false);
-  const [expire, setExpire] = useState(false);
-
   const { getToken, decodeToken } = useContext(AuthContext);
 
+  const [tokenData, setTokenData] = useState("");
+  const [expire, setExpire] = useState(false);
+  const [switcht, setSwitcht] = useState(false);
+  const [loadData, setLoadData] = useState(true);
+  const [noData, setNoData] = useState(false);
+  const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
+
   useEffect(() => {
+    let intervalId;
+
     const fetchToken = async () => {
       try {
-        const token = await getToken(); // Esperamos a que getToken devuelva el valor
-        if (token && token !== "") {
-          // Verificamos que el token sea válido
-          setToken(token);
-          console.log(token, "obtenido");
-          validateToken(token);
+        setLoadData(true);
+        const fetchedToken = await getToken();
+        if (fetchedToken) {
+          setTokenData(fetchedToken);
+          setToken(fetchedToken);
+          console.log(fetchedToken, "obtenido");
+          validateToken(fetchedToken);
+          setNoData(false);
         } else {
           console.log("Token no encontrado o está vacío.");
+          setNoData(true);
         }
       } catch (error) {
         console.log("Error al obtener el token:", error);
+        setNoData(true);
+      } finally {
+        setLoadData(false);
       }
     };
 
     const validateToken = (token) => {
-      if (!noData) {
-        if (decodeToken(token) === null) {
-          setExpire(true);
-        } else {
-          setExpire(false);
-        }
+      console.log("Validando token...");
+      if (!token || decodeToken(token) === null) {
+        setExpire(true);
+        console.log("Token inválido ❌");
+      } else {
+        setExpire(false);
+        console.log("Token válido ✅");
       }
     };
 
-    fetchToken();
-  }, [switcht]);
+    fetchToken(); // Ejecutar al montar el componente
+
+    // Verificar cada 5 minutos usando el estado más reciente
+    intervalId = setInterval(() => {
+      console.log("Revisando expiración del token...");
+      validateToken(tokenData);
+    }, tokenCheckInterval);
+
+    return () => clearInterval(intervalId); // Limpiar intervalo al desmontar
+  }, [switcht, tokenData]);
 
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
@@ -222,10 +240,55 @@ function AdminDrawerNavigator({ navigation }) {
 
   if (noData) {
     return (
-      <View>
-        <Text>Algo salió mal, inténtalo nuevamente</Text>
-        <TouchableOpacity onPress={() => setSwitcht(!switcht)}>
-          <Text>Reintentar</Text>
+      <View
+        style={{
+          width: "100%",
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
+          Algo salió mal, intentalo nuevamente
+        </Text>
+        <TouchableOpacity
+          style={{
+            width: "50%",
+            backgroundColor: colores.domin_2_1,
+            padding: 10,
+            alignItems: 'center',
+            borderRadius: 10
+          }}
+          onPress={() => setSwitcht(!switcht)}
+        >
+          <Text style={[{ color: "white", fontSize: 20}, FONTS.oswald]}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (expire) {
+    return (
+      <View
+        style={{
+          width: "100%",
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
+          Tu sesión ha expirado, inicia sesión nuevamente
+        </Text>
+        <TouchableOpacity
+          style={{
+            width: "50%",
+            backgroundColor: colores.domin_2_1,
+            padding: 10,
+          }}
+          onPress={() => setSwitcht(!switcht)}
+        >
+          <Text style={[{ color: "white" }, FONTS.oswald]}>Reintentar</Text>
         </TouchableOpacity>
       </View>
     );
@@ -252,7 +315,6 @@ function AdminDrawerNavigator({ navigation }) {
       <Drawer.Screen
         name="Home"
         component={Admin1} // Pasa el componente directamente
-        initialParams={{ tokenData }} // Pasa tokenData como parámetro inicial
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />

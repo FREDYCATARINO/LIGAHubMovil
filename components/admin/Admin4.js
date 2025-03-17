@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Text,
   Button,
@@ -20,11 +20,17 @@ import { Marker } from "react-native-maps";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import colores from "../../style/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { Platform } from "react-native";
+import { MAPS_API_KEY } from '@env'
+import api from "../../config/api";
 
 const Admin4 = ({ navigation }) => {
   const [lugar, setLugar] = useState("");
   const [elecc, setElecc] = useState("");
   const [address, setAddress] = useState("");
+  const [address2, setAddress2] = useState("");
+  const [campos, setCampos] = useState([]);
+  const [canchas, setCanchas] = useState([]);
 
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [slideAnim] = useState(new Animated.Value(-400));
@@ -102,7 +108,26 @@ const Admin4 = ({ navigation }) => {
     },
   ]);
 
-  // Función para agregar un marcador al hacer `onLongPress`
+  const handleLongPress2 = async (event) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setMarkers2([
+      {
+        id: Date.now().toString(),
+        latitude,
+        longitude,
+        title: "Nuevo marcador",
+      },
+    ]);
+
+    const { lugarNombre, direccionCompleta } = await getPlaceData(
+      latitude,
+      longitude
+    );
+
+    setElecc(lugarNombre);
+    setDireccion([{ lat: latitude, long: longitude }]);
+  };
+
   const handleLongPress = async (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setMarkers((prevMarkers) => [
@@ -114,28 +139,20 @@ const Admin4 = ({ navigation }) => {
         title: "Nuevo marcador",
       },
     ]);
-    const placeName = await getPlaceName(latitude, longitude);
+
+    const { lugarNombre, direccionCompleta } = await getPlaceData(
+      latitude,
+      longitude
+    );
+
     setDireccionUri(getOSMStaticImage(latitude, longitude));
-    setLugar(placeName);
-    handleMarkerPress(placeName);
+    setLugar(lugarNombre);
+    handleMarkerPress(lugarNombre);
+    //setSelectedPlace(lugarNombre);
+    setAddress2(direccionCompleta);
   };
 
-  const handleLongPress2 = async (event) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setMarkers2((prevMarkers) => [
-      {
-        id: Date.now().toString(),
-        latitude,
-        longitude,
-        title: "Nuevo marcador",
-      },
-    ]);
-    const placeName = await getPlaceName(latitude, longitude);
-    setElecc(placeName);
-    setDireccion([{ lat: latitude, long: longitude }]);
-  };
-
-  const handlePress = async (lat, lon, name) => {
+  const handlePress = async (lat, lon, name, add) => {
     setMarkers((prevMarkers) => [
       ...prevMarkers,
       {
@@ -145,10 +162,11 @@ const Admin4 = ({ navigation }) => {
         title: name,
       },
     ]);
-    const placeName = await getPlaceName(lat, lon);
     setDireccionUri(getOSMStaticImage(lat, lon));
-    setLugar(placeName);
-    handleMarkerPress(placeName);
+    setLugar(name);
+    setSelectedPlace(name);
+    handleMarkerPress(name);
+    setAddress2(add)
   };
 
   // 🔄 Función para eliminar todos los marcadores excepto el de inicio
@@ -162,6 +180,7 @@ const Admin4 = ({ navigation }) => {
       },
     ]);
     closeCard();
+    setAddress2("");
   };
 
   const resetMarkers2 = () => {
@@ -174,29 +193,46 @@ const Admin4 = ({ navigation }) => {
       },
     ]);
     setElecc("");
+    setLugar("");
+    setAddress("")
     setDireccion([{ lat: 0, long: 0 }]);
   };
 
-  const getPlaceName = async (latitude, longitude) => {
+  const getPlaceData = async (latitude, longitude) => {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
       );
       const data = await response.json();
-      //setLugar(data.display_name);
-      setLugar(
-        data.address.road ||
-          data.address.neighbourhood ||
-          data.address.village ||
-          data.address.city ||
-          data.address.town ||
-          "Lugar desconocido"
-      );
-      setAddress(`${data.address[0].road} ${data.address[0].city}`);
-      return data.display_name; // Devuelve el nombre del lugar
+
+      if (!data || !data.address) {
+        throw new Error("No se encontraron datos de ubicación");
+      }
+
+      // Obtener nombre del lugar
+      const lugarNombre = data.display_name || "Lugar desconocido";
+
+      // Obtener dirección detallada
+      const road = data.address.road || "Calle desconocida";
+      const city =
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        "Ciudad desconocida";
+
+      const direccionCompleta = `${road}, ${city}`;
+
+      // Guardar en estados
+      setLugar(lugarNombre);
+      setAddress(direccionCompleta);
+
+      return { lugarNombre, direccionCompleta };
     } catch (error) {
-      console.error("Error al obtener el nombre del lugar", error);
-      return "Lugar desconocido";
+      console.error("Error al obtener los datos de la ubicación", error);
+      return {
+        lugarNombre: "Lugar desconocido",
+        direccionCompleta: "Dirección desconocida",
+      };
     }
   };
 
@@ -262,6 +298,28 @@ const Admin4 = ({ navigation }) => {
       lon: -99.200279,
     }, // Ciudad de México
   ];
+
+  const getPlaceDetails = async (placeId) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${MAPS_API_KEY}`
+      );
+      const data = await response.json();
+  
+      if (data.result) {
+        console.log(data.result.name, data.result.formatted_address)
+        return {
+          name: data.result.name, // Nombre del lugar
+          address: data.result.formatted_address, // Dirección completa
+        };
+      } else {
+        return { name: "Lugar desconocido", address: "Dirección desconocida" };
+      }
+    } catch (error) {
+      console.error("Error al obtener detalles del lugar:", error);
+      return { name: "Lugar desconocido", address: "Dirección desconocida" };
+    }
+  };  
 
   return (
     <GestureHandlerRootView>
@@ -347,7 +405,7 @@ const Admin4 = ({ navigation }) => {
                       <TouchableOpacity
                         style={stylesAdmin4.button}
                         onPress={() =>
-                          handlePress(item.lat, item.lon, item.name)
+                          handlePress(item.lat, item.lon, item.name, item.dir)
                         }
                       >
                         <Ionicons name="map" size={24} color={colores.blanco} />
@@ -385,12 +443,16 @@ const Admin4 = ({ navigation }) => {
               }}
             >
               <MapView
-                provider={MapView.PROVIDER_DEFAULT}
+                provider={MapView.PROVIDER_GOOGLE}
                 style={{ flex: 1, width: "100%", height: "100%" }}
                 region={region}
                 onRegionChangeComplete={setRegion}
                 onPress={handleLongPress}
                 mapType="hybrid"
+                onPoiClick={async (event) => {
+                  const { placeId, coordinate } = event.nativeEvent;
+                  handleLongPress(event)
+                }}
               >
                 {markers.map((marker) => (
                   <Marker
@@ -449,13 +511,16 @@ const Admin4 = ({ navigation }) => {
                   {selectedPlace}
                 </Text>
                 <Text style={[FONTS.nunito, { textAlign: "center" }]}>
-                  Ubicación: {`${region.latitude}, ${region.longitude}`}
+                  Ubicación: 
+                  {address2 === ""
+                    ? ` ${region.latitude}, ${region.longitude}`
+                    : ` ${address2}`}
                 </Text>
                 <TouchableOpacity
                   onPress={resetMarkers}
                   style={{
                     width: "100%",
-                    backgroundColor: colores.acento_4_1,
+                    backgroundColor: colores.domin_3_1,
                     alignSelf: "center",
                     alignItems: "center",
                     padding: 10,
@@ -500,12 +565,17 @@ const Admin4 = ({ navigation }) => {
                 }}
               >
                 <MapView
-                  provider={MapView.PROVIDER_DEFAULT}
+                  provider={MapView.PROVIDER_GOOGLE}
                   style={{ flex: 1, width: "100%", height: "100%" }}
                   onLongPress={handleLongPress2}
                   region={region2}
                   onRegionChangeComplete={setRegion2}
                   mapType="hybrid"
+                  onPoiClick={async (event) => {
+                    const { placeId, coordinate, name } = event.nativeEvent;
+                    handleLongPress2(event)
+                    setLugar(name)
+                  }}
                 >
                   {markers2.map((marker) => (
                     <Marker
@@ -546,7 +616,7 @@ const Admin4 = ({ navigation }) => {
               style={[FONTS.oswald, stylesAdmin4.input]}
               placeholderTextColor={colores.domin_2_2}
               placeholder="Nombre"
-              value={elecc === "" ? "" : elecc}
+              value={lugar === "" ? "" : lugar}
             />
             <TextInput
               style={[FONTS.oswald, stylesAdmin4.input]}
