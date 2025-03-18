@@ -18,7 +18,7 @@ const Stack = createStackNavigator();
 const AdminAppBar = ({ navigation, title, isRoot }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
-      {title === "Equipos" ? null : (
+      {title === "Dueños" ? null : (
         <View style={styles.appBar}>
           <TouchableOpacity
             onPress={() =>

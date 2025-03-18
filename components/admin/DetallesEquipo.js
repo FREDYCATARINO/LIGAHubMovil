@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Text,
   Button,
@@ -30,11 +30,13 @@ import {
 import { useState } from "react";
 import RNPickerSelect from "react-native-picker-select";
 import { Picker } from "@react-native-picker/picker";
+import api from "../../config/api";
 
 const EqiposScreen = ({ navigation, route }) => {
   const [selectedValue, setSelectedValue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [playerName, setPlayerName] = useState("");
+  const [playerDate, setPlayerDate] = useState("");
 
   const [isPressed1, setIsPressed1] = useState(false);
   const [isPressed2, setIsPressed2] = useState(false);
@@ -48,6 +50,10 @@ const EqiposScreen = ({ navigation, route }) => {
 
   const handlePressIn3 = () => setIsPressed3(true);
   const handlePressOut3 = () => setIsPressed3(false);
+
+  const [jugadores, setJugadores] = useState([]);
+  const [loadPlayers, setLoadPlayers] = useState(false);
+  const [fallo, setFallo] = useState("");
 
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
@@ -79,14 +85,30 @@ const EqiposScreen = ({ navigation, route }) => {
 
   const { team } = route.params;
 
+  useEffect(() => {
+    setLoadPlayers(true);
+    api
+      .get(`/api/jugadores/porEquipo/${team.id}`)
+      .then((res) => {
+        if (res.data.length === 0) setFallo("No hay jugadores disponibles");
+        else setJugadores(res.data);
+      })
+      .catch((e) => {
+        console.error(e, e.res.message);
+        if (e.res.message) setFallo(e.res.message);
+        else setFallo("Error al obtener jugadores");
+      })
+      .finally(() => setLoadPlayers(false));
+  }, []);
+
   return (
     <SafeAreaView style={stylesTeamDet.container}>
       <ScrollView contentContainerStyle={stylesTeamDet.scrollContent}>
         <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}>
-          Detalles del equipo {team.nombre}:
+          Detalles del equipo {team.nombreEquipo}:
         </Text>
         <Image
-          source={{ uri: team.image, alt: team.nombre }}
+          source={{ uri: team.logoEquipo, alt: team.nombreEquipo }}
           style={stylesTeamDet.fotoEquipo}
         />
         <Text style={FONTS.oswald}>id de equipo: #{team.id}</Text>
@@ -97,7 +119,7 @@ const EqiposScreen = ({ navigation, route }) => {
           <View style={stylesTeamDet.row}>
             <Image
               source={{
-                uri: team.dueno.img,
+                uri: team.imagenDueno,
               }}
               style={{
                 width: 125,
@@ -114,119 +136,112 @@ const EqiposScreen = ({ navigation, route }) => {
                 Nombre completo:
               </Text>
               <Text style={[FONTS.nunito, stylesTeamDet.duenoDataText]}>
-                {team.dueno.nombre}
+                {team.nombreDueno}
               </Text>
               <Text style={[FONTS.oswaldNegrita, stylesTeamDet.duenoText]}>
                 Correo electrónico:
               </Text>
               <Text style={[FONTS.nunito, stylesTeamDet.duenoDataText]}>
-                {team.dueno.correo}
+                {team.correoDueno}
               </Text>
-              <TouchableOpacity style={stylesTeamDet.duenoDataButton}>
-                <Text
-                  style={[
-                    FONTS.oswald,
-                    { color: colores.blanco, alignSelf: "center" },
-                  ]}
-                >
-                  Deshabilitar
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
         <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}>
           Jugadores
         </Text>
-        <ScrollView style={{ maxHeight: 350 }}>
-          <View style={stylesTeamDet.grid}>
-            {team.jugadores.map((jugador) => {
-              return (
-                <View style={stylesTeamDet.card} key={jugador.id}>
-                  {" "}
-                  {/* Es importante agregar una key única si es posible */}
-                  <View
-                    style={
-                      jugador.activo
-                        ? stylesTeamDet.cardHeader
-                        : stylesTeamDet.cardHeaderDark
-                    }
-                  >
-                    <TouchableOpacity
-                      style={stylesTeamDet.menuIconJ}
-                      onPress={() => {
-                        setModalVisible(true);
-                        setPlayerName(jugador.nombre);
-                      }}
+        <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled={true}>
+          {loadPlayers ? (
+            <ActivityIndicator
+              size="large"
+              color={colores.domin_1_1}
+              style={{ marginTop: 20 }}
+            />
+          ) : fallo === "" ? (
+            <View style={stylesTeamDet.grid}>
+              {jugadores.map((jugador) => {
+                return (
+                  <View style={stylesTeamDet.card} key={jugador.id}>
+                    {/* Es importante agregar una key única si es posible */}
+                    <View
+                      style={
+                        jugador.habilitado
+                          ? stylesTeamDet.cardHeader
+                          : stylesTeamDet.cardHeaderDark
+                      }
                     >
-                      <Ionicons name="menu" size={30} color="black" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={stylesTeamDet.cardBody}>
-                    <Image
-                      source={{
-                        uri: jugador.img,
-                        alt: jugador.nombre,
-                      }}
-                      style={stylesTeamDet.playerImage}
-                    />
-                    <Text
-                      style={[
-                        FONTS.oswaldNegrita,
-                        stylesTeamDet.playerNameText,
-                      ]}
-                    >
-                      {jugador.nombre}
-                    </Text>
-                    <View style={stylesTeamDet.playerDataRow}>
-                      <Text style={[FONTS.oswald, stylesTeamDet.font16]}>
-                        Partidos: {jugador.partidos}
+                      <TouchableOpacity
+                        style={stylesTeamDet.menuIconJ}
+                        onPress={() => {
+                          setModalVisible(true);
+                          setPlayerName(jugador.nombreCompleto);
+                          setPlayerDate(jugador.fechaNacimiento);
+                        }}
+                      >
+                        <Ionicons name="menu" size={30} color="black" />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={stylesTeamDet.cardBody}>
+                      <Image
+                        source={{
+                          uri: jugador.fotoJugador,
+                          alt: jugador.nombreCompleto,
+                        }}
+                        style={stylesTeamDet.playerImage}
+                      />
+                      <Text
+                        style={[
+                          FONTS.oswaldNegrita,
+                          stylesTeamDet.playerNameText,
+                        ]}
+                      >
+                        {jugador.nombreCompleto}
                       </Text>
-                      <Text style={[FONTS.oswald, stylesTeamDet.font16]}>
-                        Goles: {jugador.goles}
+                      <View style={stylesTeamDet.playerDataRow}>
+                        <Text style={[FONTS.oswald, stylesTeamDet.font16]}>
+                          Partidos: {jugador.partidosJugados}
+                        </Text>
+                        <Text style={[FONTS.oswald, stylesTeamDet.font16]}>
+                          Expulsado: {jugador.expulsado ? "Si" : "No"}
+                        </Text>
+                      </View>
+                      <Text style={[FONTS.oswald, stylesTeamDet.font18]}>
+                        # de camiseta: {jugador.numeroCamiseta}
                       </Text>
                     </View>
-                    <Text style={[FONTS.oswald, stylesTeamDet.font18]}>
-                      Amonestaciones: {jugador.fallas}
-                    </Text>
-                  </View>
-                  <View
-                    style={
-                      jugador.activo
-                        ? stylesTeamDet.viewActivo
-                        : stylesTeamDet.viewInactivo
-                    }
-                  >
-                    <Text
-                      style={[
-                        FONTS.oswaldNegrita,
-                        jugador.activo
-                          ? stylesTeamDet.textActivo
-                          : stylesTeamDet.textInactivo,
-                      ]}
+                    <View
+                      style={
+                        jugador.habilitado
+                          ? stylesTeamDet.viewActivo
+                          : stylesTeamDet.viewInactivo
+                      }
                     >
-                      {jugador.activo ? "ACTIVO" : "¡INACTIVO!"}
-                    </Text>
+                      <Text
+                        style={[
+                          FONTS.oswaldNegrita,
+                          jugador.habilitado
+                            ? stylesTeamDet.textActivo
+                            : stylesTeamDet.textInactivo,
+                        ]}
+                      >
+                        {jugador.habilitado ? "ACTIVO" : "¡INACTIVO!"}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              );
-            })}
-
-            {/*<Picker
-          selectedValue={selectedValue}
-          onValueChange={(itemValue) => setSelectedValue(itemValue)}
-          style={{ height: 50, width: 200 }}
-        >
-          <Picker.Item label="Opción 1" value="opcion1" />
-          <Picker.Item label="Opción 2" value="opcion2" />
-          <Picker.Item label="Opción 3" value="opcion3" />
-        </Picker>*/}
-            {/* Botón para abrir el Picker */}
-          </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text
+              style={[FONTS.oswald, styles.errMessCenter, { marginTop: 10 }]}
+            >
+              {fallo}
+            </Text>
+          )}
         </ScrollView>
         <TouchableOpacity
           style={stylesTeamDet.buttonBack}
-          onPress={() => navigation.navigate("Menú de equipos")}
+          onPress={() => navigation.goBack()}
         >
           <Text style={[FONTS.oswald, { color: colores.blanco, fontSize: 25 }]}>
             Volver
@@ -262,6 +277,7 @@ const EqiposScreen = ({ navigation, route }) => {
                 FONTS.oswald,
                 isPressed1 && stylesTeamDet.modalItemActive,
               ]}
+              disabled
               onPressIn={handlePressIn1}
               onPressOut={handlePressOut1}
             >
@@ -271,7 +287,7 @@ const EqiposScreen = ({ navigation, route }) => {
                   isPressed1 && { opacity: 1, color: colores.acento_2_4 },
                 ]}
               >
-                Editar
+                Fecha de nacimiento: {playerDate}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -280,6 +296,7 @@ const EqiposScreen = ({ navigation, route }) => {
                 FONTS.oswald,
                 isPressed2 && stylesTeamDet.modalItemActive,
               ]}
+              disabled
               onPressIn={handlePressIn2}
               onPressOut={handlePressOut2}
             >
@@ -289,25 +306,7 @@ const EqiposScreen = ({ navigation, route }) => {
                   isPressed2 && { opacity: 1, color: colores.acento_2_4 },
                 ]}
               >
-                Eliminar
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                stylesTeamDet.modalItem,
-                FONTS.oswald,
-                isPressed3 && stylesTeamDet.modalItemActive,
-              ]}
-              onPressIn={handlePressIn3}
-              onPressOut={handlePressOut3}
-            >
-              <Text
-                style={[
-                  FONTS.oswald,
-                  isPressed3 && { opacity: 1, color: colores.acento_2_4 },
-                ]}
-              >
-                Expulsar
+                Amonestaciones: 0
               </Text>
             </TouchableOpacity>
           </View>
@@ -325,8 +324,8 @@ const stylesTeamDet = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  titulo: { fontSize: 20 },
-  fotoEquipo: { width: 125, height: 125, resizeMode: "contain" },
+  titulo: { fontSize: 20, width: '95%', textAlign: 'center', marginTop:5 },
+  fotoEquipo: { width: 125, height: 125, resizeMode: "stretch" },
   cardDueño: {
     backgroundColor: colores.blanco,
     margin: 5,
@@ -341,8 +340,8 @@ const stylesTeamDet = StyleSheet.create({
     alignItems: "flex-start",
     flexWrap: "wrap",
     width: "100%",
-    padding: 5, 
-    marginBottom: 0
+    padding: 5,
+    marginBottom: 0,
   },
   card: {
     backgroundColor: colores.blanco,
@@ -444,7 +443,7 @@ const stylesTeamDet = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 100,
   },
-  playerNameText: { fontSize: 25, textAlign: "center" },
+  playerNameText: { fontSize: 20, textAlign: "center" },
   playerDataRow: {
     flexDirection: "row",
     gap: 5,

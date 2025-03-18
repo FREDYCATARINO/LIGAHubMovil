@@ -142,48 +142,57 @@ const Admin5 = ({ navigation }) => {
   const registrarArbitro = async (data, image) => {
     setLoadArbit(true);
     setFallo2("");
-  
+
     try {
       const formData = new FormData();
 
       const { imagen, ...arbitroData } = data;
-      
+
       // ✅ Agregar los datos del árbitro correctamente
       formData.append("arbitro", JSON.stringify(arbitroData));
 
-      console.log(arbitroData)
-  
+      console.log(arbitroData);
+
       // ✅ Agregar la imagen correctamente
       formData.append("imagen", {
         uri: image, // ✅ Usa `image` directamente
         name: "arbitro.jpg",
         type: "image/jpeg",
       });
-  
+
       const tokData = await getToken(); // Asegúrate de obtener el token correctamente
-  
+
       const res = await api_multi.post("/api/arbitros", formData, {
         headers: {
           Authorization: `Bearer ${tokData}`,
         },
       });
-      
+
       console.log(res.data);
-      Alert.alert("Registro exitoso", `Árbitro ${data.nombreCompleto} registrado`);
+      Alert.alert(
+        "Registro exitoso",
+        `Árbitro ${data.nombreCompleto} registrado`
+      );
     } catch (err) {
       console.log("Error:", err.message, err.toJSON());
-  
+
       if (err.response) {
         console.log("Error Response:", err.response.data);
-        setFallo2(err.response.data.message || err.response.data.detail ||"Error desconocido en el servidor");
+        setFallo2(
+          err.response.data.message ||
+            err.response.data.detail ||
+            "Error desconocido en el servidor"
+        );
         return;
       }
-  
-      setFallo2("Ocurrió un error al registrar al árbitro, inténtalo nuevamente");
+
+      setFallo2(
+        "Ocurrió un error al registrar al árbitro, inténtalo nuevamente"
+      );
     } finally {
       setLoadArbit(false);
     }
-  };  
+  };
 
   useEffect(() => {
     const getAbritros = async () => {
@@ -498,6 +507,7 @@ const Admin5 = ({ navigation }) => {
                 <Ionicons name="image" size={24} color={colores.blanco} />
               </TouchableOpacity>
             </View>
+            <Text style={[formStyle.errText, {color: 'black', textAlign: 'center', width: '100%'}]}>Seleccionar foto</Text>
           </View>
           <View style={styles.formFields}>
             <Controller
@@ -513,7 +523,9 @@ const Admin5 = ({ navigation }) => {
                     onChangeText={(text) => onChange(text)}
                   />
                   {errors.nombreCompleto && (
-                    <Text style={formStyle.errText}>{errors.nombreCompleto.message}</Text>
+                    <Text style={formStyle.errText}>
+                      {errors.nombreCompleto.message}
+                    </Text>
                   )}
                 </>
               )}
@@ -554,7 +566,9 @@ const Admin5 = ({ navigation }) => {
                     onChangeText={(text) => onChange(text)}
                   />
                   {errors.password && (
-                    <Text style={formStyle.errText}>{errors.password.message}</Text>
+                    <Text style={formStyle.errText}>
+                      {errors.password.message}
+                    </Text>
                   )}
                 </>
               )}

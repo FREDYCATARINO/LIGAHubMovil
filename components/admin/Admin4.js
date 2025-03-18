@@ -297,65 +297,6 @@ const Admin4 = ({ navigation }) => {
     return `https://static-maps.yandex.ru/1.x/?ll=${lon},${lat}&z=14&l=sat&size=600,300`;
   };
 
-  const data = [
-    {
-      id: "1",
-      name: "The Field",
-      dir: "Av sin esquinas s/n",
-      canchas: 3,
-      lat: 18.852205,
-      lon: -99.201187,
-    },
-    {
-      id: "2",
-      name: "Deportivo Galaxy",
-      dir: "Calle pollo #12",
-      canchas: 4,
-      lat: 18.852461,
-      lon: -99.20014,
-    },
-    {
-      id: "3",
-      name: "Campo el rayo",
-      dir: "Blvd of broken dreams",
-      canchas: 9,
-      lat: 18.851852,
-      lon: -99.200673,
-    },
-    {
-      id: "4",
-      name: "Footbalistica",
-      dir: "Calle cuaderno #21",
-      canchas: 5,
-      lat: 18.851132,
-      lon: -99.200403,
-    },
-    {
-      id: "5",
-      name: "El Rayo",
-      dir: "Av Acatlipa #02",
-      canchas: 1,
-      lat: 18.85005,
-      lon: -99.201182,
-    },
-    {
-      id: "6",
-      name: "El campo cascarudo",
-      dir: "Calle concha s/n",
-      canchas: 5,
-      lat: 18.849287,
-      lon: -99.201373,
-    },
-    {
-      id: "7",
-      name: "Estadio Azteca",
-      dir: "México",
-      canchas: 1,
-      lat: 18.849643,
-      lon: -99.200279,
-    }, // Ciudad de México
-  ];
-
   const getPlaceDetails = async (placeId) => {
     try {
       const response = await fetch(

@@ -286,7 +286,11 @@ function AdminDrawerNavigator({ navigation }) {
             backgroundColor: colores.domin_2_1,
             padding: 10,
           }}
-          onPress={() => {removeToken(); removeUser(); logout()}}
+          onPress={() => {
+            removeToken();
+            removeUser();
+            logout();
+          }}
         >
           <Text style={[{ color: "white" }, FONTS.oswald]}>Aceptar</Text>
         </TouchableOpacity>
@@ -324,11 +328,11 @@ function AdminDrawerNavigator({ navigation }) {
       />
 
       <Drawer.Screen
-        name="Equipos"
+        name="Dueños"
         component={EquiposStack}
         options={{
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="shield" size={size} color={color} />
+            <Ionicons name="person" size={size} color={color} />
           ),
           drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
@@ -386,6 +390,11 @@ function AdminDrawerNavigator({ navigation }) {
       <Drawer.Screen
         name="Perfil"
         component={PerfilScreen}
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
+      <Drawer.Screen
+        name="Jugadores"
+        component={EquiposScreen}
         options={{ drawerItemStyle: { display: "none" } }}
       />
     </Drawer.Navigator>

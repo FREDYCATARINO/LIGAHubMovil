@@ -297,7 +297,7 @@ const Admin1 = ({ navigation, route }) => {
             <Text style={[FONTS.oswaldNegrita, styless.title2]}>
               Solicitudes pendientes
             </Text>
-            <ScrollView style={styless.list}>
+            <ScrollView style={styless.list} nestedScrollEnabled={true}>
               {loadSolids ? (
                 <ActivityIndicator
                   size="large"
@@ -404,6 +404,7 @@ const Admin1 = ({ navigation, route }) => {
                     return (
                       <TouchableOpacity
                         style={[styless.prod]}
+                        onPress={() => navigation.navigate("Jugadores",{ team: item })}
                         // onPress={() =>
                         //   sendData(
                         //     item.equipoId,
@@ -653,7 +654,7 @@ const styless = StyleSheet.create({
   },
   row2: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     alignItems: "center",
     gap: 5,
     width: "100%",
