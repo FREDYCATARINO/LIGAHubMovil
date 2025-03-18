@@ -16,7 +16,7 @@ import { Title } from "react-native-paper";
 import FONTS from "../style/fonts";
 import colores from "../style/colors";
 
-const ErrorComponent = ({ reintentar, valor }) => {
+const NoTokenComponent = ({ reintentar, valor }) => {
   return (
     <SafeAreaView
       style={{
@@ -24,12 +24,18 @@ const ErrorComponent = ({ reintentar, valor }) => {
         height: "100%",
         justifyContent: "center",
         alignItems: "center",
-        gap: 10
+        gap: 10,
       }}
     >
-      <Image source={require('../assets/error_bot.png')} style={{width: '75%', height: 250}} />
+      <Image
+        source={require("../assets/error_bot.png")}
+        style={{ width: "75%", height: 250 }}
+      />
+      <Text style={[{ fontSize: 25 }, FONTS.oswaldNegrita]}>
+        ¡Oh no!
+      </Text>
       <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
-        Algo salió mal, intentalo nuevamente
+        Tu sesión ha expirado, vuelve a iniciar sesión para continuar
       </Text>
       <TouchableOpacity
         style={{
@@ -42,7 +48,7 @@ const ErrorComponent = ({ reintentar, valor }) => {
         onPress={() => reintentar(!valor)}
       >
         <Text style={[{ color: "white", fontSize: 20 }, FONTS.oswald]}>
-          Reintentar
+          Ir
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -63,4 +69,4 @@ const errorStyles = StyleSheet.create({
   },
 });
 
-export default ErrorComponent;
+export default NoTokenComponent;

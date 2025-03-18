@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Text,
   Button,
@@ -11,6 +11,7 @@ import {
   Animated,
   TextInput,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useState } from "react";
 import MapView from "react-native-maps";
@@ -21,20 +22,76 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import colores from "../../style/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
-import { MAPS_API_KEY } from '@env'
+import { MAPS_API_KEY } from "@env";
 import api from "../../config/api";
+import formStyle from "../../style/formStyles";
+
+import { useForm, Controller } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 const Admin4 = ({ navigation }) => {
+  const { getUserId, getUserRole, getToken } = useContext(AuthContext);
+  const [tokData, setTokData] = useState("");
+
   const [lugar, setLugar] = useState("");
   const [elecc, setElecc] = useState("");
   const [address, setAddress] = useState("");
   const [address2, setAddress2] = useState("");
   const [campos, setCampos] = useState([]);
   const [canchas, setCanchas] = useState([]);
+  const [loadCamps, setLoadCamps] = useState(false);
+  const [fallo1, setFallo1] = useState("");
 
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [slideAnim] = useState(new Animated.Value(-400));
   const [rows, setRows] = useState(1);
+
+  useEffect(() => {
+    const getCampos = async () => {
+      const id = await getUserRole();
+      const rolo = await getUserId();
+      const tok = await getToken();
+      setTokData(tok);
+
+      setLoadCamps(true);
+      api
+        .get(`/api/campos`, {
+          headers: {
+            Authorization: `Bearer ${tok}`,
+          },
+        })
+        .then((res) => {
+          if (res.data.length === 0) setFallo1("No hay campos registrados");
+          else setCampos(res.data);
+        })
+        .catch((e) => {
+          console.error(e, e.res.message);
+          if (e.res.message) setFallo1(e.res.message);
+          else setFallo1("Error al obtener campos");
+        })
+        .finally(() => setLoadCamps(false));
+    };
+    getCampos();
+  }, []);
+
+  // Crear una referencia para el ScrollView
+  const scrollViewRef = useRef(null);
+
+  // Crear referencias para cada componente al que te quieres desplazar
+  const sectionOneRef = useRef(null);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const handleScroll = () => {
+    Animated.timing(scrollY, {
+      toValue: 600, // La posición en la que quieres hacer scroll
+      duration: 100, // Duración en milisegundos (ajusta este valor según lo suave que quieras la animación)
+      useNativeDriver: true,
+    }).start();
+  };
 
   // Función para manejar el clic en el marcador
   const handleMarkerPress = (place) => {
@@ -166,7 +223,7 @@ const Admin4 = ({ navigation }) => {
     setLugar(name);
     setSelectedPlace(name);
     handleMarkerPress(name);
-    setAddress2(add)
+    setAddress2(add);
   };
 
   // 🔄 Función para eliminar todos los marcadores excepto el de inicio
@@ -194,7 +251,7 @@ const Admin4 = ({ navigation }) => {
     ]);
     setElecc("");
     setLugar("");
-    setAddress("")
+    setAddress("");
     setDireccion([{ lat: 0, long: 0 }]);
   };
 
@@ -305,9 +362,9 @@ const Admin4 = ({ navigation }) => {
         `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${MAPS_API_KEY}`
       );
       const data = await response.json();
-  
+
       if (data.result) {
-        console.log(data.result.name, data.result.formatted_address)
+        console.log(data.result.name, data.result.formatted_address);
         return {
           name: data.result.name, // Nombre del lugar
           address: data.result.formatted_address, // Dirección completa
@@ -319,120 +376,199 @@ const Admin4 = ({ navigation }) => {
       console.error("Error al obtener detalles del lugar:", error);
       return { name: "Lugar desconocido", address: "Dirección desconocida" };
     }
-  };  
+  };
 
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={stylesAdmin4.container}>
-        <ScrollView style={{ gap: 5 }}>
-          <Text
-            style={[
-              styles.TextField,
-              stylesAdmin4.title,
-              FONTS.nunitoNegrita,
-              { paddingVertical: 15, paddingHorizontal: 5 },
-            ]}
+        <Animated.ScrollView
+          style={{ gap: 5 }}
+          ref={scrollViewRef}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          contentOffset={{ y: scrollY }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 5,
+              alignItems: "center",
+              width: "95%",
+              justifyContent: "flex-start",
+            }}
           >
-            Campos
-          </Text>
+            <Text
+              style={[
+                styles.TextField,
+                stylesAdmin4.title,
+                FONTS.nunitoNegrita,
+                { paddingVertical: 15, paddingHorizontal: 5 },
+              ]}
+            >
+              Campos
+            </Text>
+            <TouchableOpacity onPress={handleScroll}>
+              <Ionicons
+                name="add-circle-sharp"
+                size={30}
+                color={colores.acento_2_2}
+              />
+            </TouchableOpacity>
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ width: "100%" }}
+            contentContainerStyle={{
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            style={{ maxHeight: 300 }}
           >
-            <View style={stylesAdmin4.table}>
-              {/* Encabezado de la tabla */}
-              <View style={stylesAdmin4.headerRow}>
-                <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
-                  ID
-                </Text>
-                <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
-                  Nombre
-                </Text>
-                <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
-                  Dirección
-                </Text>
-                <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
-                  Canchas
-                </Text>
-                <Text
-                  style={[
-                    stylesAdmin4.headerCell,
-                    FONTS.oswaldNegrita,
-                    { width: 80 },
-                  ]}
-                >
-                  Ver
-                </Text>
-                <Text
-                  style={[
-                    stylesAdmin4.headerCell,
-                    FONTS.oswaldNegrita,
-                    { width: 80 },
-                  ]}
-                >
-                  Editar
-                </Text>
-                <Text
-                  style={[
-                    stylesAdmin4.headerCell,
-                    FONTS.oswaldNegrita,
-                    { width: 80 },
-                  ]}
-                >
-                  Eliminar
-                </Text>
+            {loadCamps ? (
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <ActivityIndicator size="large" color={colores.domin_1_1} />
               </View>
+            ) : fallo1 === "" ? (
+              <View style={stylesAdmin4.table}>
+                {/* Encabezado de la tabla */}
+                <View style={stylesAdmin4.headerRow}>
+                  <Text
+                    style={[
+                      stylesAdmin4.headerCell,
+                      FONTS.oswaldNegrita,
+                      stylesAdmin4.idCell,
+                    ]}
+                  >
+                    ID
+                  </Text>
+                  <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
+                    Nombre
+                  </Text>
+                  <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
+                    Dirección
+                  </Text>
+                  <Text style={[stylesAdmin4.headerCell, FONTS.oswaldNegrita]}>
+                    Canchas
+                  </Text>
+                  <Text
+                    style={[
+                      stylesAdmin4.headerCell,
+                      FONTS.oswaldNegrita,
+                      stylesAdmin4.buttonHead,
+                      { width: 80 },
+                    ]}
+                  >
+                    Ver
+                  </Text>
+                  <Text
+                    style={[
+                      stylesAdmin4.headerCell,
+                      FONTS.oswaldNegrita,
+                      stylesAdmin4.buttonHead,
+                      { width: 80 },
+                    ]}
+                  >
+                    Editar
+                  </Text>
+                  <Text
+                    style={[
+                      stylesAdmin4.headerCell,
+                      FONTS.oswaldNegrita,
+                      stylesAdmin4.buttonHead,
+                      { width: 80 },
+                    ]}
+                  >
+                    Eliminar
+                  </Text>
+                </View>
 
-              <View style={{ maxHeight: 250, padding: 5 }}>
-                <FlatList
-                  data={data}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <View style={stylesAdmin4.row}>
-                      <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
-                        {item.id}
-                      </Text>
-                      <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
-                        {item.name}
-                      </Text>
-                      <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
-                        {item.dir}
-                      </Text>
-                      <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
-                        {item.canchas}
-                      </Text>
-                      <TouchableOpacity
-                        style={stylesAdmin4.button}
-                        onPress={() =>
-                          handlePress(item.lat, item.lon, item.name, item.dir)
-                        }
-                      >
-                        <Ionicons name="map" size={24} color={colores.blanco} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[stylesAdmin4.button, stylesAdmin4.editButton]}
-                      >
-                        <Ionicons
-                          name="pencil"
-                          size={24}
-                          color={colores.blanco}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[stylesAdmin4.button, stylesAdmin4.deleteButton]}
-                      >
-                        <Ionicons
-                          name="trash"
-                          size={24}
-                          color={colores.blanco}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                />
+                <View style={{ maxHeight: 250, padding: 5 }}>
+                  <FlatList
+                    data={campos}
+                    keyExtractor={(item) => item.id}
+                    nestedScrollEnabled={true}
+                    renderItem={({ item }) => (
+                      <View style={stylesAdmin4.row}>
+                        <Text
+                          style={[
+                            stylesAdmin4.cell,
+                            FONTS.nunitoNegrita,
+                            stylesAdmin4.idCell,
+                          ]}
+                        >
+                          {item.id}
+                        </Text>
+                        <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
+                          {item.nombre}
+                        </Text>
+                        <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
+                          {item.direccion}
+                        </Text>
+                        <Text style={[stylesAdmin4.cell, FONTS.nunitoNegrita]}>
+                          {item.canchas.length}
+                        </Text>
+                        <TouchableOpacity
+                          style={[stylesAdmin4.button, stylesAdmin4.buttonCell]}
+                          onPress={() =>
+                            handlePress(
+                              item.latitud,
+                              item.longitud,
+                              item.nombre,
+                              item.direccion
+                            )
+                          }
+                        >
+                          <Ionicons
+                            name="map"
+                            size={24}
+                            color={colores.blanco}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            stylesAdmin4.button,
+                            stylesAdmin4.editButton,
+                            stylesAdmin4.buttonCell,
+                          ]}
+                        >
+                          <Ionicons
+                            name="pencil"
+                            size={24}
+                            color={colores.blanco}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            stylesAdmin4.button,
+                            stylesAdmin4.deleteButton,
+                            stylesAdmin4.buttonCell,
+                          ]}
+                        >
+                          <Ionicons
+                            name="trash"
+                            size={24}
+                            color={colores.blanco}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  />
+                </View>
               </View>
-            </View>
+            ) : (
+              <Text
+                style={[FONTS.oswald, styles.errMessCenter, { marginTop: 10 }]}
+              >
+                {fallo1}
+              </Text>
+            )}
           </ScrollView>
           {Platform.OS !== "web" && (
             <View
@@ -451,7 +587,7 @@ const Admin4 = ({ navigation }) => {
                 mapType="hybrid"
                 onPoiClick={async (event) => {
                   const { placeId, coordinate } = event.nativeEvent;
-                  handleLongPress(event)
+                  handleLongPress(event);
                 }}
               >
                 {markers.map((marker) => (
@@ -511,7 +647,7 @@ const Admin4 = ({ navigation }) => {
                   {selectedPlace}
                 </Text>
                 <Text style={[FONTS.nunito, { textAlign: "center" }]}>
-                  Ubicación: 
+                  Ubicación:
                   {address2 === ""
                     ? ` ${region.latitude}, ${region.longitude}`
                     : ` ${address2}`}
@@ -540,6 +676,7 @@ const Admin4 = ({ navigation }) => {
               </View>
             </Animated.View>
           )}
+          <View ref={sectionOneRef}></View>
           <Text
             style={[
               styles.TextField,
@@ -573,8 +710,8 @@ const Admin4 = ({ navigation }) => {
                   mapType="hybrid"
                   onPoiClick={async (event) => {
                     const { placeId, coordinate, name } = event.nativeEvent;
-                    handleLongPress2(event)
-                    setLugar(name)
+                    handleLongPress2(event);
+                    setLugar(name);
                   }}
                 >
                   {markers2.map((marker) => (
@@ -616,7 +753,7 @@ const Admin4 = ({ navigation }) => {
               style={[FONTS.oswald, stylesAdmin4.input]}
               placeholderTextColor={colores.domin_2_2}
               placeholder="Nombre"
-              value={lugar === "" ? "" : lugar}
+              value={elecc === "" ? "" : elecc}
             />
             <TextInput
               style={[FONTS.oswald, stylesAdmin4.input]}
@@ -683,7 +820,7 @@ const Admin4 = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -713,13 +850,21 @@ const stylesAdmin4 = StyleSheet.create({
 
   headerRow: {
     flexDirection: "row",
-    backgroundColor: colores.base_2_4,
+    backgroundColor: colores.base_2_2,
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderTopRightRadius: 5,
     borderTopLeftRadius: 5,
   },
-  headerCell: { flex: 1, textAlign: "center" },
+  headerCell: {
+    flex: 1,
+    textAlign: "left",
+    color: "white",
+    paddingHorizontal: 10,
+  },
+  idCell: { maxWidth: 50 },
+  buttonCell: { maxWidth: 60 },
+  buttonHead: { maxWidth: 70 },
 
   row: {
     flexDirection: "row",
@@ -728,7 +873,7 @@ const stylesAdmin4 = StyleSheet.create({
     alignItems: "center",
     borderBottomColor: colores.base_2_4,
   },
-  cell: { flex: 1, textAlign: "center", paddingHorizontal: 10 },
+  cell: { flex: 1, textAlign: "left", paddingHorizontal: 10 },
 
   button: {
     flex: 1,

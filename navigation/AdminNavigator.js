@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   createDrawerNavigator,
   DrawerItemList,
@@ -31,6 +31,7 @@ import { DrawerActions } from "@react-navigation/native";
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
 import { useFonts } from "@expo-google-fonts/oswald";
+import ErrorComponent from "../components/ErrorComponent";
 
 import {
   Oswald_400Regular,
@@ -50,6 +51,7 @@ const Stack = createStackNavigator();
 import { useContext } from "react";
 import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function HomeStack() {
   return (
@@ -168,6 +170,7 @@ const CustomDrawerContent = (props) => {
 function AdminDrawerNavigator({ navigation }) {
   const { setToken } = useContext(TokenContext);
   const { getToken, decodeToken } = useContext(AuthContext);
+  const { logout, removeToken, removeUser } = useContext(AuthContext);
 
   const [tokenData, setTokenData] = useState("");
   const [expire, setExpire] = useState(false);
@@ -175,6 +178,9 @@ function AdminDrawerNavigator({ navigation }) {
   const [loadData, setLoadData] = useState(true);
   const [noData, setNoData] = useState(false);
   const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
+
+  // useRef para mantener el valor más reciente del token
+  const tokenRef = useRef("");
 
   useEffect(() => {
     let intervalId;
@@ -186,6 +192,7 @@ function AdminDrawerNavigator({ navigation }) {
         if (fetchedToken) {
           setTokenData(fetchedToken);
           setToken(fetchedToken);
+          tokenRef.current = fetchedToken; // Actualizar el token más reciente
           console.log(fetchedToken, "obtenido");
           validateToken(fetchedToken);
           setNoData(false);
@@ -202,10 +209,18 @@ function AdminDrawerNavigator({ navigation }) {
     };
 
     const validateToken = (token) => {
-      console.log("Validando token...");
-      if (!token || decodeToken(token) === null) {
+      if (!token) {
         setExpire(true);
         console.log("Token inválido ❌");
+        return;
+      }
+
+      const expirationDate = decodeToken(token);
+      const currentDate = new Date();
+
+      if (!expirationDate || expirationDate < currentDate) {
+        setExpire(true);
+        console.log("El token ha expirado ❌");
       } else {
         setExpire(false);
         console.log("Token válido ✅");
@@ -214,14 +229,14 @@ function AdminDrawerNavigator({ navigation }) {
 
     fetchToken(); // Ejecutar al montar el componente
 
-    // Verificar cada 5 minutos usando el estado más reciente
+    // Verificar cada 5 minutos con el token más reciente
     intervalId = setInterval(() => {
       console.log("Revisando expiración del token...");
-      validateToken(tokenData);
+      validateToken(tokenRef.current);
     }, tokenCheckInterval);
 
     return () => clearInterval(intervalId); // Limpiar intervalo al desmontar
-  }, [switcht, tokenData]);
+  }, [switcht]);
 
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
@@ -235,36 +250,21 @@ function AdminDrawerNavigator({ navigation }) {
   });
 
   if (loadData) {
-    return <ActivityIndicator size="large" color="green" />;
-  }
-
-  if (noData) {
     return (
-      <View
+      <SafeAreaView
         style={{
-          width: "100%",
           height: "100%",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
-          Algo salió mal, intentalo nuevamente
-        </Text>
-        <TouchableOpacity
-          style={{
-            width: "50%",
-            backgroundColor: colores.domin_2_1,
-            padding: 10,
-            alignItems: 'center',
-            borderRadius: 10
-          }}
-          onPress={() => setSwitcht(!switcht)}
-        >
-          <Text style={[{ color: "white", fontSize: 20}, FONTS.oswald]}>Reintentar</Text>
-        </TouchableOpacity>
-      </View>
+        <ActivityIndicator size="large" color={colores.acento_2_1} />
+      </SafeAreaView>
     );
+  }
+
+  if (noData) {
+    return <ErrorComponent reintentar={setSwitcht} valor={switcht} />;
   }
 
   if (expire) {
@@ -286,9 +286,9 @@ function AdminDrawerNavigator({ navigation }) {
             backgroundColor: colores.domin_2_1,
             padding: 10,
           }}
-          onPress={() => setSwitcht(!switcht)}
+          onPress={() => {removeToken(); removeUser(); logout()}}
         >
-          <Text style={[{ color: "white" }, FONTS.oswald]}>Reintentar</Text>
+          <Text style={[{ color: "white" }, FONTS.oswald]}>Aceptar</Text>
         </TouchableOpacity>
       </View>
     );

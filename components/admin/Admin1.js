@@ -45,6 +45,11 @@ const Admin1 = ({ navigation, route }) => {
   const [modalSolid, setModalSolid] = useState(false);
   const [torName, setTorName] = useState("");
 
+  const [load1, setLoad1] = useState(false);
+  const [load2, setLoad2] = useState(false);
+  const [load3, setLoad3] = useState(false);
+  const [load4, setLoad4] = useState(false);
+
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
     Oswald_700Bold,
@@ -95,7 +100,6 @@ const Admin1 = ({ navigation, route }) => {
       const rolo = await getUserId();
       const tok = await getToken();
       setTokData(tok);
-
       setLoadSolids(true);
       api
         .get(`/api/solicitudes/admin/pendientes`, {
@@ -116,6 +120,11 @@ const Admin1 = ({ navigation, route }) => {
     };
     getUserAll();
 
+    setLoad1(true);
+    setLoad2(true);
+    setLoad3(true);
+    setLoad4(true);
+    setLoadEqu(true);
     api
       .get(`/api/equipos`)
       .then((res) => {
@@ -139,6 +148,10 @@ const Admin1 = ({ navigation, route }) => {
       .catch((e) => {
         console.error(e, e.res.message);
         setTorEspera(0);
+      })
+      .finally(() => {
+        setLoad1(false);
+        setLoad4(false);
       });
 
     api
@@ -154,8 +167,27 @@ const Admin1 = ({ navigation, route }) => {
       .catch((e) => {
         console.error(e, e.res.message);
         setTotPagos(0);
+      })
+      .finally(() => {
+        setLoad2(false);
+        setLoad3(false);
       });
   }, []);
+
+  const markedDates = {
+    "2025-02-19": {
+      selected: true,
+      selectedColor: colores.acento_3_1,
+    },
+    "2025-02-25": {
+      selected: true,
+      selectedColor: colores.acento_3_1,
+    },
+    "2025-03-02": {
+      selected: true,
+      selectedColor: colores.acento_3_1,
+    },
+  };
 
   return (
     <GestureHandlerRootView>
@@ -187,7 +219,11 @@ const Admin1 = ({ navigation, route }) => {
                     color={colores.base_1_3}
                   />
                 </View>
-                <Text style={FONTS.oswald}>Domingo, 23 de febrero</Text>
+                {load1 ? (
+                  <ActivityIndicator size="small" color="#3CB371" />
+                ) : (
+                  <Text style={FONTS.oswald}>Domingo, 23 de febrero</Text>
+                )}
               </View>
             </View>
             <View style={styless.card}>
@@ -206,7 +242,11 @@ const Admin1 = ({ navigation, route }) => {
                     style={{ marginTop: 2 }}
                   />
                 </View>
-                <Text style={FONTS.oswald}>{totPagos}</Text>
+                {load2 ? (
+                  <ActivityIndicator size="small" color="#FFC300" />
+                ) : (
+                  <Text style={FONTS.oswald}>{totPagos}</Text>
+                )}
               </View>
             </View>
             <View style={styless.card}>
@@ -220,7 +260,11 @@ const Admin1 = ({ navigation, route }) => {
                   </Text>
                   <Ionicons name="mail" size={24} color={colores.base_1_3} />
                 </View>
-                <Text style={FONTS.oswald}>{solicitudes.length}</Text>
+                {load3 ? (
+                  <ActivityIndicator size="small" color="#4E73DF" />
+                ) : (
+                  <Text style={FONTS.oswald}>{solicitudes.length}</Text>
+                )}
               </View>
             </View>
             <View style={styless.card}>
@@ -235,7 +279,11 @@ const Admin1 = ({ navigation, route }) => {
                   <Ionicons name="trophy" size={24} color={colores.base_1_3} />
                 </View>
                 <View style={styless.row3}>
-                  <Text style={FONTS.oswald}>{torEspera}</Text>
+                  {load4 ? (
+                    <ActivityIndicator size="small" color="#9A0000" />
+                  ) : (
+                    <Text style={FONTS.oswald}>{torEspera}</Text>
+                  )}
                   {/* <Progress.Bar
                     progress={progress}
                     width={100}
@@ -394,45 +442,33 @@ const Admin1 = ({ navigation, route }) => {
               Calendario de partidos
             </Text>
             <Calendar
-              style={[FONTS.nunito, styless.calendar]} // Aplica la fuente en el estilo principal (si es necesario)
-              // Configuración básica
+              style={[FONTS.nunito, styless.calendar]}
               onDayPress={(day) => {
-                alert("Hola " + day.day);
+                if (markedDates.hasOwnProperty(day.dateString)) {
+                  alert("Hola " + day.day);
+                }
               }}
               monthFormat={"MMM yyyy"}
-              markedDates={{
-                "2025-02-19": {
-                  selected: true,
-                  selectedColor: colores.acento_3_1,
-                },
-                "2025-02-25": {
-                  selected: true,
-                  selectedColor: colores.acento_3_1,
-                },
-                "2025-03-02": {
-                  selected: true,
-                  selectedColor: colores.acento_3_1,
-                },
-              }}
+              markedDates={markedDates} // Usamos la variable aquí
               theme={{
-                todayTextColor: colores.domin_2_1, // Cambia el color del texto de hoy
+                todayTextColor: colores.domin_2_1,
                 todayBackgroundColor: colores.acento_1_3,
-                selectedDayBackgroundColor: colores.acento_2_5, // Color del fondo del día seleccionado
-                selectedDayTextColor: colores.blanco, // Color del texto del día seleccionado
-                textSectionTitleColor: colores.acento_1_3, // Color del texto de las secciones del mes
-                monthTextColor: colores.domin_2_1, // Color del texto del mes
-                arrowColor: colores.domin_2_1, // Color de las flechas del calendario
-                // Aplicar la fuente en todos los textos del calendario
+                selectedDayBackgroundColor: colores.acento_2_5,
+                selectedDayTextColor: colores.blanco,
+                textSectionTitleColor: colores.acento_1_3,
+                monthTextColor: colores.domin_2_1,
+                arrowColor: colores.domin_2_1,
                 textDayFontSize: 16,
-                textDayFontFamily: "Nunito_400Regular", // Aplicar Nunito en los días
-                textMonthFontFamily: "Nunito_400Regular", // Aplicar Nunito en el mes
-                textDayHeaderFontFamily: "Nunito_400Regular", // Aplicar Nunito en el encabezado
+                textDayFontFamily: "Nunito_400Regular",
+                textMonthFontFamily: "Nunito_400Regular",
+                textDayHeaderFontFamily: "Nunito_400Regular",
                 textDayStyle: {
-                  minWidth: 30, // Ajusta el tamaño mínimo de la celda para evitar recortes
+                  minWidth: 30,
                   textAlign: "center",
                 },
               }}
             />
+            ;
           </View>
         </ScrollView>
         <Modal

@@ -2,6 +2,7 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL_LOCAL } from "@env";
+import api from '../config/api.js'
 
 export const AuthContext = createContext();
 
@@ -84,7 +85,8 @@ export const AuthProvider = ({ children }) => {
   async function validate(username, pass) {
     setIsLoading(true);
     try {
-      const res = await axios.post(`http://192.168.1.68:8080/auth/login`, {
+      //const res = await axios.post(`http://192.168.1.69:8080/auth/login`, {
+      const res = await api.post(`/auth/login`, {
         email: username,
         password: pass,
       });

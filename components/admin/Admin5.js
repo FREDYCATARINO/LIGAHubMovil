@@ -11,28 +11,179 @@ import {
   Dimensions,
   FlatList,
   ActivityIndicator,
+  Button,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import FONTS from "../../style/fonts";
 import colores from "../../style/colors";
-
+import * as ImagePicker from "expo-image-picker";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../config/api";
+import api_multi from "../../config/api_multi";
+import formStyle from "../../style/formStyles";
+
+import { useForm, Controller } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import axios from "axios";
 
 const { width } = Dimensions.get("window");
 
 const Admin5 = ({ navigation }) => {
-  const [form, setForm] = useState({ nombre: "", correo: "", contrasena: "" });
+  const [form, setForm] = useState({
+    nombre: "",
+    correo: "",
+    contrasena: "",
+    imagen: "",
+  });
   const { getUserId, getUserRole, getToken } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
   const [arbitros, setArbitros] = useState([]);
   const [loadArb, setLoadArb] = useState(false);
   const [fallo1, setFallo1] = useState("");
 
-  const [arbitro, setArbitro] = useState({});
+  const [image, setImage] = useState(null);
+
   const [loadArbit, setLoadArbit] = useState(false);
-  const [fallo2, setFallo3] = useState("");
+  const [fallo2, setFallo2] = useState("");
+
+  //esquema para validaciones
+  const arbitro = yup.object().shape({
+    nombreCompleto: yup.string().required("El nombre es requerido"),
+    email: yup
+      .string()
+      .email("Formato de correo inválido")
+      .required("El correo es requerido"),
+    password: yup.string().required("Contraseña requerida"),
+    imagen: yup
+      .string()
+      .nullable() // Permite valores nulos para evitar validaciones antes de seleccionar la imagen
+      .test("is-valid-image", "Debes seleccionar una imagen", (value) => {
+        return typeof value === "string" && value.startsWith("file://");
+      }),
+  });
+
+  //conectar el schema con el form
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: yupResolver(arbitro),
+    mode: "onChange",
+  });
+
+  const onSubmit = async (data) => {
+    if (!image || typeof image !== "string" || !image.startsWith("file://")) {
+      console.log("Error: No hay imagen seleccionada.");
+      return Alert.alert("Error", "Debes seleccionar una imagen válida.");
+    }
+
+    await registrarArbitro(data, image);
+
+    // const formData = new FormData();
+
+    // // Agregar la imagen
+    // formData.append("imagen", {
+    //   uri: image,               // The URI of the image you picked
+    //   name: "arbitro.jpeg",     // File name (make sure it's correct)
+    //   type: "image/jpeg",       // MIME type of the image
+    // });
+
+    // // Agregar el JSON de los datos del árbitro como string
+    // formData.append(
+    //   "arbitro",
+    //   JSON.stringify({
+    //     email: data.email,
+    //     password: data.pass,
+    //     nombreCompleto: data.name,
+    //   })
+    // );
+
+    // // Log the image URI and FormData for debugging
+    // console.log("Image URI:", image);
+    // console.log("FormData content:", formData);
+
+    // setLoadArbit(true);
+
+    // try {
+    //   // Send the POST request
+    //   const res = await api.post(`/api/arbitros`, formData, {
+    //     headers: {
+    //       // Remove the 'Content-Type' header - Axios will handle this automatically
+    //       Authorization: `Bearer ${tokData}`,
+    //     },
+    //   });
+
+    //   console.log(res.data);
+    //   Alert.alert("Registro exitoso", `Árbitro ${data.name} registrado`);
+    //   setFallo2("");
+    // } catch (err) {
+    //   console.log("Error:", err.message, err.toJSON());
+    //   if (err.response) {
+    //     console.log("Error Response:", err.response.data.message);
+    //     setFallo2(err.response.data.message);
+    //     return;
+    //   }
+    //   setFallo2("Ocurrió un error al registrar al árbitro, inténtalo nuevamente");
+    // } finally {
+    //   setLoadArbit(false);
+    // }
+  };
+
+  useEffect(() => {
+    console.log("Estado actualizado:", image);
+  }, [image]);
+
+  const registrarArbitro = async (data, image) => {
+    setLoadArbit(true);
+    setFallo2("");
+  
+    try {
+      const formData = new FormData();
+
+      const { imagen, ...arbitroData } = data;
+      
+      // ✅ Agregar los datos del árbitro correctamente
+      formData.append("arbitro", JSON.stringify(arbitroData));
+
+      console.log(arbitroData)
+  
+      // ✅ Agregar la imagen correctamente
+      formData.append("imagen", {
+        uri: image, // ✅ Usa `image` directamente
+        name: "arbitro.jpg",
+        type: "image/jpeg",
+      });
+  
+      const tokData = await getToken(); // Asegúrate de obtener el token correctamente
+  
+      const res = await api_multi.post("/api/arbitros", formData, {
+        headers: {
+          Authorization: `Bearer ${tokData}`,
+        },
+      });
+      
+      console.log(res.data);
+      Alert.alert("Registro exitoso", `Árbitro ${data.nombreCompleto} registrado`);
+    } catch (err) {
+      console.log("Error:", err.message, err.toJSON());
+  
+      if (err.response) {
+        console.log("Error Response:", err.response.data);
+        setFallo2(err.response.data.message || err.response.data.detail ||"Error desconocido en el servidor");
+        return;
+      }
+  
+      setFallo2("Ocurrió un error al registrar al árbitro, inténtalo nuevamente");
+    } finally {
+      setLoadArbit(false);
+    }
+  };  
 
   useEffect(() => {
     const getAbritros = async () => {
@@ -49,11 +200,11 @@ const Admin5 = ({ navigation }) => {
           },
         })
         .then((res) => {
-          if (res.data.length === 0) setFallo1("No hay 'arbitros registrados");
+          if (res.data.length === 0) setFallo1("No hay árbitros registrados");
           else setArbitros(res.data);
         })
         .catch((e) => {
-          console.error(e, e.res.message);
+          console.error(e, e.res.message, e.res.code);
           if (e.res.message) setFallo1(e.res.message);
           else setFallo1("Error al obtener árbitros");
         })
@@ -61,6 +212,60 @@ const Admin5 = ({ navigation }) => {
     };
     getAbritros();
   }, []);
+
+  // Función para pedir permisos y abrir la cámara
+  const openCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permiso denegado",
+        "Necesitas permitir el acceso a la cámara."
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const imageUri = result.assets[0].uri;
+      console.log("Imagen seleccionada:", imageUri); // Depuración
+      setImage(imageUri);
+      setForm({ ...form, imagen: imageUri });
+      setValue("image", imageUri); // Actualiza react-hook-form
+      trigger("image"); // Valida la imagen
+    }
+  };
+
+  // Función para abrir la galería
+  const openGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permiso denegado",
+        "Necesitas permitir el acceso a la galería."
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const imageUri = result.assets[0].uri;
+      console.log("Imagen seleccionada:", imageUri); // Depuración
+      setImage(imageUri);
+      setForm({ ...form, imagen: imageUri });
+      setValue("imagen", imageUri); // Actualiza react-hook-form
+      trigger("imagen"); // Valida la imagen
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -116,11 +321,15 @@ const Admin5 = ({ navigation }) => {
           style={{ maxHeight: 250 }}
         >
           {loadArb ? (
-            <View style={{ alignItems: "center", justifyContent: "center", width: '100%', height: '100%'}}>
-              <ActivityIndicator
-                size="large"
-                color={colores.domin_1_1}
-              />
+            <View
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <ActivityIndicator size="large" color={colores.domin_1_1} />
             </View>
           ) : fallo1 === "" ? (
             <View style={styles.table}>
@@ -162,10 +371,11 @@ const Admin5 = ({ navigation }) => {
                 </Text>
               </View>
 
-              <View style={{ maxHeight: 250, padding: 5 }}>
+              <View style={{ maxHeight: 200, padding: 5 }}>
                 <FlatList
                   data={arbitros}
                   keyExtractor={(item) => item.id}
+                  nestedScrollEnabled={true}
                   renderItem={({ item }) => (
                     <View style={styles.row}>
                       <Text
@@ -222,42 +432,159 @@ const Admin5 = ({ navigation }) => {
           Registrar árbitro
         </Text>
         <View style={styles.formContainer}>
-          <Image
-            source={{
-              uri: "https://th.bing.com/th/id/OIP._UyGdulfXcXluqK6G5I9JgAAAA?w=148&h=166&c=7&pcl=1b1a19&r=0&o=5&dpr=1.5&pid=1.7",
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
             }}
-            style={styles.registerImage}
-          />
+          >
+            <Text style={[FONTS.nunitoNegrita, styles.registerTitlePic]}>
+              Foto de perfil
+            </Text>
+            <Controller
+              control={control}
+              name="imagen"
+              render={({ field: { value } }) => (
+                <>
+                  {image && (
+                    <Image
+                      source={{
+                        uri: value,
+                      }}
+                      style={styles.registerImage}
+                    />
+                  )}
+                  {errors.imagen && (
+                    <Text style={formStyle.errText}>
+                      {errors.imagen.message}
+                    </Text>
+                  )}
+                </>
+              )}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                width: "100%",
+                gap: 5,
+                marginVertical: 3,
+              }}
+            >
+              <TouchableOpacity
+                onPress={openCamera}
+                style={{
+                  backgroundColor: colores.acento_1_2,
+                  width: "45%",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 10,
+                }}
+              >
+                <Ionicons name="camera" size={24} color={colores.blanco} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={openGallery}
+                style={{
+                  backgroundColor: colores.acento_1_2,
+                  width: "45%",
+                  height: 50,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 10,
+                }}
+              >
+                <Ionicons name="image" size={24} color={colores.blanco} />
+              </TouchableOpacity>
+            </View>
+          </View>
           <View style={styles.formFields}>
-            <TextInput
-              style={[styles.input, styles.inputError, FONTS.oswald]}
-              placeholder="Nombre completo"
-              placeholderTextColor={colores.domin_2_2}
-              value={form.nombre}
-              onChangeText={(text) => setForm({ ...form, nombre: text })}
+            <Controller
+              control={control}
+              name="nombreCompleto"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <TextInput
+                    style={[styles.input, styles.inputError, FONTS.oswald]}
+                    placeholder="Nombre completo"
+                    placeholderTextColor={colores.domin_2_2}
+                    value={value}
+                    onChangeText={(text) => onChange(text)}
+                  />
+                  {errors.nombreCompleto && (
+                    <Text style={formStyle.errText}>{errors.nombreCompleto.message}</Text>
+                  )}
+                </>
+              )}
             />
-            <TextInput
-              style={[styles.input, styles.inputError, FONTS.oswald]}
-              placeholder="Correo electrónico"
-              placeholderTextColor={colores.domin_2_2}
-              value={form.correo}
-              onChangeText={(text) => setForm({ ...form, correo: text })}
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <TextInput
+                    style={[styles.input, styles.inputError, FONTS.oswald]}
+                    placeholder="Correo electrónico"
+                    placeholderTextColor={colores.domin_2_2}
+                    value={value}
+                    keyboardType="email-address"
+                    onChangeText={(text) => onChange(text)}
+                  />
+                  {errors.email && (
+                    <Text style={formStyle.errText}>
+                      {errors.email.message}
+                    </Text>
+                  )}
+                </>
+              )}
             />
-            <TextInput
-              style={[styles.input, styles.inputError, FONTS.oswald]}
-              placeholder="Contraseña"
-              placeholderTextColor={colores.domin_2_2}
-              secureTextEntry
-              value={form.contrasena}
-              onChangeText={(text) => setForm({ ...form, contrasena: text })}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <TextInput
+                    style={[styles.input, styles.inputError, FONTS.oswald]}
+                    placeholder="Contraseña"
+                    placeholderTextColor={colores.domin_2_2}
+                    secureTextEntry
+                    value={value}
+                    keyboardType="password"
+                    onChangeText={(text) => onChange(text)}
+                  />
+                  {errors.password && (
+                    <Text style={formStyle.errText}>{errors.password.message}</Text>
+                  )}
+                </>
+              )}
             />
-            <TouchableOpacity style={styles.registerButton}>
-              <Text style={[FONTS.oswald, styles.registerButtonText]}>
-                Registrar
-              </Text>
-            </TouchableOpacity>
+            {loadArbit ? (
+              <ActivityIndicator size="large" color={colores.domin_2_3} />
+            ) : (
+              <TouchableOpacity
+                style={[styles.registerButton, { opacity: isValid ? 1 : 0.5 }]}
+                onPress={handleSubmit(onSubmit)}
+                disabled={!isValid}
+              >
+                <Text style={[FONTS.oswald, styles.registerButtonText]}>
+                  Registrar
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+        {fallo2 ? (
+          <Text
+            style={[
+              FONTS.nunitoNegrita,
+              formStyle.errText,
+              { color: colores.domin_1_1 },
+            ]}
+          >
+            ¡{fallo2}!
+          </Text>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -330,9 +657,15 @@ const styles = StyleSheet.create({
     color: colores.blanco,
   },
   registerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     marginBottom: 10,
     textAlign: "center",
+  },
+  registerTitlePic: {
+    fontSize: 20,
+    marginBottom: 10,
+    marginRight: 8,
+    textAlign: "left",
   },
   formContainer: {
     flexDirection: "row",
@@ -342,9 +675,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   registerImage: {
-    width: 120,
+    width: "90%",
+    marginRight: 10,
     height: 120,
-    marginRight: 15,
+    borderRadius: 5,
   },
   formFields: {
     flex: 1,
@@ -359,10 +693,10 @@ const styles = StyleSheet.create({
     marginVertical: 3,
   },
   inputError: {
-    borderColor: "red",
+    borderColor: colores.domin_2_3,
   },
   registerButton: {
-    backgroundColor: "red",
+    backgroundColor: colores.domin_2_3,
     padding: 10,
     borderRadius: 5,
     alignItems: "center",
