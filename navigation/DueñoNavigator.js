@@ -1,5 +1,5 @@
 // DueñoDrawerNavigator.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import DueñoDashboard from "../screens/dueño/DueñoDashboard";
 import CustomDrawerContent from "./CustomDrawerContent"; // Importar el componente del menú
@@ -8,51 +8,116 @@ import colores from "../style/colors"; // Asegúrate de importar colores
 import { StyleSheet } from "react-native";
 import DuenoBar from "./DuenoAppbar";
 import PerfilScreen from "../screens/Perfil";
+import { useContext } from "react";
+import {
+  Image,
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { AuthContext, AuthProvider } from "../context/AuthContext";
+import { TokenContext, TokenProvider } from "../context/TokenContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ErrorComponent from "../components/ErrorComponent";
 const Drawer = createDrawerNavigator();
 
-const DueñoDrawerNavigator = () => {
-  const [loadData, setLoadData] = useState(false);
-  const [noData, setNoData] = useState(false);
-  const [tokenData, setTokenData] = useState("");
-  const [switcht, setSwitcht] = useState(false);
+const DueñoNavigator = () => {
+  const { setToken } = useContext(TokenContext);
+  const { getToken, decodeToken } = useContext(AuthContext);
+  const { logout, removeToken, removeUser } = useContext(AuthContext);
 
-  const { getToken } = useContext(AuthContext);
+  const [tokenData, setTokenData] = useState("");
+  const [expire, setExpire] = useState(false);
+  const [switcht, setSwitcht] = useState(false);
+  const [loadData, setLoadData] = useState(true);
+  const [noData, setNoData] = useState(false);
+  const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
+
+  // useRef para mantener el valor más reciente del token
+  const tokenRef = useRef("");
 
   useEffect(() => {
+    let intervalId;
+
     const fetchToken = async () => {
-      setLoadData(true);
-      const token = await getToken();
-      setTokenData(token);
-      setLoadData(false);
-      setNoData(token === "" ? true : false);
+      try {
+        setLoadData(true);
+        const fetchedToken = await getToken();
+        if (fetchedToken) {
+          setTokenData(fetchedToken);
+          setToken(fetchedToken);
+          tokenRef.current = fetchedToken; // Actualizar el token más reciente
+          console.log(fetchedToken, "obtenido");
+          validateToken(fetchedToken);
+          setNoData(false);
+        } else {
+          console.log("Token no encontrado o está vacío.");
+          setNoData(true);
+        }
+      } catch (error) {
+        console.log("Error al obtener el token:", error);
+        setNoData(true);
+      } finally {
+        setLoadData(false);
+      }
     };
 
-    fetchToken();
+    const validateToken = (token) => {
+      if (!token) {
+        setExpire(true);
+        console.log("Token inválido ❌");
+        return;
+      }
+
+      const expirationDate = decodeToken(token);
+      const currentDate = new Date();
+
+      if (!expirationDate || expirationDate < currentDate) {
+        setExpire(true);
+        console.log("El token ha expirado ❌");
+      } else {
+        setExpire(false);
+        console.log("Token válido ✅");
+      }
+    };
+
+    fetchToken(); // Ejecutar al montar el componente
+
+    // Verificar cada 5 minutos con el token más reciente
+    intervalId = setInterval(() => {
+      console.log("Revisando expiración del token...");
+      validateToken(tokenRef.current);
+    }, tokenCheckInterval);
+
+    return () => clearInterval(intervalId); // Limpiar intervalo al desmontar
   }, [switcht]);
 
-  const [fontsLoaded] = useFonts({
-    Oswald_400Regular,
-    Oswald_700Bold,
-    Oswald_400Italic,
-    Oswald_700BoldItalic,
-    Nunito_400Regular,
-    Nunito_700Bold,
-    Nunito_400Italic,
-    Nunito_700BoldItalic,
-  });
-
   if (loadData) {
-    return <ActivityIndicator size="large" color="green" />;
+    return (
+      <SafeAreaView
+        style={{
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colores.acento_2_1} />
+      </SafeAreaView>
+    );
   }
 
   if (noData) {
+    return <ErrorComponent reintentar={setSwitcht} valor={switcht} />;
+  }
+
+  if (expire) {
     return (
-      <View>
-        <Text>Algo salió mal, inténtalo nuevamente</Text>
-        <TouchableOpacity onPress={() => setSwitcht(!switcht)}>
-          <Text>Reintentar</Text>
-        </TouchableOpacity>
-      </View>
+      <NoTokenComponent
+        removeToken={removeToken}
+        removeUser={removeUser}
+        logout={logout}
+      />
     );
   }
   return (
@@ -92,7 +157,7 @@ const DueñoDrawerNavigator = () => {
   );
 };
 
-export default DueñoDrawerNavigator;
+export default DueñoNavigator;
 
 const styles = StyleSheet.create({
   header: {

@@ -97,6 +97,7 @@ const Login = ({ navigation }) => {
             placeholder="Correo electrónico"
             keyboardType="email-address"
             value={email}
+            autoCapitalize="none"
             onChangeText={setEmail}
           />
         </View>
@@ -113,6 +114,7 @@ const Login = ({ navigation }) => {
             secureTextEntry
             value={password}
             keyboardType="password"
+            autoCapitalize="none"
             onChangeText={setPassword}
           />
         </View>

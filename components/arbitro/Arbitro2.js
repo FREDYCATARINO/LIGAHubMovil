@@ -133,7 +133,7 @@ const Arbitro2 = ({ navigation, route }) => {
           <View style={{alignItems:'center'}}>
             <Text style={[FONTS.oswaldNegrita, { fontSize: 18 }]}>
               Marcador
-            </Text>{" "}
+            </Text>
             <Text style={[FONTS.oswaldNegrita, { fontSize: 28 }]}>-</Text>
           </View>
           <TextInput

@@ -42,8 +42,22 @@ const TokenProvider = ({ children }) => {
       }
     };
 
+    const fetchToken = async () => {
+      try {
+        const role = await getToken();
+        if (role && role !== "") {
+          console.log(role, "obtenido");
+        } else {
+          console.log("Rol no encontrado o está vacío.");
+        }
+      } catch (error) {
+        console.log("Error al obtener el rol:", error);
+      }
+    };
+
     fetchId();
     fetchRole();
+    fetchToken();
   }, []);
 
   return (

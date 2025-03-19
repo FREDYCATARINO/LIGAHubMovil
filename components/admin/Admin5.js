@@ -142,32 +142,33 @@ const Admin5 = ({ navigation }) => {
   const registrarArbitro = async (data, image) => {
     setLoadArbit(true);
     setFallo2("");
-
+  
     try {
       const formData = new FormData();
-
+  
       const { imagen, ...arbitroData } = data;
-
-      // ✅ Agregar los datos del árbitro correctamente
+  
+      // ✅ Convertir los datos del árbitro a una cadena JSON
       formData.append("arbitro", JSON.stringify(arbitroData));
-
-      console.log(arbitroData);
-
+  
       // ✅ Agregar la imagen correctamente
       formData.append("imagen", {
-        uri: image, // ✅ Usa `image` directamente
+        uri: image,
         name: "arbitro.jpg",
         type: "image/jpeg",
       });
 
+      console.log(formData);
+  
       const tokData = await getToken(); // Asegúrate de obtener el token correctamente
-
-      const res = await api_multi.post("/api/arbitros", formData, {
+  
+      // Axios automáticamente establece el Content-Type cuando se usa FormData
+      const res = await api.post("/api/arbitros", formData, {
         headers: {
           Authorization: `Bearer ${tokData}`,
         },
       });
-
+  
       console.log(res.data);
       Alert.alert(
         "Registro exitoso",
@@ -175,7 +176,23 @@ const Admin5 = ({ navigation }) => {
       );
     } catch (err) {
       console.log("Error:", err.message, err.toJSON());
-
+  
+      if (err.response) {
+        console.error(err.response.status);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+          // Aquí podrías redirigir al login, por ejemplo:
+          // navigation.navigate("Login");
+          return;
+        }
+        console.log("🔴 Error del servidor:", err.response.status, err.response.data);
+      } else if (err.request) {
+        console.log("⚠️ No hubo respuesta del servidor.");
+      } else {
+        console.log("🛑 Error al configurar la petición.");
+      }
+  
       if (err.response) {
         console.log("Error Response:", err.response.data);
         setFallo2(
@@ -185,14 +202,14 @@ const Admin5 = ({ navigation }) => {
         );
         return;
       }
-
+  
       setFallo2(
         "Ocurrió un error al registrar al árbitro, inténtalo nuevamente"
       );
     } finally {
       setLoadArbit(false);
     }
-  };
+  };  
 
   useEffect(() => {
     const getAbritros = async () => {
@@ -540,6 +557,7 @@ const Admin5 = ({ navigation }) => {
                     placeholder="Correo electrónico"
                     placeholderTextColor={colores.domin_2_2}
                     value={value}
+                    autoCapitalize="none"
                     keyboardType="email-address"
                     onChangeText={(text) => onChange(text)}
                   />

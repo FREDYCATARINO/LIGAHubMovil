@@ -2,7 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useContext } from "react";
 import { AuthContext, AuthProvider } from "../context/AuthContext";
-import DueñoNavigator from "./DueñoDrawerNavigator";
+import DueñoNavigator from "./DueñoNavigator";
 import UserNavigator from "./UserDrawerNavigator";
 import AdminNavigator from "./AdminNavigator";
 import ArbitroNavigator from "./ArbitroNavigator";
@@ -12,6 +12,7 @@ const Stack = createNativeStackNavigator();
 
 const MainNavigator = () => {
   const { user } = useContext(AuthContext);
+  console.log(user)
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>

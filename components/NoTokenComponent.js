@@ -12,30 +12,21 @@ import {
   TextInput,
   Image,
 } from "react-native";
-import { Title } from "react-native-paper";
 import FONTS from "../style/fonts";
 import colores from "../style/colors";
 
-const NoTokenComponent = ({ reintentar, valor }) => {
+const NoTokenComponent = ({ removeToken, removeUser, logout }) => {
   return (
-    <SafeAreaView
+    <View
       style={{
         width: "100%",
         height: "100%",
         justifyContent: "center",
         alignItems: "center",
-        gap: 10,
       }}
     >
-      <Image
-        source={require("../assets/error_bot.png")}
-        style={{ width: "75%", height: 250 }}
-      />
-      <Text style={[{ fontSize: 25 }, FONTS.oswaldNegrita]}>
-        ¡Oh no!
-      </Text>
       <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
-        Tu sesión ha expirado, vuelve a iniciar sesión para continuar
+        Tu sesión ha expirado, inicia sesión nuevamente
       </Text>
       <TouchableOpacity
         style={{
@@ -45,13 +36,16 @@ const NoTokenComponent = ({ reintentar, valor }) => {
           alignItems: "center",
           borderRadius: 10,
         }}
-        onPress={() => reintentar(!valor)}
+        onPress={async () => {
+          await Promise.all([removeToken(), removeUser()]);
+          logout();
+        }}
       >
         <Text style={[{ color: "white", fontSize: 20 }, FONTS.oswald]}>
-          Ir
+          Regresar
         </Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 };
 

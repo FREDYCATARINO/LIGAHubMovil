@@ -94,6 +94,8 @@ const Admin1 = ({ navigation, route }) => {
   const [torEspera, setTorEspera] = useState(0);
   const [totPagos, setTotPagos] = useState(0);
 
+  const [torneos, setTorneos] = useState([]);
+
   useEffect(() => {
     const getUserAll = async () => {
       const id = await getUserRole();
@@ -117,6 +119,15 @@ const Admin1 = ({ navigation, route }) => {
           else setFallo("Error al obtener solicitudes");
         })
         .finally(() => setLoadSolids(false));
+
+      api
+        .get(`/api/torneos`)
+        .then((res) => {
+          setTorneos(res.data);
+        })
+        .catch((e) => {
+          console.error(e, e.res.message);
+        });
     };
     getUserAll();
 
@@ -173,6 +184,17 @@ const Admin1 = ({ navigation, route }) => {
         setLoad3(false);
       });
   }, []);
+
+  function getTorneoLogo(id) {
+    const torneo = torneos.find((tor) => tor.id === id);
+    if (torneo) {
+      console.log("Encontrado");
+      return torneo.logoTorneo;
+    } else {
+      console.log("No encontrado");
+      return "https://th.bing.com/th/id/OIP.vxFF12mSgYf6Cs5z9O2i7QAAAA?rs=1&pid=ImgDetMain"; // Imagen de respaldo
+    }
+  }  
 
   const markedDates = {
     "2025-02-19": {
@@ -315,8 +337,29 @@ const Admin1 = ({ navigation, route }) => {
                           setModalSolid(true);
                         }}
                       >
-                        <View style={styless.row1}>
-                          {/* <Image
+                        <View
+                          style={{
+                            width: 80,
+                            justifyContent: "center",
+                            gap: 5,
+                          }}
+                        >
+                          <Image
+                            source={{
+                              uri: getTorneoLogo(s.idTorneo),
+                            }}
+                            style={{
+                              height: 80,
+                              backgroundColor: colores.base_1_1,
+                              borderRadius: 100,
+                              resizeMode: "stretch",
+                              padding: 0,
+                            }}
+                          />
+                        </View>
+                        <View style={{ width: '72%', marginLeft: 5 }}>
+                          <View style={styless.row1}>
+                            {/* <Image
                           source={{
                             uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
                           }}
@@ -329,41 +372,44 @@ const Admin1 = ({ navigation, route }) => {
                             alignSelf: "center",
                           }}
                         /> */}
-                          <Text style={[styless.nombre]}>{s.nombreEquipo}</Text>
-                        </View>
-                        <View style={styless.row2}>
-                          <TouchableOpacity
-                            style={[
-                              styles.button,
-                              { backgroundColor: colores.acento_3_1 },
-                              styless.boton,
-                            ]}
-                          >
-                            <Text
+                            <Text style={[styless.nombre]}>
+                              {s.nombreEquipo}
+                            </Text>
+                          </View>
+                          <View style={styless.row2}>
+                            <TouchableOpacity
                               style={[
-                                FONTS.oswald,
-                                { color: "white", fontSize: 18 },
+                                styles.button,
+                                { backgroundColor: colores.acento_3_1 },
+                                styless.boton,
                               ]}
                             >
-                              Aceptar
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[
-                              styles.button,
-                              { backgroundColor: colores.domin_1_1 },
-                              styless.boton,
-                            ]}
-                          >
-                            <Text
+                              <Text
+                                style={[
+                                  FONTS.oswald,
+                                  { color: "white", fontSize: 18 },
+                                ]}
+                              >
+                                Aceptar
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
                               style={[
-                                FONTS.oswald,
-                                { color: "white", fontSize: 18 },
+                                styles.button,
+                                { backgroundColor: colores.domin_1_1 },
+                                styless.boton,
                               ]}
                             >
-                              Rechazar
-                            </Text>
-                          </TouchableOpacity>
+                              <Text
+                                style={[
+                                  FONTS.oswald,
+                                  { color: "white", fontSize: 18 },
+                                ]}
+                              >
+                                Rechazar
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </TouchableOpacity>
                       <View style={styless.myBorder}></View>
@@ -404,7 +450,9 @@ const Admin1 = ({ navigation, route }) => {
                     return (
                       <TouchableOpacity
                         style={[styless.prod]}
-                        onPress={() => navigation.navigate("Jugadores",{ team: item })}
+                        onPress={() =>
+                          navigation.navigate("Jugadores", { team: item })
+                        }
                         // onPress={() =>
                         //   sendData(
                         //     item.equipoId,
@@ -631,13 +679,13 @@ const styless = StyleSheet.create({
   solid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    alignItems: "baseline",
-    justifyContent: "space-between",
+    alignItems: "center",
     marginVertical: 10,
     marginHorizontal: 5,
     borderTopColor: colores.base_3_1,
     borderBottomColor: colores.base_3_1,
     borderRadius: 10,
+    width: '100%',
   },
   myBorder: {
     width: "100%",
@@ -684,11 +732,12 @@ const styless = StyleSheet.create({
     fontFamily: "Oswald_400Regular",
   },
   boton: {
-    width: "30%",
-    paddingVertical: 2,
-    paddingHorizontal: 5,
+    width: "40%",
+    paddingVertical: 5,
+    paddingHorizontal: 8,
     justifyContent: "center",
     alignItems: "center",
+    textAlign: 'center',
     paddingBottom: 3,
   },
   image: {

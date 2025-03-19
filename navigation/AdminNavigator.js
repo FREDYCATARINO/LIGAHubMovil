@@ -15,6 +15,7 @@ import Admin7 from "../components/admin/Admin7";
 import PerfilScreen from "../screens/Perfil";
 import EquiposScreen from "../components/admin/DetallesEquipo";
 import { useNavigation } from "@react-navigation/native";
+import NoTokenComponent from "../components/NoTokenComponent";
 import {
   StyleSheet,
   Image,
@@ -52,46 +53,6 @@ import { useContext } from "react";
 import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-function HomeStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={({ navigation, route }) => ({
-        header: () => (
-          <AdminAppBar
-            navigation={navigation}
-            title={route.name}
-            isRoot={route.name === "Home"}
-          />
-        ),
-      })}
-    >
-      <Stack.Screen name="Home" component={Admin1} />
-      <Stack.Screen name="Equipos" component={Admin2} />
-      <Stack.Screen name="Torneos" component={Admin3} />
-      <Stack.Screen name="Campos" component={Admin4} />
-      <Stack.Screen name="Arbitros" component={Admin5} />
-    </Stack.Navigator>
-  );
-}
-
-function ProfileStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={({ navigation, route }) => ({
-        header: () => (
-          <AdminAppBar
-            navigation={navigation}
-            title={route.name}
-            isRoot={route.name !== "Perfil"}
-          />
-        ),
-      })}
-    >
-      <Stack.Screen name="Perfil" component={PerfilScreen} />
-    </Stack.Navigator>
-  );
-}
 
 function EquiposStack() {
   return (
@@ -269,32 +230,11 @@ function AdminDrawerNavigator({ navigation }) {
 
   if (expire) {
     return (
-      <View
-        style={{
-          width: "100%",
-          height: "100%",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
-          Tu sesión ha expirado, inicia sesión nuevamente
-        </Text>
-        <TouchableOpacity
-          style={{
-            width: "50%",
-            backgroundColor: colores.domin_2_1,
-            padding: 10,
-          }}
-          onPress={() => {
-            removeToken();
-            removeUser();
-            logout();
-          }}
-        >
-          <Text style={[{ color: "white" }, FONTS.oswald]}>Aceptar</Text>
-        </TouchableOpacity>
-      </View>
+      <NoTokenComponent
+        removeToken={removeToken}
+        removeUser={removeUser}
+        logout={logout}
+      />
     );
   }
 

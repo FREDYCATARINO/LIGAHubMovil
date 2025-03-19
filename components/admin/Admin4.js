@@ -42,6 +42,7 @@ const Admin4 = ({ navigation }) => {
   const [address2, setAddress2] = useState("");
   const [campos, setCampos] = useState([]);
   const [canchas, setCanchas] = useState([]);
+  const [canchasDesc, setCanchasDesc] = useState([]);
   const [loadCamps, setLoadCamps] = useState(false);
   const [fallo1, setFallo1] = useState("");
 
@@ -721,21 +722,23 @@ const Admin4 = ({ navigation }) => {
                     placeholderTextColor={colores.domin_2_2}
                     placeholder="#"
                     keyboardType="numeric"
+                    value={rows + index}
                   />
                   <TextInput
                     style={[FONTS.oswald, stylesAdmin4.input, { width: "50%" }]}
                     placeholderTextColor={colores.domin_2_2}
-                    placeholder="Dirección"
+                    placeholder="Descripción"
+                    onChangeText={(text) => canchasDesc.push(text)}
                   />
                   <TouchableOpacity
                     style={[stylesAdmin4.button2, stylesAdmin4.editButton]}
-                    onPress={() => setRows(rows + 1)}
+                    onPress={() => {setRows(rows + 1); canchas.push({pos: index, desc: canchasDesc[index] || ""})}}
                   >
                     <Ionicons name="add" size={18} color={colores.blanco} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[stylesAdmin4.button2, stylesAdmin4.deleteButton]}
-                    onPress={() => (rows === 1 ? "" : setRows(rows - 1))}
+                    onPress={() => {(rows === 1 ? "" : (setRows(rows - 1))); }}
                   >
                     <Ionicons name="remove" size={18} color={colores.blanco} />
                   </TouchableOpacity>
@@ -743,7 +746,7 @@ const Admin4 = ({ navigation }) => {
               ))}
             </View>
             <TouchableOpacity
-              onPress={resetMarkers2}
+              onPress={() => {resetMarkers2; console.log(canchas)}}
               style={{
                 width: "50%",
                 backgroundColor: colores.domin_1_4,

@@ -91,11 +91,17 @@ export const AuthProvider = ({ children }) => {
         password: pass,
       });
 
-      console.log(res.data);
-
-      setTokenOBj(res.data);
       await saveToken(res.data.token);
       await saveUser(res.data.roles, res.data.id)
+
+      if (res.data.roles === "ROLE_DUENO") {
+        setUser({ role: "dueno" });
+      } else if (res.data.roles === "ROLE_ADMIN") {
+        setUser({ role: "admin" });
+      } else if (res.data.roles === "ROLE_ARBITRO") {
+        setUser({ role: "arbitro" });
+      }
+
       setFailure(false);
     } catch (err) {
       console.log(err, err.message, err.toJSON());
@@ -105,19 +111,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   }
-
-  // Detecta cambios en `tokenOBj` y actualiza `setUser`
-  useEffect(() => {
-    if (tokenOBj?.roles) {
-      if (tokenOBj.roles === "ROLE_DUENO") {
-        setUser({ role: "dueno" });
-      } else if (tokenOBj.roles === "ROLE_ADMIN") {
-        setUser({ role: "admin" });
-      } else if (tokenOBj.roles === "ARBITRO") {
-        setUser({ role: "arbitro" });
-      }
-    }
-  }, [tokenOBj]); // Ejecutar cuando `tokenOBj` cambie
 
   function decodeToken(token) {
     try {
@@ -153,14 +146,6 @@ export const AuthProvider = ({ children }) => {
     const formattedUsername = username.toLowerCase().trim();
 
     validate(formattedUsername, password);
-
-    if (tokenOBj.roles === "ROLE_DUENO") {
-      ({ role: "dueno" });
-    } else if (tokenOBj.roles === "ROLE_ADMIN") {
-      setUser({ role: "admin" });
-    } else if (tokenOBj.roles === "ARBITRO") {
-      setUser({ role: "arbitro" });
-    }
 
     console.log(username, password);
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   createDrawerNavigator,
   DrawerItemList,
@@ -8,7 +8,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import LoginScreen from "../screens/Login";
 import { useNavigation } from "@react-navigation/native";
-import { StyleSheet, Image, View, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, Image, View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import AdminAppBar from "../components/admin/AdminNavBar";
 import { Ionicons } from "@expo/vector-icons";
 import myStyles from "../style/style";
@@ -17,6 +17,11 @@ import { DrawerActions } from "@react-navigation/native";
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
 import { useFonts } from "@expo-google-fonts/oswald";
+import { useContext } from "react";
+import { AuthContext, AuthProvider } from "../context/AuthContext";
+import { TokenContext, TokenProvider } from "../context/TokenContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import NoTokenComponent from "../components/NoTokenComponent";
 
 import {
   Oswald_400Regular,
@@ -35,6 +40,7 @@ import Arbitro2 from "../components/arbitro/Arbitro2";
 import ArbitroAppBar from "../components/arbitro/ArbitroNavBar";
 import PerfilScreen from "../screens/Perfil";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import ErrorComponent from "../components/ErrorComponent";
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -44,23 +50,74 @@ import { Feather } from "@expo/vector-icons";
 const Tab = createBottomTabNavigator();
 
 const ArbitroNavigator = () => {
-  const [loadData, setLoadData] = useState(false);
-  const [noData, setNoData] = useState(false);
-  const [tokenData, setTokenData] = useState("");
-  const [switcht, setSwitcht] = useState(false);
+  const { setToken } = useContext(TokenContext);
+  const { getToken, decodeToken } = useContext(AuthContext);
+  const { logout, removeToken, removeUser } = useContext(AuthContext);
 
-  const { getToken } = useContext(AuthContext);
+  const [tokenData, setTokenData] = useState("");
+  const [expire, setExpire] = useState(false);
+  const [switcht, setSwitcht] = useState(false);
+  const [loadData, setLoadData] = useState(true);
+  const [noData, setNoData] = useState(false);
+  const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
+
+  // useRef para mantener el valor más reciente del token
+  const tokenRef = useRef("");
 
   useEffect(() => {
+    let intervalId;
+
     const fetchToken = async () => {
-      setLoadData(true);
-      const token = await getToken();
-      setTokenData(token);
-      setLoadData(false);
-      setNoData(token === "" ? true : false);
+      try {
+        setLoadData(true);
+        const fetchedToken = await getToken();
+        if (fetchedToken) {
+          setTokenData(fetchedToken);
+          setToken(fetchedToken);
+          tokenRef.current = fetchedToken; // Actualizar el token más reciente
+          console.log(fetchedToken, "obtenido");
+          validateToken(fetchedToken);
+          setNoData(false);
+        } else {
+          console.log("Token no encontrado o está vacío.");
+          setNoData(true);
+        }
+      } catch (error) {
+        console.log("Error al obtener el token:", error);
+        setNoData(true);
+      } finally {
+        setLoadData(false);
+      }
     };
 
-    fetchToken();
+    const validateToken = (token) => {
+      if (!token) {
+        setExpire(true);
+        console.log("Token inválido ❌");
+        return;
+      }
+
+      const expirationDate = decodeToken(token);
+      const currentDate = new Date();
+
+      if (!expirationDate || expirationDate < currentDate) {
+        setExpire(true);
+        console.log("El token ha expirado ❌");
+      } else {
+        setExpire(false);
+        console.log("Token válido ✅");
+      }
+    };
+
+    fetchToken(); // Ejecutar al montar el componente
+
+    // Verificar cada 5 minutos con el token más reciente
+    intervalId = setInterval(() => {
+      console.log("Revisando expiración del token...");
+      validateToken(tokenRef.current);
+    }, tokenCheckInterval);
+
+    return () => clearInterval(intervalId); // Limpiar intervalo al desmontar
   }, [switcht]);
 
   const [fontsLoaded] = useFonts({
@@ -75,17 +132,30 @@ const ArbitroNavigator = () => {
   });
 
   if (loadData) {
-    return <ActivityIndicator size="large" color="green" />;
+    return (
+      <SafeAreaView
+        style={{
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colores.acento_2_1} />
+      </SafeAreaView>
+    );
   }
 
   if (noData) {
+    return <ErrorComponent reintentar={setSwitcht} valor={switcht} />;
+  }
+
+  if (expire) {
     return (
-      <View>
-        <Text>Algo salió mal, inténtalo nuevamente</Text>
-        <TouchableOpacity onPress={() => setSwitcht(!switcht)}>
-          <Text>Reintentar</Text>
-        </TouchableOpacity>
-      </View>
+      <NoTokenComponent
+      removeToken={removeToken}
+      removeUser={removeUser}
+      logout={logout}
+    />
     );
   }
   
