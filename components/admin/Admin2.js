@@ -238,6 +238,15 @@ const Admin2 = ({ navigation }) => {
         })
         .catch((e) => {
           console.error(e, e.res.message);
+          if (err.response.status === 403) {
+            console.log("⚠️ Token expirado, redirigiendo a login...");
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout()
+            return;
+          }
           if (e.res.message) setFalloD(e.res.message);
           else setFalloD("Error al obtener dueños");
         })

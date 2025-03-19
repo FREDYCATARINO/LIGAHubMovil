@@ -40,7 +40,7 @@ import { TokenContext } from "../../context/TokenContext";
 
 const Admin1 = ({ navigation, route }) => {
   const [progress, setProgress] = useState(0.25);
-  const { getUserId, getUserRole, getToken } = useContext(AuthContext);
+  const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
   const { token } = useContext(TokenContext);
   const [modalSolid, setModalSolid] = useState(false);
   const [torName, setTorName] = useState("");
@@ -114,6 +114,15 @@ const Admin1 = ({ navigation, route }) => {
           else setSolicitudes(res.data);
         })
         .catch((e) => {
+          if (err.response.status === 403) {
+            console.log("⚠️ Token expirado, redirigiendo a login...");
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout()
+            return;
+          }
           console.error(e, e.res.message);
           if (e.res.message) setFallo(e.res.message);
           else setFallo("Error al obtener solicitudes");
@@ -126,6 +135,15 @@ const Admin1 = ({ navigation, route }) => {
           setTorneos(res.data);
         })
         .catch((e) => {
+          if (err.response.status === 403) {
+            console.log("⚠️ Token expirado, redirigiendo a login...");
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout()
+            return;
+          }
           console.error(e, e.res.message);
         });
     };
@@ -145,6 +163,15 @@ const Admin1 = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout()
+          return;
+        }
         if (e.res.message) setFallo2(e.res.message);
         else setFallo2("Error al obtener equipos");
       })
@@ -158,6 +185,15 @@ const Admin1 = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout()
+          return;
+        }
         setTorEspera(0);
       })
       .finally(() => {
@@ -177,6 +213,15 @@ const Admin1 = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout()
+          return;
+        }
         setTotPagos(0);
       })
       .finally(() => {
@@ -194,7 +239,7 @@ const Admin1 = ({ navigation, route }) => {
       console.log("No encontrado");
       return "https://th.bing.com/th/id/OIP.vxFF12mSgYf6Cs5z9O2i7QAAAA?rs=1&pid=ImgDetMain"; // Imagen de respaldo
     }
-  }  
+  }
 
   const markedDates = {
     "2025-02-19": {
@@ -357,7 +402,7 @@ const Admin1 = ({ navigation, route }) => {
                             }}
                           />
                         </View>
-                        <View style={{ width: '72%', marginLeft: 5 }}>
+                        <View style={{ width: "72%", marginLeft: 5 }}>
                           <View style={styless.row1}>
                             {/* <Image
                           source={{
@@ -685,7 +730,7 @@ const styless = StyleSheet.create({
     borderTopColor: colores.base_3_1,
     borderBottomColor: colores.base_3_1,
     borderRadius: 10,
-    width: '100%',
+    width: "100%",
   },
   myBorder: {
     width: "100%",
@@ -737,7 +782,7 @@ const styless = StyleSheet.create({
     paddingHorizontal: 8,
     justifyContent: "center",
     alignItems: "center",
-    textAlign: 'center',
+    textAlign: "center",
     paddingBottom: 3,
   },
   image: {
