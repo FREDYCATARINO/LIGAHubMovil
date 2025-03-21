@@ -388,7 +388,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                     getEstilo(tor.nombreTorneo, tor.motivoFinalizacion),
                   ]}
                 >
-                  <View style={stylesAdmin3.boxHeader}>
+                  <View style={stylesAdmin3.boxHeader} key={tor.id}>
                     <Text
                       style={[
                         stylesAdmin3.textHead1,
@@ -594,10 +594,23 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
               </>
             )}
           />
-          <TextInput
-            placeholder="Premio disputado"
-            placeholderTextColor={colores.domin_2_2}
-            style={stylesAdmin3.input}
+          <Controller
+            control={control}
+            name="premio"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  placeholder="Premio disputado"
+                  placeholderTextColor={colores.domin_2_2}
+                  value={value}
+                  onChangeText={(text) => onChange(text)}
+                  style={stylesAdmin3.input}
+                />
+                {errors.premio && (
+                  <Text style={formStyle.errText}>{errors.premio.message}</Text>
+                )}
+              </>
+            )}
           />
           {show && (
             <Modal
@@ -650,7 +663,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             </Text>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: "row", width: "100$", gap: 5 }}>
+          {/* <View style={{ flexDirection: "row", width: "100$", gap: 5 }}>
             <TextInput
               placeholder="Fecha de inicio"
               placeholderTextColor={colores.domin_2_2}
@@ -661,19 +674,70 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
               placeholderTextColor={colores.domin_2_2}
               style={[stylesAdmin3.input, { width: "49%" }]}
             />
-          </View>
+          </View> */}
           <View style={{ flexDirection: "row", width: "100$", gap: 5 }}>
-            <TextInput
-              placeholder="Máximo de equipos"
-              placeholderTextColor={colores.domin_2_2}
-              keyboardType="numeric"
-              style={[stylesAdmin3.input, { width: "49%" }]}
+            <Controller
+              control={control}
+              name="maxEquipos"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <TextInput
+                    placeholder="Máximo de equipos"
+                    placeholderTextColor={colores.domin_2_2}
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={(text) => onChange(text)}
+                    style={[stylesAdmin3.input, { width: "30%" }]}
+                  />
+                  {errors.maxEquipos && (
+                    <Text style={formStyle.errText}>
+                      {errors.maxEquipos.message}
+                    </Text>
+                  )}
+                </>
+              )}
             />
-            <TextInput
-              placeholder="Mínimo de equipos"
-              placeholderTextColor={colores.domin_2_2}
-              keyboardType="numeric"
-              style={[stylesAdmin3.input, { width: "49%" }]}
+            <Controller
+              control={control}
+              name="minEquipos"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <TextInput
+                    placeholder="Mínimo de equipos"
+                    placeholderTextColor={colores.domin_2_2}
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={(text) => onChange(text)}
+                    style={[stylesAdmin3.input, { width: "30%" }]}
+                  />
+                  {errors.minEquipos && (
+                    <Text style={formStyle.errText}>
+                      {errors.minEquipos.message}
+                    </Text>
+                  )}
+                </>
+              )}
+            />
+            <Controller
+              control={control}
+              name="vueltas"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <TextInput
+                    placeholder="Vueltas"
+                    placeholderTextColor={colores.domin_2_2}
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={(text) => onChange(text)}
+                    style={[stylesAdmin3.input, { width: "30%" }]}
+                  />
+                  {errors.vueltas && (
+                    <Text style={formStyle.errText}>
+                      {errors.vueltas.message}
+                    </Text>
+                  )}
+                </>
+              )}
             />
           </View>
         </View>
