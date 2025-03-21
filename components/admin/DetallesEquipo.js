@@ -95,6 +95,15 @@ const EqiposScreen = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout()
+          return;
+        }
         if (e.res.message) setFallo(e.res.message);
         else setFallo("Error al obtener jugadores");
       })

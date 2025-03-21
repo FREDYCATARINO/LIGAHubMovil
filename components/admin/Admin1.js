@@ -114,16 +114,16 @@ const Admin1 = ({ navigation, route }) => {
           else setSolicitudes(res.data);
         })
         .catch((e) => {
+          console.error(e, e.res.message);
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
               "Sesión expirada",
               "Por favor, inicia sesión nuevamente."
             );
-            logout()
+            logout();
             return;
           }
-          console.error(e, e.res.message);
           if (e.res.message) setFallo(e.res.message);
           else setFallo("Error al obtener solicitudes");
         })
@@ -135,16 +135,16 @@ const Admin1 = ({ navigation, route }) => {
           setTorneos(res.data);
         })
         .catch((e) => {
+          console.error(e, e.res.message);
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
               "Sesión expirada",
               "Por favor, inicia sesión nuevamente."
             );
-            logout()
+            logout();
             return;
           }
-          console.error(e, e.res.message);
         });
     };
     getUserAll();
@@ -169,7 +169,7 @@ const Admin1 = ({ navigation, route }) => {
             "Sesión expirada",
             "Por favor, inicia sesión nuevamente."
           );
-          logout()
+          logout();
           return;
         }
         if (e.res.message) setFallo2(e.res.message);
@@ -191,7 +191,7 @@ const Admin1 = ({ navigation, route }) => {
             "Sesión expirada",
             "Por favor, inicia sesión nuevamente."
           );
-          logout()
+          logout();
           return;
         }
         setTorEspera(0);
@@ -219,7 +219,7 @@ const Admin1 = ({ navigation, route }) => {
             "Sesión expirada",
             "Por favor, inicia sesión nuevamente."
           );
-          logout()
+          logout();
           return;
         }
         setTotPagos(0);
@@ -489,7 +489,7 @@ const Admin1 = ({ navigation, route }) => {
                 <FlatList
                   data={equipos}
                   keyExtractor={(item) => item.id.toString()} // Usar equipoId en lugar de id
-                  numColumns={2}
+                  numColumns={3}
                   nestedScrollEnabled={true}
                   renderItem={({ item }) => {
                     return (
@@ -512,7 +512,11 @@ const Admin1 = ({ navigation, route }) => {
                           source={{ uri: item.logoEquipo }}
                           style={styless.image}
                         />
-                        <Text style={[styless.aligned1, FONTS.oswaldNegrita]}>
+                        <Text
+                          style={[styless.aligned1, FONTS.oswaldNegrita]}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
                           {item.nombreEquipo}
                         </Text>
                         <Text style={[styless.aligned2, FONTS.oswaldNegrita]}>
@@ -562,7 +566,6 @@ const Admin1 = ({ navigation, route }) => {
                 },
               }}
             />
-            ;
           </View>
         </ScrollView>
         <Modal
@@ -786,15 +789,15 @@ const styless = StyleSheet.create({
     paddingBottom: 3,
   },
   image: {
-    width: 125,
-    height: 125,
+    width: "100%",
+    height: 80,
     resizeMode: "stretch",
     borderRadius: 15,
   },
   prod: {
     backgroundColor: colores.base_1_1,
     flexGrow: 1,
-    flexBasis: "45%",
+    flexBasis: "30%",
     margin: 5,
     gap: 5,
     // iOS
@@ -807,11 +810,12 @@ const styless = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
+    padding: 5,
   },
   aligned1: {
     textAlign: "center",
-    fontSize: 18,
+    fontSize: 16,
+    width: '100%'
   },
   aligned2: {
     textAlign: "center",

@@ -207,14 +207,8 @@ const Admin2 = ({ navigation }) => {
   const { getUserId, getUserRole, getToken } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
 
-  function sendData(id, name, dt, jugadores, img) {
-    const team = {
-      id: id,
-      nombre: name,
-      jugadores: jugadores,
-      image: img,
-      dueno: dt,
-    };
+  function sendData(data) {
+    const team = data
     navigation.navigate("Ver equipo", { team });
   }
 
@@ -320,10 +314,7 @@ const Admin2 = ({ navigation }) => {
                     style={[styles3.prod]}
                     onPress={() =>
                       sendData(
-                        item.id,
-                        item.nombreCompleto,
-                        item.usuario.email,
-                        item.imagenUrl
+                        item
                       )
                     }
                   >

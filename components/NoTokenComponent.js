@@ -23,9 +23,14 @@ const NoTokenComponent = ({ removeToken, removeUser, logout }) => {
         height: "100%",
         justifyContent: "center",
         alignItems: "center",
+        gap: 5
       }}
     >
-      <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
+      <Image source={require('../assets/campo_cerrado.png')} style={{width: '75%', height: 150, resizeMode: 'stretch'}} />
+      <Text style={[{ fontSize: 25 }, FONTS.nunitoNegrita]}>
+        Cerrando la cancha...
+      </Text>
+      <Text style={[{ fontSize: 20, width: '95%', textAlign: 'center' }, FONTS.oswald]}>
         Tu sesión ha expirado, inicia sesión nuevamente
       </Text>
       <TouchableOpacity

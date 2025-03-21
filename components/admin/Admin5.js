@@ -38,7 +38,8 @@ const Admin5 = ({ navigation }) => {
     contrasena: "",
     imagen: "",
   });
-  const { getUserId, getUserRole, getToken } = useContext(AuthContext);
+  const [reload, setReload] = useState(false)
+  const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
   const [arbitros, setArbitros] = useState([]);
   const [loadArb, setLoadArb] = useState(false);
@@ -140,76 +141,89 @@ const Admin5 = ({ navigation }) => {
   }, [image]);
 
   const registrarArbitro = async (data, image) => {
-    setLoadArbit(true);
-    setFallo2("");
-  
     try {
       const formData = new FormData();
-  
-      const { imagen, ...arbitroData } = data;
-  
-      // ✅ Convertir los datos del árbitro a una cadena JSON
-      formData.append("arbitro", JSON.stringify(arbitroData));
-  
-      // ✅ Agregar la imagen correctamente
-      formData.append("imagen", {
-        uri: image,
-        name: "arbitro.jpg",
-        type: "image/jpeg",
-      });
 
-      console.log(formData);
-  
-      const tokData = await getToken(); // Asegúrate de obtener el token correctamente
-  
-      // Axios automáticamente establece el Content-Type cuando se usa FormData
+      // Enviar JSON como texto (igual que en Postman)
+      formData.append(
+        "arbitro",
+        JSON.stringify({
+          nombreCompleto: data.nombreCompleto,
+          email: data.email,
+          password: data.password,
+        }),
+        "arbitro.json"
+      );
+
+      // Adjuntar imagen correctamente
+      if (image) {
+        formData.append("imagen", {
+          uri: image,
+          name: "arbitro.jpeg",
+          type: "image/jpeg",
+        });
+      }
+
+      const tokData = await getToken();
+
+      // Enviar petición con Axios
       const res = await api.post("/api/arbitros", formData, {
         headers: {
           Authorization: `Bearer ${tokData}`,
+          Accept: "application/json",
+          "Content-Type": undefined,
         },
       });
-  
-      console.log(res.data);
+
+      console.log("Registro exitoso:", res.data);
       Alert.alert(
         "Registro exitoso",
         `Árbitro ${data.nombreCompleto} registrado`
       );
     } catch (err) {
-      console.log("Error:", err.message, err.toJSON());
-  
+      console.error("Error en la petición:", err);
       if (err.response) {
-        console.error(err.response.status);
-        if (err.response.status === 403) {
-          console.log("⚠️ Token expirado, redirigiendo a login...");
-          Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
-          // Aquí podrías redirigir al login, por ejemplo:
-          // navigation.navigate("Login");
-          return;
-        }
-        console.log("🔴 Error del servidor:", err.response.status, err.response.data);
-      } else if (err.request) {
-        console.log("⚠️ No hubo respuesta del servidor.");
-      } else {
-        console.log("🛑 Error al configurar la petición.");
-      }
-  
-      if (err.response) {
-        console.log("Error Response:", err.response.data);
-        setFallo2(
-          err.response.data.message ||
-            err.response.data.detail ||
-            "Error desconocido en el servidor"
+        console.log(
+          "🔴 Error del servidor:",
+          err.response.status,
+          err.response.data
         );
+      } else {
+        console.log("⚠️ No hubo respuesta del servidor.");
+      }
+    }
+  };
+
+  const desactivarArbitro = async (id, name) => {
+    try {
+      const tokData = await getToken();
+
+      const res = await api.put(`/api/arbitros/cambiarEstatus/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${tokData}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Registro exitoso:", res.data);
+      Alert.alert("Operación exitosa", `${res.data}`);
+      setReload(!reload);
+    } catch (err) {
+      console.error(err);
+      if (err.response.status === 400) {
+        console.log(err.response.data.message)
+        Alert.alert("Árbitro no desactivado", err.response.data.message);
         return;
       }
-  
-      setFallo2(
-        "Ocurrió un error al registrar al árbitro, inténtalo nuevamente"
-      );
-    } finally {
-      setLoadArbit(false);
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        logout();
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        return;
+      }
+      Alert.alert("¡Error!", `No se pudo deshabilitar a ${name}`);
     }
-  };  
+  };
 
   useEffect(() => {
     const getAbritros = async () => {
@@ -237,7 +251,7 @@ const Admin5 = ({ navigation }) => {
               "Sesión expirada",
               "Por favor, inicia sesión nuevamente."
             );
-            logout()
+            logout();
             return;
           }
           if (e.res.message) setFallo1(e.res.message);
@@ -246,7 +260,7 @@ const Admin5 = ({ navigation }) => {
         .finally(() => setLoadArb(false));
     };
     getAbritros();
-  }, []);
+  }, [reload]);
 
   // Función para pedir permisos y abrir la cámara
   const openCamera = async () => {
@@ -294,7 +308,12 @@ const Admin5 = ({ navigation }) => {
 
     if (!result.canceled && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-      console.log("Imagen seleccionada:", imageUri); // Depuración
+      console.log(
+        "Uri seleccionada:",
+        imageUri,
+        " Imagen seleccionada: ",
+        result.assets[0]
+      ); // Depuración
       setImage(imageUri);
       setForm({ ...form, imagen: imageUri });
       setValue("imagen", imageUri); // Actualiza react-hook-form
@@ -392,7 +411,7 @@ const Admin5 = ({ navigation }) => {
                     FONTS.oswaldNegrita,
                   ]}
                 >
-                  Partidos
+                  Estado
                 </Text>
                 <Text
                   style={[
@@ -402,7 +421,7 @@ const Admin5 = ({ navigation }) => {
                     { width: 80 },
                   ]}
                 >
-                  Eliminar
+                  Opciones
                 </Text>
               </View>
 
@@ -435,20 +454,31 @@ const Admin5 = ({ navigation }) => {
                           FONTS.nunitoNegrita,
                         ]}
                       >
-                        N/A
+                        {item.usuario.estatus ? 'Activo' : 'Inactivo'}
                       </Text>
                       <TouchableOpacity
                         style={[
                           styles.button,
-                          styles.deleteButton,
+                          item.usuario.estatus ? styles.reactiveButton : styles.deleteButton,
                           styles.buttonHead,
                         ]}
+                        onPress={async () =>
+                          desactivarArbitro(item.id, item.nombreCompleto)
+                        }
                       >
-                        <Ionicons
-                          name="trash"
-                          size={24}
-                          color={colores.blanco}
-                        />
+                        {!item.usuario.estatus ? (
+                          <Ionicons
+                            name="refresh"
+                            size={24}
+                            color={colores.blanco}
+                          />
+                        ) : (
+                          <Ionicons
+                            name="trash"
+                            size={24}
+                            color={colores.blanco}
+                          />
+                        )}
                       </TouchableOpacity>
                     </View>
                   )}
@@ -533,7 +563,14 @@ const Admin5 = ({ navigation }) => {
                 <Ionicons name="image" size={24} color={colores.blanco} />
               </TouchableOpacity>
             </View>
-            <Text style={[formStyle.errText, {color: 'black', textAlign: 'center', width: '100%'}]}>Seleccionar foto</Text>
+            <Text
+              style={[
+                formStyle.errText,
+                { color: "black", textAlign: "center", width: "100%" },
+              ]}
+            >
+              Seleccionar foto
+            </Text>
           </View>
           <View style={styles.formFields}>
             <Controller
@@ -796,6 +833,7 @@ const styles = StyleSheet.create({
 
   editButton: { backgroundColor: colores.acento_2_3 },
   deleteButton: { backgroundColor: colores.domin_2_2 },
+  reactiveButton: { backgroundColor: colores.acento_3_1 },
 });
 
 export default Admin5;

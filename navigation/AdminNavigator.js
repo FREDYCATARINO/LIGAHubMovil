@@ -14,6 +14,7 @@ import Admin6 from "../components/admin/Admin6";
 import Admin7 from "../components/admin/Admin7";
 import PerfilScreen from "../screens/Perfil";
 import EquiposScreen from "../components/admin/DetallesEquipo";
+import EquipoScreen from "../components/admin/DetallesEquipos";
 import { useNavigation } from "@react-navigation/native";
 import NoTokenComponent from "../components/NoTokenComponent";
 import {
@@ -72,7 +73,7 @@ function EquiposStack() {
       <Stack.Screen
         name="Ver equipo"
         options={{ title: "Detalles de equipo" }}
-        component={EquiposScreen}
+        component={EquipoScreen}
       />
     </Stack.Navigator>
   );

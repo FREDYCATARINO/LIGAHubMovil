@@ -41,7 +41,10 @@ const Admin4 = ({ navigation }) => {
   const [address, setAddress] = useState("");
   const [address2, setAddress2] = useState("");
   const [campos, setCampos] = useState([]);
-  const [canchas, setCanchas] = useState([]);
+  //const [canchas, setCanchas] = useState([]);
+  const [canchas, setCanchas] = useState([
+    { id: Date.now(), pos: 0, desc: "" },
+  ]); // Fila por defecto
   const [canchasDesc, setCanchasDesc] = useState([]);
   const [loadCamps, setLoadCamps] = useState(false);
   const [fallo1, setFallo1] = useState("");
@@ -76,7 +79,7 @@ const Admin4 = ({ navigation }) => {
               "Sesión expirada",
               "Por favor, inicia sesión nuevamente."
             );
-            logout()
+            logout();
             return;
           }
           if (e.res.message) setFallo1(e.res.message);
@@ -88,20 +91,29 @@ const Admin4 = ({ navigation }) => {
   }, []);
 
   // Crear una referencia para el ScrollView
+  const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef(null);
 
-  // Crear referencias para cada componente al que te quieres desplazar
-  const sectionOneRef = useRef(null);
-
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  const handleScroll = () => {
+  // Función para manejar el desplazamiento programático
+  const scrollToPosition = (position, duration = 500) => {
     Animated.timing(scrollY, {
-      toValue: 600, // La posición en la que quieres hacer scroll
-      duration: 100, // Duración en milisegundos (ajusta este valor según lo suave que quieras la animación)
-      useNativeDriver: true,
+      toValue: position,
+      duration: duration,
+      useNativeDriver: false, // Necesario para ScrollView
     }).start();
+  
+    scrollViewRef.current?.scrollTo({ y: position, animated: true });
   };
+
+  // Escuchar cambios en la animación y actualizar el estado si es necesario
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+    });
+
+    return () => {
+      scrollY.removeListener(listenerId);
+    };
+  }, []);
 
   // Función para manejar el clic en el marcador
   const handleMarkerPress = (place) => {
@@ -329,15 +341,38 @@ const Admin4 = ({ navigation }) => {
     }
   };
 
+  const addRow = () => {
+    setRows(rows + 1);
+    setCanchas([...canchas, { id: Date.now(), pos: rows, desc: "" }]); // Agrega una nueva fila con id único
+  };
+
+  const updateDescription = (id, text) => {
+    setCanchas(
+      canchas.map(
+        (cancha) => (cancha.id === id ? { ...cancha, desc: text } : cancha) // Actualiza la descripción de la cancha
+      )
+    );
+  };
+
+  const removeRow = (id) => {
+    if (rows > 1) {
+      setRows(rows - 1);
+      setCanchas(canchas.filter((cancha) => cancha.id !== id)); // Elimina la fila con el id correspondiente
+    }
+  };
+
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={stylesAdmin4.container}>
         <Animated.ScrollView
-          style={{ gap: 5 }}
-          ref={scrollViewRef}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-          contentOffset={{ y: scrollY }}
+        style={{ gap: 5 }}
+        ref={scrollViewRef}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
         >
           <View
             style={{
@@ -358,7 +393,7 @@ const Admin4 = ({ navigation }) => {
             >
               Campos
             </Text>
-            <TouchableOpacity onPress={handleScroll}>
+            <TouchableOpacity onPress={() => scrollToPosition(600,1000)}>
               <Ionicons
                 name="add-circle-sharp"
                 size={30}
@@ -627,7 +662,7 @@ const Admin4 = ({ navigation }) => {
               </View>
             </Animated.View>
           )}
-          <View ref={sectionOneRef}></View>
+          {/* <View ref={sectionOneRef}></View> */}
           <Text
             style={[
               styles.TextField,
@@ -716,9 +751,9 @@ const Admin4 = ({ navigation }) => {
               Asignación de canchas
             </Text>
             <View>
-              {Array.from({ length: rows }).map((_, index) => (
+              {canchas.map((cancha, index) => (
                 <View
-                  key={index}
+                  key={cancha.id}
                   style={{
                     flexDirection: "row",
                     height: 50,
@@ -731,23 +766,25 @@ const Admin4 = ({ navigation }) => {
                     placeholderTextColor={colores.domin_2_2}
                     placeholder="#"
                     keyboardType="numeric"
-                    value={rows + index}
+                    value={(index + 1).toString()} // Muestra el número de la fila
+                    editable={false} // Solo visualización, no editable
                   />
                   <TextInput
                     style={[FONTS.oswald, stylesAdmin4.input, { width: "50%" }]}
                     placeholderTextColor={colores.domin_2_2}
                     placeholder="Descripción"
-                    onChangeText={(text) => canchasDesc.push(text)}
+                    onChangeText={(text) => updateDescription(cancha.id, text)} // Actualiza la descripción
+                    value={cancha.desc} // Muestra el valor actual de la descripción
                   />
                   <TouchableOpacity
                     style={[stylesAdmin4.button2, stylesAdmin4.editButton]}
-                    onPress={() => {setRows(rows + 1); canchas.push({pos: index, desc: canchasDesc[index] || ""})}}
+                    onPress={addRow} // Agrega una nueva fila
                   >
                     <Ionicons name="add" size={18} color={colores.blanco} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[stylesAdmin4.button2, stylesAdmin4.deleteButton]}
-                    onPress={() => {(rows === 1 ? "" : (setRows(rows - 1))); }}
+                    onPress={() => removeRow(cancha.id)} // Elimina la fila correspondiente
                   >
                     <Ionicons name="remove" size={18} color={colores.blanco} />
                   </TouchableOpacity>
@@ -755,7 +792,10 @@ const Admin4 = ({ navigation }) => {
               ))}
             </View>
             <TouchableOpacity
-              onPress={() => {resetMarkers2; console.log(canchas)}}
+              onPress={() => {
+                resetMarkers2;
+                console.log(canchas);
+              }}
               style={{
                 width: "50%",
                 backgroundColor: colores.domin_1_4,

@@ -11,7 +11,10 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from "react-native";
+import formStyle from "../../style/formStyles";
+import DateTimePicker from "@react-native-community/datetimepicker";
 //import { TextInput } from "react-native-paper";
 import WebView from "react-native-webview";
 import { useRef, useEffect, useState } from "react";
@@ -36,8 +39,12 @@ import { Checkbox } from "react-native-paper";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../config/api";
+import { useForm, Controller, set } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as ImagePicker from "expo-image-picker";
 
-const Admin3 = ({ navigation }) => {
+const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const [modalVisible1, setModalVisible1] = useState(false);
   const [modalVisible2, setModalVisible2] = useState(false);
   const [modalVisible3, setModalVisible3] = useState(false);
@@ -52,7 +59,86 @@ const Admin3 = ({ navigation }) => {
   const [falloT, setFalloT] = useState("");
   const [estado, setEstado] = useState("");
 
+  const [image, setImage] = useState(null);
+
   const ordenEstados = ["En Juego", "En Espera", "Finalizado"];
+
+  const torneo = yup.object().shape({
+    nombreTorneo: yup.string().required("El nombre es requerido"),
+    descripcion: yup
+      .string()
+      .max(500, "Tamaño de descripción excedido")
+      .required("La descripción del torneo es requerida"),
+    fechaInicio: yup
+      .date()
+      .min(new Date(), "Se requiere una fecha de inicio")
+      .required("La fecha de inicio es requerida"),
+    maxEquipos: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Se requiere un máximo de equipos entero")
+      .min(2, "Debe ser al menos 2")
+      .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
+      .required("Este campo es obligatorio"),
+    minEquipos: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Se requiere un mínimo de equipos entero")
+      .min(2, "Debe ser al menos 2")
+      .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
+      .required("Este campo es obligatorio"),
+    equiposLiguilla: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Debe ser un número entero")
+      .required("Debes especificar cuántos pasan a liguilla"),
+
+    vueltas: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Debe ser un número entero")
+      .required("Se requieren las vueltas"),
+    premio: yup.string().required("Se requiere especificar premio"),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: yupResolver(torneo),
+    mode: "onChange",
+  });
+
+  const onSubmit = async (data) => {
+    if (!image || typeof image !== "string" || !image.startsWith("file://")) {
+      console.log("Error: No hay imagen seleccionada.");
+      return Alert.alert("Error", "Debes seleccionar una imagen válida.");
+    }
+  };
+
+  const [showInicio, setShowInicio] = useState(false);
+  const [showFin, setShowFin] = useState(false);
+
+  const [fechaInicio, setFechaInicio] = useState(new Date());
+
+  const [show, setShow] = useState(false);
+
+  const onChange = (event, selectedDate) => {
+    setShow(false); // Cierra el DatePicker después de seleccionar
+    if (selectedDate) {
+      setFechaInicio(selectedDate); // Establece la fecha seleccionada
+    }
+  };
+
+  const onChangeFechaInicio = (event, selectedDate) => {
+    if (selectedDate) {
+      setFechaInicio(selectedDate);
+      setValue("fechaInicio", selectedDate);
+    }
+  };
 
   const getEstado = (nombre) => {
     for (let i = 0; i < ordenEstados.length; i++) {
@@ -138,7 +224,7 @@ const Admin3 = ({ navigation }) => {
             "Sesión expirada",
             "Por favor, inicia sesión nuevamente."
           );
-          logout()
+          logout();
           return;
         }
         if (e.res.message) setFalloT(e.res.message);
@@ -194,7 +280,39 @@ const Admin3 = ({ navigation }) => {
 
   const handleScroll = () => {
     if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 500, animated: true }); // Ajusta 'y' a la posición deseada
+      scrollViewRef.current.scrollTo({ y: 450, animated: true }); // Ajusta 'y' a la posición deseada
+    }
+  };
+
+  // Función para abrir la galería
+  const openGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permiso denegado",
+        "Necesitas permitir el acceso a la galería."
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const imageUri = result.assets[0].uri;
+      console.log(
+        "Uri seleccionada:",
+        imageUri,
+        " Imagen seleccionada: ",
+        result.assets[0]
+      ); // Depuración
+      setImage(imageUri);
+      // setForm({ ...form, imagen: imageUri });
+      // setValue("imagen", imageUri); // Actualiza react-hook-form
+      // trigger("imagen"); // Valida la imagen
     }
   };
 
@@ -415,10 +533,17 @@ const Admin3 = ({ navigation }) => {
           </Text>
           <View style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}>
             <Image
-              source={require("../../assets/EquiposLogos/LogoDefault.png")}
+              source={
+                image
+                  ? { uri: image }
+                  : require("../../assets/EquiposLogos/LogoDefault.png")
+              }
               style={{ width: 150, height: 150, resizeMode: "contain" }}
             />
-            <TouchableOpacity style={stylesAdmin3.botTorneo}>
+            <TouchableOpacity
+              style={stylesAdmin3.botTorneo}
+              onPress={openGallery}
+            >
               <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
                 Elegir una imagen
               </Text>
@@ -427,24 +552,104 @@ const Admin3 = ({ navigation }) => {
           <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
             Datos del torneo
           </Text>
-          <TextInput
-            placeholder="Nombre del torneo"
-            placeholderTextColor={colores.domin_2_2}
-            style={stylesAdmin3.input}
+          <Controller
+            control={control}
+            name="nombreTorneo"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  placeholder="Nombre del torneo"
+                  placeholderTextColor={colores.domin_2_2}
+                  style={stylesAdmin3.input}
+                  value={value}
+                  onChangeText={(text) => onChange(text)}
+                />
+                {errors.nombreTorneo && (
+                  <Text style={formStyle.errText}>
+                    {errors.nombreTorneo.message}
+                  </Text>
+                )}
+              </>
+            )}
           />
-          <TextInput
-            placeholder="Descripción del torneo"
-            placeholderTextColor={colores.domin_2_2}
-            multiline
-            numberOfLines={4}
-            style={[stylesAdmin3.input, { height: 120 }]}
+          <Controller
+            control={control}
+            name="descripcion"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  placeholder="Descripción del torneo"
+                  placeholderTextColor={colores.domin_2_2}
+                  multiline
+                  numberOfLines={4}
+                  value={value}
+                  onChangeText={(text) => onChange(text)}
+                  style={[stylesAdmin3.input, { height: 120 }]}
+                />
+                {errors.descripcion && (
+                  <Text style={formStyle.errText}>
+                    {errors.descripcion.message}
+                  </Text>
+                )}
+              </>
+            )}
           />
           <TextInput
             placeholder="Premio disputado"
             placeholderTextColor={colores.domin_2_2}
-            keyboardType="decimal-pad"
             style={stylesAdmin3.input}
           />
+          {show && (
+            <Modal
+              transparent={true}
+              animationType="slide"
+              visible={show}
+              onRequestClose={() => setShow(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "rgba(0, 0, 0, 0.5)",
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "white",
+                    padding: 20,
+                    borderRadius: 10,
+                    width: 300,
+                  }}
+                >
+                  <DateTimePicker
+                    value={fechaInicio}
+                    mode="date" // Selección solo de fecha
+                    display={Platform.OS === "android" ? "calendar" : "default"}
+                    onChange={onChange}
+                  />
+                  <Button
+                    title="Cerrar"
+                    onPress={() => setShow(false)}
+                    style={{ marginTop: 10 }}
+                  />
+                </View>
+              </View>
+            </Modal>
+          )}
+          <TouchableOpacity
+            style={[stylesAdmin3.botTorneo, { width: "100%" }]}
+            onPress={() => {
+              setShow(true);
+              console.log(show);
+              console.log(DateTimePicker);
+            }}
+          >
+            <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+              Seleccionar Fecha
+            </Text>
+          </TouchableOpacity>
+
           <View style={{ flexDirection: "row", width: "100$", gap: 5 }}>
             <TextInput
               placeholder="Fecha de inicio"
