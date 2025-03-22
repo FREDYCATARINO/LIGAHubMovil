@@ -85,6 +85,9 @@ const Admin1 = ({ navigation, route }) => {
     }
   }, 1000);
 
+  const [respuesta, setRespuesta] = useState("");
+  const [respuestas, setRespuestas] = useState({});
+
   const [solicitudes, setSolicitudes] = useState([]);
   const [loadSolids, setLoadSolids] = useState(false);
   const [fallo, setFallo] = useState("");
@@ -105,6 +108,7 @@ const Admin1 = ({ navigation, route }) => {
   const [falloPart, setFalloPart] = useState(false);
 
   useEffect(() => {
+    setRespuesta("");
     const getUserAll = async () => {
       const id = await getUserRole();
       const rolo = await getUserId();
@@ -112,7 +116,7 @@ const Admin1 = ({ navigation, route }) => {
       setTokData(tok);
       setLoadSolids(true);
       api
-        .get(`/api/solicitudes/admin/pendientes`, {
+        .get(`/api/solicitudes/admin`, {
           headers: {
             Authorization: `Bearer ${tok}`,
           },
@@ -272,7 +276,6 @@ const Admin1 = ({ navigation, route }) => {
       .then((res) => {
         if (res.data === "") setFechaReciente("No hay partidos próximos");
         else setFechaReciente(res.data);
-        console.log(res.data);
       })
       .catch((e) => {
         console.error(e, e.res.message);
@@ -292,13 +295,77 @@ const Admin1 = ({ navigation, route }) => {
       });
   }, []);
 
+  const rechazarSolid = async (id) => {
+    await api
+      .put(
+        `/api/solicitudes/${id}/rechazar`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+          },
+        }
+      )
+      .then((res) => {
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Solicitud rechazada",
+        }));
+      })
+      .catch((error) => {
+        console.error(error, error.response);
+        if (error.response?.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Error al rechazar la solicitud",
+        }));
+      });
+  };
+
+  const aceptarSolid = async (id) => {
+    await api
+      .put(
+        `/api/solicitudes/${id}/aceptar`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+          },
+        }
+      )
+      .then((res) => {
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Solicitud aceptada",
+        }));
+        Alert.alert("Éxito", res.data);
+      })
+      .catch((error) => {
+        console.error(error, error.response?.data?.message);
+        Alert.alert(
+          "Denegado",
+          error.response?.data?.message || "Error desconocido"
+        );
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Error al aceptar la solicitud",
+        }));
+      });
+  };
+
   function getTorneoLogo(id) {
     const torneo = torneos.find((tor) => tor.id === id);
     if (torneo) {
-      console.log("Encontrado");
       return torneo.logoTorneo;
     } else {
-      console.log("No encontrado");
       return "https://th.bing.com/th/id/OIP.vxFF12mSgYf6Cs5z9O2i7QAAAA?rs=1&pid=ImgDetMain"; // Imagen de respaldo
     }
   }
@@ -451,57 +518,52 @@ const Admin1 = ({ navigation, route }) => {
                         </View>
                         <View style={{ width: "72%", marginLeft: 5 }}>
                           <View style={styless.row1}>
-                            {/* <Image
-                          source={{
-                            uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                          }}
-                          style={{
-                            width: 40, 
-                            height: 40,
-                            backgroundColor: colores.base_1_1,
-                            borderRadius: 100,
-                            resizeMode: "stretch",
-                            alignSelf: "center",
-                          }}
-                        /> */}
                             <Text style={[styless.nombre]}>
                               {s.nombreEquipo}
                             </Text>
                           </View>
-                          <View style={styless.row2}>
-                            <TouchableOpacity
-                              style={[
-                                styles.button,
-                                { backgroundColor: colores.acento_3_1 },
-                                styless.boton,
-                              ]}
-                            >
-                              <Text
+                          {!respuestas[s.id] ? (
+                            <View style={styless.row2}>
+                              <TouchableOpacity
                                 style={[
-                                  FONTS.oswald,
-                                  { color: "white", fontSize: 18 },
+                                  styles.button,
+                                  { backgroundColor: colores.acento_3_1 },
+                                  styless.boton,
                                 ]}
+                                onPress={async () => aceptarSolid(s.id)}
                               >
-                                Aceptar
-                              </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[
-                                styles.button,
-                                { backgroundColor: colores.domin_1_1 },
-                                styless.boton,
-                              ]}
-                            >
-                              <Text
+                                <Text
+                                  style={[
+                                    FONTS.oswald,
+                                    { color: "white", fontSize: 18 },
+                                  ]}
+                                >
+                                  Aceptar
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
                                 style={[
-                                  FONTS.oswald,
-                                  { color: "white", fontSize: 18 },
+                                  styles.button,
+                                  { backgroundColor: colores.domin_1_1 },
+                                  styless.boton,
                                 ]}
+                                onPress={async () => rechazarSolid(s.id)}
                               >
-                                Rechazar
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
+                                <Text
+                                  style={[
+                                    FONTS.oswald,
+                                    { color: "white", fontSize: 18 },
+                                  ]}
+                                >
+                                  Rechazar
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <Text style={[styless.nombre]}>
+                              {respuestas[s.id]}
+                            </Text>
+                          )}
                         </View>
                       </TouchableOpacity>
                       <View style={styless.myBorder}></View>
@@ -635,6 +697,55 @@ const Admin1 = ({ navigation, route }) => {
             )}
           </View>
         </ScrollView>
+        <Modal
+          animationType="fade" // Animación del modal (puede ser 'fade', 'slide', o 'none')
+          transparent={true} // Hace que el fondo sea transparente
+          visible={modalSolid} // El Modal solo se muestra si modalVisible es true
+          onRequestClose={() => {
+            setModalSolid(false);
+          }} // Cierra el modal al presionar el botón de retroceso en Android
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            <View
+              style={{
+                width: 300,
+                padding: 20,
+                backgroundColor: "white",
+                borderRadius: 10,
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <Text style={[{ fontSize: 25 }, FONTS.oswaldNegrita]}>
+                Detalles de la solicitud
+              </Text>
+              <Text
+                style={[{ fontSize: 20, textAlign: "center" }, FONTS.oswald]}
+              >
+                Toneo solicitado: {torName}
+              </Text>
+              <TouchableOpacity
+                title="Cerrar Modal"
+                style={[styles.loginButton, { width: "50%" }]}
+                onPress={() => {
+                  setModalSolid(false);
+                }}
+              >
+                <Text style={[styles.loginText, FONTS.oswaldNegrita]}>
+                  Aceptar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
         <Modal
           animationType="fade" // Animación del modal (puede ser 'fade', 'slide', o 'none')
           transparent={true} // Hace que el fondo sea transparente

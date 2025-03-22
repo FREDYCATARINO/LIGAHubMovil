@@ -14,6 +14,7 @@ import {
   Button,
   Alert,
 } from "react-native";
+import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import FONTS from "../../style/fonts";
 import colores from "../../style/colors";
@@ -38,7 +39,7 @@ const Admin5 = ({ navigation }) => {
     contrasena: "",
     imagen: "",
   });
-  const [reload, setReload] = useState(false)
+  const [reload, setReload] = useState(false);
   const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
   const [arbitros, setArbitros] = useState([]);
@@ -140,89 +141,75 @@ const Admin5 = ({ navigation }) => {
     console.log("Estado actualizado:", image);
   }, [image]);
 
-  const registrarArbitro = async (data, image) => {
-    try {
-      const formData = new FormData();
+  const registrarArbitro = async (data, imageUri) => {
+    // Obtener el token
+    const tokData = await getToken();
 
-      // Enviar JSON como texto (igual que en Postman)
-      formData.append(
-        "arbitro",
-        JSON.stringify({
-          nombreCompleto: data.nombreCompleto,
-          email: data.email,
-          password: data.password,
-        }),
-        "arbitro.json"
-      );
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", `Bearer ${tokData}`); // Token de autorización
 
-      // Adjuntar imagen correctamente
-      if (image) {
-        formData.append("imagen", {
-          uri: image,
-          name: "arbitro.jpeg",
-          type: "image/jpeg",
-        });
-      }
+    const formdata = new FormData();
 
-      const tokData = await getToken();
+    // Agregar el JSON como string
+    formdata.append(
+      "arbitro",
+      JSON.stringify({
+        email: data.email,
+        password: data.password,
+        nombreCompleto: data.nombreCompleto,
+      })
+    );
 
-      // Enviar petición con Axios
-      const res = await api.post("/api/arbitros", formData, {
-        headers: {
-          Authorization: `Bearer ${tokData}`,
-          Accept: "application/json",
-          "Content-Type": undefined,
-        },
-      });
+    // Agregar la imagen si existe
+    if (imageUri) {
+      const fileExtension = imageUri.split(".").pop(); // Obtener la extensión del archivo
+      const mimeType = fileExtension === "png" ? "image/png" : "image/jpeg"; // Tipo MIME correcto
 
-      console.log("Registro exitoso:", res.data);
-      Alert.alert(
-        "Registro exitoso",
-        `Árbitro ${data.nombreCompleto} registrado`
-      );
-    } catch (err) {
-      console.error("Error en la petición:", err);
-      if (err.response) {
-        console.log(
-          "🔴 Error del servidor:",
-          err.response.status,
-          err.response.data
+      // Crear el objeto de archivo
+      const imageFile = {
+        uri: Platform.OS === "ios" ? imageUri.replace("file://", "") : imageUri, // Eliminar 'file://' en iOS
+        name: `arbitro.${fileExtension}`, // Nombre del archivo con la extensión correcta
+        type: mimeType, // Tipo MIME adecuado
+      };
+
+      // Agregar la imagen al FormData
+      formdata.append("imagen", imageFile);
+    }
+
+    const requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: formdata,
+      redirect: "follow",
+    };
+
+    fetch("http://192.168.1.67:8080/api/arbitros", requestOptions)
+      .then((response) => {
+        if (response.ok) {
+          return response.json(); // Si la respuesta es exitosa, devuelve el JSON
+        } else {
+          throw new Error(`Error del servidor: ${response.status}`);
+        }
+      })
+      .then((result) => {
+        console.log("Respuesta del servidor:", result);
+        Alert.alert(
+          "Registro exitoso",
+          `Árbitro ${result.nombreCompleto} registrado`
         );
-      } else {
-        console.log("⚠️ No hubo respuesta del servidor.");
-      }
-    }
-  };
-
-  const desactivarArbitro = async (id, name) => {
-    try {
-      const tokData = await getToken();
-
-      const res = await api.put(`/api/arbitros/cambiarEstatus/${id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${tokData}`,
-          "Content-Type": "application/json",
-        },
+      })
+      .catch((error) => {
+        console.error("Error en la petición:", error);
+        Alert.alert("Error", "No se pudo conectar al servidor.");
+        if (error.response && error.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+        }
       });
-
-      console.log("Registro exitoso:", res.data);
-      Alert.alert("Operación exitosa", `${res.data}`);
-      setReload(!reload);
-    } catch (err) {
-      console.error(err);
-      if (err.response.status === 400) {
-        console.log(err.response.data.message)
-        Alert.alert("Árbitro no desactivado", err.response.data.message);
-        return;
-      }
-      if (err.response.status === 403) {
-        console.log("⚠️ Token expirado, redirigiendo a login...");
-        logout();
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
-        return;
-      }
-      Alert.alert("¡Error!", `No se pudo deshabilitar a ${name}`);
-    }
   };
 
   useEffect(() => {
@@ -454,12 +441,14 @@ const Admin5 = ({ navigation }) => {
                           FONTS.nunitoNegrita,
                         ]}
                       >
-                        {item.usuario.estatus ? 'Activo' : 'Inactivo'}
+                        {item.usuario.estatus ? "Activo" : "Inactivo"}
                       </Text>
                       <TouchableOpacity
                         style={[
                           styles.button,
-                          item.usuario.estatus ? styles.reactiveButton : styles.deleteButton,
+                          item.usuario.estatus
+                            ? styles.reactiveButton
+                            : styles.deleteButton,
                           styles.buttonHead,
                         ]}
                         onPress={async () =>
