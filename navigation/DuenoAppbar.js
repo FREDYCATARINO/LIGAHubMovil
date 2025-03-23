@@ -7,21 +7,20 @@ import {
   StyleSheet,
   Image,
 } from "react-native";
+import { Card, Avatar } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
 
-const UserAppBar = ({ navigation, title, isRoot }) => {
-  isRoot === true
+const UserAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
+  isRoot === true;
   const control = !isRoot;
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.appBar}>
         {/* Botón para abrir el menú */}
         <TouchableOpacity
-          onPress={() =>
-            navigation.dispatch(DrawerActions.openDrawer())
-          }
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         >
           <Ionicons
             //name={"menu"}
@@ -37,23 +36,28 @@ const UserAppBar = ({ navigation, title, isRoot }) => {
         <TouchableOpacity
           onPress={() =>
             navigation.navigate(title == "Perfil" ? "Home" : "Perfil", {
-              usuario: "Juan Peréz",
-              rol: "Dueño",
+              usuario: name !== "" ? name : "Usuario Dueño",
+              rol: "Dueño de equipos",
+              correo: correo,
+              img: img,
             })
           }
         >
-          <Image
-            source={{
-              uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-            }}
-            style={{
-              width: 50,
-              height: 50,
-              backgroundColor: colores.base_1_1,
-              borderRadius: 100,
-              resizeMode: "stretch",
-            }}
-          />
+          {img === "" ? (
+            <Avatar.Icon
+              size={50}
+              icon="account"
+              style={{ backgroundColor: colores.domin_2_5 }}
+              color={colores.domin_1_1}
+            />
+          ) : (
+            <Avatar.Image
+              size={50}
+              source={{
+                uri: img,
+              }}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

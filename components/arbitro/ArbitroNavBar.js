@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Image,
 } from "react-native";
+import { Card, Avatar } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions } from "@react-navigation/native";
 import PerfilScreen from "../../screens/Perfil";
@@ -14,7 +15,15 @@ import colores from "../../style/colors";
 import FONTS from "../../style/fonts";
 import Arbito1 from "./Arbitro1";
 
-const ArbitroAppBar = ({ navigation, title, isRoot }) => {
+const ArbitroAppBar = ({
+  navigation,
+  title,
+  isRoot,
+  correo,
+  rol,
+  name,
+  img,
+}) => {
   return (
     <View style={styles.safeArea}>
       <View style={styles.appBar}>
@@ -26,13 +35,13 @@ const ArbitroAppBar = ({ navigation, title, isRoot }) => {
         >
           {title === "Inicio" ? (
             <Image
-              source={require('../../assets/icon.png')}
+              source={require("../../assets/icon.png")}
               style={{
                 width: 50,
                 height: 50,
                 backgroundColor: "transparent",
                 resizeMode: "cover",
-                borderRadius: 5
+                borderRadius: 5,
               }}
             />
           ) : (
@@ -47,21 +56,29 @@ const ArbitroAppBar = ({ navigation, title, isRoot }) => {
         <Text style={[styles.title, FONTS.nunitoNegrita]}>{title}</Text>
         <TouchableOpacity
           onPress={() =>
-            navigation.navigate("Mi perfil", { usuario: "Juan Pérez", rol: "Árbitro" })
+            navigation.navigate("Mi perfil", {
+              usuario: name !== '' ? name : "Usuario Árbitro",
+              rol: 'Árbitro',
+              correo: correo,
+              img: img
+            })
           }
         >
-          <Image
-            source={{
-              uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-            }}
-            style={{
-              width: 50,
-              height: 50,
-              backgroundColor: colores.base_1_1,
-              borderRadius: 100,
-              resizeMode: "stretch",
-            }}
-          />
+          { img === "" ? (
+            <Avatar.Icon
+              size={50}
+              icon="account"
+              style={{ backgroundColor: colores.domin_2_5 }}
+              color={colores.domin_1_1}
+            />
+          ) : (
+            <Avatar.Image
+              size={50}
+              source={{
+                uri: img,
+              }}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -75,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 15,
     justifyContent: "space-between",
-    marginTop: '5%'
+    marginTop: "5%",
   },
   title: { color: "white", fontSize: 18, marginLeft: 15 },
 });

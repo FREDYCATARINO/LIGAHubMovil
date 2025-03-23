@@ -18,21 +18,33 @@ import Arbitro1 from "../components/arbitro/Arbitro1";
 import { Button } from "react-native-paper";
 import { ScrollView } from "react-native-gesture-handler";
 import { AuthContext } from "../context/AuthContext";
+import { Card, Avatar } from "react-native-paper";
 
 const PerfilScreen = ({ navigation, route }) => {
   const { logout, removeToken, removeUser } = useContext(AuthContext);
-  const [color, setColor] = useState('')
-  const [page, setPage] = useState('')
-  const { usuario, rol } = route.params || {}; 
+  const [color, setColor] = useState("");
+  const [page, setPage] = useState("");
+  const { usuario, rol, correo, img } = route.params || {};
 
   const getColor = () => {
     switch (rol) {
-      case "Árbitro": setColor(colores.acento_3_1); setPage('Inicio'); break;
-      case "Dueño": setColor(colores.acento_2_2); setPage('Home'); break;
-      case "Admin": setColor(colores.domin_1_1); setPage('Home'); break;
-      default: setColor(colores.base_1_5); break;
+      case "Árbitro":
+        setColor(colores.acento_3_1);
+        setPage("Inicio");
+        break;
+      case "Dueño de equipos":
+        setColor(colores.acento_2_2);
+        setPage("Home");
+        break;
+      case "Administrador":
+        setColor(colores.domin_1_1);
+        setPage("Home");
+        break;
+      default:
+        setColor(colores.base_1_5);
+        break;
     }
-  }
+  };
 
   useEffect(() => {
     getColor();
@@ -56,7 +68,31 @@ const PerfilScreen = ({ navigation, route }) => {
                 resizeMode: "stretch",
               }}
             />
-            <Image
+            {correo === "sistemaligafutleagueshub@gmail.com" ||
+            img === "" ? (
+              <Avatar.Icon
+                size={150}
+                icon="account"
+                style={{ backgroundColor: colores.domin_2_5, marginTop: -75 }}
+                color={colores.domin_1_1}
+              />
+            ) : (
+              <Avatar.Image
+                size={150}
+                source={{
+                  uri: img,
+                }}
+                style={{
+                  marginTop: -75,
+                  //   width: 50,
+                  //   height: 50,
+                  //   backgroundColor: colores.base_1_1,
+                  //   borderRadius: 100,
+                  //   resizeMode: "stretch",
+                }}
+              />
+            )}
+            {/* <Image
               source={{
                 uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
               }}
@@ -68,18 +104,21 @@ const PerfilScreen = ({ navigation, route }) => {
                 resizeMode: "stretch",
                 marginTop: -75,
               }}
-            />
-            <TouchableOpacity
-              style={{
-                padding: 15,
-                backgroundColor: colores.acento_1_2,
-                borderRadius: 25,
-                marginLeft: 90,
-                marginTop: -60,
-              }}
-            >
-              <Ionicons name="image" size={30} color={colores.blanco} />
-            </TouchableOpacity>
+            /> */}
+            {correo === "sistemaligafutleagueshub@gmail.com" ||
+            correo === "" ? null : (
+              <TouchableOpacity
+                style={{
+                  padding: 15,
+                  backgroundColor: colores.acento_1_2,
+                  borderRadius: 25,
+                  marginLeft: 90,
+                  marginTop: -60,
+                }}
+              >
+                <Ionicons name="image" size={30} color={colores.blanco} />
+              </TouchableOpacity>
+            )}
           </View>
           <Text
             style={[FONTS.oswaldNegrita, { alignSelf: "center", fontSize: 25 }]}
@@ -97,13 +136,18 @@ const PerfilScreen = ({ navigation, route }) => {
               style={[FONTS.oswald, stylesPerfil.input]}
               placeholderTextColor={colores.domin_2_2}
               placeholder="Correo electrónico"
+              value={correo}
               readOnly
             />
-            <TextInput
-              style={[FONTS.oswald, stylesPerfil.input]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Nombre"
-            />
+            {correo === "sistemaligafutleagueshub@gmail.com" ||
+            correo === "" ? null : (
+              <TextInput
+                style={[FONTS.oswald, stylesPerfil.input]}
+                placeholderTextColor={colores.domin_2_2}
+                placeholder="Nombre"
+                value={usuario}
+              />
+            )}
             <Text style={[FONTS.oswald, { fontSize: 20 }]}>
               Cambiar contraseña
             </Text>
@@ -123,17 +167,47 @@ const PerfilScreen = ({ navigation, route }) => {
               placeholder="Confirmar contraseña"
             />
             <TouchableOpacity
-              style={{ backgroundColor: colores.base_3_1, padding: 10, borderRadius: 5, width: '25%'}}
+              style={{
+                backgroundColor: colores.base_3_1,
+                padding: 10,
+                borderRadius: 5,
+                width: "25%",
+              }}
               onPress={() => alert("Guardado")}
             >
-              <Text style={[FONTS.oswald, {color: colores.blanco, alignSelf: 'center'}]}>Guardar</Text>
+              <Text
+                style={[
+                  FONTS.oswald,
+                  { color: colores.blanco, alignSelf: "center" },
+                ]}
+              >
+                Guardar
+              </Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
-            style={{ backgroundColor: colores.domin_1_1, paddingVertical: 10, borderRadius: 5, width: '90%', alignSelf: 'center', justifyContent: 'center'}}
-            onPress={() => /*navigation.navigate(page)*/ {logout(); removeToken(); removeUser()}}
+            style={{
+              backgroundColor: colores.domin_1_1,
+              paddingVertical: 10,
+              borderRadius: 5,
+              width: "90%",
+              alignSelf: "center",
+              justifyContent: "center",
+            }}
+            onPress={() => /*navigation.navigate(page)*/ {
+              logout();
+              removeToken();
+              removeUser();
+            }}
           >
-            <Text style={[FONTS.oswald, {color: colores.blanco, alignSelf: 'center', fontSize: 20}]}>Cerrar sesión</Text>
+            <Text
+              style={[
+                FONTS.oswald,
+                { color: colores.blanco, alignSelf: "center", fontSize: 20 },
+              ]}
+            >
+              Cerrar sesión
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>

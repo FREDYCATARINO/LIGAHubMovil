@@ -8,7 +8,14 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import LoginScreen from "../screens/Login";
 import { useNavigation } from "@react-navigation/native";
-import { StyleSheet, Image, View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  StyleSheet,
+  Image,
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import AdminAppBar from "../components/admin/AdminNavBar";
 import { Ionicons } from "@expo/vector-icons";
 import myStyles from "../style/style";
@@ -35,6 +42,7 @@ import {
   Nunito_400Italic,
   Nunito_700BoldItalic,
 } from "@expo-google-fonts/nunito"; // Cargar Nunito
+import { Alert } from "react-native";
 import Arbitro1 from "../components/arbitro/Arbitro1";
 import Arbitro2 from "../components/arbitro/Arbitro2";
 import ArbitroAppBar from "../components/arbitro/ArbitroNavBar";
@@ -46,12 +54,13 @@ const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
 import { Feather } from "@expo/vector-icons";
+import api from "../config/api";
 
 const Tab = createBottomTabNavigator();
 
 const ArbitroNavigator = () => {
   const { setToken } = useContext(TokenContext);
-  const { getToken, decodeToken } = useContext(AuthContext);
+  const { getToken, decodeToken, getUserId, getUserEmail, getUserRole } = useContext(AuthContext);
   const { logout, removeToken, removeUser } = useContext(AuthContext);
 
   const [tokenData, setTokenData] = useState("");
@@ -59,6 +68,11 @@ const ArbitroNavigator = () => {
   const [switcht, setSwitcht] = useState(false);
   const [loadData, setLoadData] = useState(true);
   const [noData, setNoData] = useState(false);
+
+  const [correo, setCorreo] = useState("");
+  const [rol, setRol] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [imagen, setImagen] = useState("");
   const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
 
   // useRef para mantener el valor más reciente del token
@@ -71,12 +85,18 @@ const ArbitroNavigator = () => {
       try {
         setLoadData(true);
         const fetchedToken = await getToken();
+        const abrId = await getUserId();
+        const rol = await getUserRole();
+        const correo = await getUserEmail();
         if (fetchedToken) {
           setTokenData(fetchedToken);
           setToken(fetchedToken);
           tokenRef.current = fetchedToken; // Actualizar el token más reciente
           console.log(fetchedToken, "obtenido");
           validateToken(fetchedToken);
+          setRol(rol);
+          setCorreo(correo);
+          getUserData(abrId, fetchedToken);
           setNoData(false);
         } else {
           console.log("Token no encontrado o está vacío.");
@@ -88,6 +108,23 @@ const ArbitroNavigator = () => {
       } finally {
         setLoadData(false);
       }
+    };
+
+    const getUserData = async (id,tok) => {
+      await api.get(`/api/arbitros/poruser/${id}`, {
+        headers: {
+          Authorization: `Bearer ${tok}`
+        }
+      })
+      .then((res) => {
+        setNombre(res.data.nombreCompleto);
+        setImagen(res.data.imagenUrl);
+      })
+      .catch((err) => {
+        console.error(err);
+        Alert.alert("Error","Hubo un error al recuperar tus datos")
+        return;
+      })
     };
 
     const validateToken = (token) => {
@@ -152,13 +189,13 @@ const ArbitroNavigator = () => {
   if (expire) {
     return (
       <NoTokenComponent
-      removeToken={removeToken}
-      removeUser={removeUser}
-      logout={logout}
-    />
+        removeToken={removeToken}
+        removeUser={removeUser}
+        logout={logout}
+      />
     );
   }
-  
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -171,6 +208,10 @@ const ArbitroNavigator = () => {
                 route.name !== "Detalles de partido" &&
                 route.name !== "Mi perfil"
               }
+              correo={correo}
+              rol={rol}
+              name={nombre}
+              img={imagen}
             />
           );
         },
