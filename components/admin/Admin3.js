@@ -22,6 +22,7 @@ import { useRef, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import FONTS from "../../style/fonts";
 import { useFonts } from "expo-font";
+
 import {
   Oswald_400Regular,
   Oswald_700Bold,
@@ -44,8 +45,11 @@ import { useForm, Controller, set } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
 
 const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
+  const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
+
   const [modalVisible1, setModalVisible1] = useState(false);
   const [modalVisible2, setModalVisible2] = useState(false);
   const [modalVisible3, setModalVisible3] = useState(false);
@@ -60,6 +64,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const [falloT, setFalloT] = useState("");
   const [estado, setEstado] = useState("");
 
+  const [formVis, setFormVis] = useState(false);
   const [image, setImage] = useState(null);
 
   const ordenEstados = ["En Juego", "En Espera", "Finalizado"];
@@ -71,23 +76,34 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       .max(500, "Tamaño de descripción excedido")
       .required("La descripción del torneo es requerida"),
     fechaInicio: yup
-      .date()
-      .min(new Date(), "Se requiere una fecha de inicio")
-      .required("La fecha de inicio es requerida"),
-    maxEquipos: yup
-      .number()
-      .typeError("Debe ser un número")
-      .integer("Se requiere un máximo de equipos entero")
-      .min(2, "Debe ser al menos 2")
-      .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
-      .required("Este campo es obligatorio"),
+      .string()
+      .required("La fecha de inicio es requerida")
+      .test("es-futura", "La fecha debe ser hoy o en el futuro", (value) => {
+        const fechaIngresada = new Date(value);
+        const fechaActual = new Date();
+        fechaActual.setHours(0, 0, 0, 0); // Elimina la hora para comparar solo la fecha
+        return fechaIngresada >= fechaActual;
+      }),
     minEquipos: yup
       .number()
       .typeError("Debe ser un número")
-      .integer("Se requiere un mínimo de equipos entero")
+      .integer("Se requiere un número entero")
       .min(2, "Debe ser al menos 2")
       .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
-      .required("Este campo es obligatorio"),
+      .required("Este campo es obligatorio")
+      .test("max-min", "Debe ser menor o igual al máximo", function (value) {
+        return value <= this.parent.maxEquipos;
+      }),
+    maxEquipos: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Se requiere un número entero")
+      .min(2, "Debe ser al menos 2")
+      .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
+      .required("Este campo es obligatorio")
+      .test("min-max", "Debe ser mayor o igual al mínimo", function (value) {
+        return value >= this.parent.minEquipos;
+      }),
     equiposLiguilla: yup
       .number()
       .typeError("Debe ser un número")
@@ -120,7 +136,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       return Alert.alert("Error", "Debes seleccionar una imagen válida.");
     }
 
-    await registrarTorneo(data, image)
+    await registrarTorneo(data, image);
   };
 
   const [showInicio, setShowInicio] = useState(false);
@@ -138,15 +154,18 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     return `${year}-${month}-${day}`;
   };
 
-  const handleConfirm = (date, onChange) => {
+  const handleConfirm = (date, onChange, value) => {
     const formattedDate = formatDate(date);
-    onChange(formattedDate); // Actualiza el valor del formulario con formato YYYY-MM-DD
-    setShow(false); // Cierra el modal
+    console.log("Fecha seleccionada:", formattedDate); // Verificar qué valor se guarda
+    onChange(formattedDate);
+    setValue("fechaInicio", formattedDate, { shouldValidate: true });
+    setShow(false);
+    console.log(value);
   };
 
   const getEstado = (nombre) => {
     for (let i = 0; i < ordenEstados.length; i++) {
-      if (nombre.toLowerCase().includes(ordenEstados[i].toLowerCase())) {      
+      if (nombre.toLowerCase().includes(ordenEstados[i].toLowerCase())) {
         return i;
       }
     }
@@ -154,33 +173,49 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   };
 
   const registrarTorneo = async (data, image) => {
-      const formData = new FormData();
-      
-      formData.append("arbitro", JSON.stringify({
-        email: "arbitro@example.com",
-        password: "123",
-        nombreCompleto: "Árbitro Test 1",
-      }));
-    
-      formData.append("imagen", {
-        uri: image,
-        name: "arbitro.png",
-        type: "image/png",
-      });
-    
-      try {
-        const response = await axios.post("http://192.168.1.67:8080/api/torneos", formData, {
+    const formData = new FormData();
+    console.log(data);
+
+    formData.append(
+      "torneo",
+      JSON.stringify({
+        nombreTorneo: "Ultra Torneo",
+        descripcion: "Torneo anual con los mejores equipos de la UEFA.",
+        fechaInicio: "2025-05-11",
+        maxEquipos: 16,
+        minEquipos: 8,
+        equiposLiguilla: 4,
+        premio: "1000 pesos y medallas individuales de oro para cada jugador",
+        vueltas: 2,
+      })
+    );
+
+    formData.append("imagen", {
+      uri: image,
+      name: "arbitro.png",
+      type: "image/png",
+    });
+
+    try {
+      const tokData = await getToken();
+      const response = await axios.post(
+        "http://192.168.1.67:8080/api/torneos",
+        formData,
+        {
           headers: {
             Authorization: `Bearer ${tokData}`,
             "Content-Type": "multipart/form-data",
           },
           transformRequest: (data) => data, // Devuelve directamente el FormData
-        });
-        console.log(response.data);
-      } catch (error) {
-        console.error("Error:", error.response.data || error || error.response);
-      }
-    };  
+        }
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.log("At");
+      console.log(error);
+      console.error("Error:", error.response.data || error || error.response);
+    }
+  };
 
   const getEstadoType = (name) => {
     for (let i = 0; i < ordenEstados.length; i++) {
@@ -312,6 +347,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const sectionOneRef = useRef(null);
 
   const handleScroll = () => {
+    setFormVis(!formVis);
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ y: 450, animated: true }); // Ajusta 'y' a la posición deseada
     }
@@ -348,6 +384,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       // trigger("imagen"); // Valida la imagen
     }
   };
+
+  useEffect(() => {
+    console.log("Errores en el formulario:", errors);
+  }, [errors]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -561,253 +601,265 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             <Text style={stylesAdmin3.text}>5</Text>
           </TouchableOpacity> */}
         </ScrollView>
-        <View ref={sectionOneRef}></View>
-        <Text
-          style={[
-            styles.TextField,
-            stylesAdmin3.title,
-            FONTS.nunitoNegrita,
-            { paddingVertical: 15, paddingHorizontal: 5 },
-          ]}
-        >
-          Nuevo torneo
-        </Text>
-        <View style={stylesAdmin3.form}>
-          <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-            Logo del torneo
-          </Text>
-          <View style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}>
-            <Image
-              source={
-                image
-                  ? { uri: image }
-                  : require("../../assets/EquiposLogos/LogoDefault.png")
-              }
-              style={{
-                width: 175,
-                height: 175,
-                resizeMode: "stretch",
-                borderRadius: 15,
-              }}
-            />
-            <TouchableOpacity
-              style={stylesAdmin3.botTorneo}
-              onPress={openGallery}
+        {!formVis ? null : (
+          <View ref={sectionOneRef}>
+            <Text
+              style={[
+                styles.TextField,
+                stylesAdmin3.title,
+                FONTS.nunitoNegrita,
+                { paddingVertical: 15, paddingHorizontal: 5 },
+              ]}
             >
-              <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-                Elegir una imagen
+              Nuevo torneo
+            </Text>
+            <View style={stylesAdmin3.form}>
+              <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                Logo del torneo
               </Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-            Datos del torneo
-          </Text>
-          <Controller
-            control={control}
-            name="nombreTorneo"
-            render={({ field: { onChange, value } }) => (
-              <>
-                <TextInput
-                  placeholder="Nombre del torneo"
-                  placeholderTextColor={colores.domin_2_2}
-                  style={stylesAdmin3.input}
-                  value={value}
-                  onChangeText={(text) => onChange(text)}
+              <View
+                style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}
+              >
+                <Image
+                  source={
+                    image
+                      ? { uri: image }
+                      : require("../../assets/EquiposLogos/LogoDefault.png")
+                  }
+                  style={{
+                    width: 175,
+                    height: 175,
+                    resizeMode: "stretch",
+                    borderRadius: 15,
+                  }}
                 />
-                {errors.nombreTorneo && (
-                  <Text style={formStyle.errText}>
-                    {errors.nombreTorneo.message}
+                <TouchableOpacity
+                  style={stylesAdmin3.botTorneo}
+                  onPress={openGallery}
+                >
+                  <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                    Elegir una imagen
                   </Text>
-                )}
-              </>
-            )}
-          />
-          <Controller
-            control={control}
-            name="descripcion"
-            render={({ field: { onChange, value } }) => (
-              <>
-                <TextInput
-                  placeholder="Descripción del torneo"
-                  placeholderTextColor={colores.domin_2_2}
-                  multiline
-                  numberOfLines={4}
-                  value={value}
-                  onChangeText={(text) => onChange(text)}
-                  style={[stylesAdmin3.input, { height: 120 }]}
-                />
-                {errors.descripcion && (
-                  <Text style={[formStyle.errText]}>
-                    {errors.descripcion.message}
-                  </Text>
-                )}
-              </>
-            )}
-          />
-          <Controller
-            control={control}
-            name="premio"
-            render={({ field: { onChange, value } }) => (
-              <>
-                <TextInput
-                  placeholder="Premio disputado"
-                  placeholderTextColor={colores.domin_2_2}
-                  value={value}
-                  onChangeText={(text) => onChange(text)}
-                  style={stylesAdmin3.input}
-                />
-                {errors.premio && (
-                  <Text style={[formStyle.errText]}>
-                    {errors.premio.message}
-                  </Text>
-                )}
-              </>
-            )}
-          />
-          <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
-            <Controller
-              control={control}
-              name="fechaInicio"
-              render={({ field: { onChange, value } }) => (
-                <>
-                  <TouchableOpacity
-                    style={[
-                      {
-                        backgroundColor: colores.domin_2_2,
-                        borderRadius: 5,
-                        width: "19%",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      },
-                    ]}
-                    onPress={() => setShow(true)}
-                  >
-                    <Ionicons name="calendar" size={24} color={"white"} />
-                  </TouchableOpacity>
-
-                  <View style={{ flexDirection: "column", width: "79%" }}>
+                </TouchableOpacity>
+              </View>
+              <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                Datos del torneo
+              </Text>
+              <Controller
+                control={control}
+                name="nombreTorneo"
+                render={({ field: { onChange, value } }) => (
+                  <>
                     <TextInput
-                      placeholder="Seleccionar fecha"
+                      placeholder="Nombre del torneo"
+                      placeholderTextColor={colores.domin_2_2}
+                      style={stylesAdmin3.input}
+                      value={value}
+                      onChangeText={(text) => onChange(text)}
+                    />
+                    {errors.nombreTorneo && (
+                      <Text style={formStyle.errText}>
+                        {errors.nombreTorneo.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <Controller
+                control={control}
+                name="descripcion"
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TextInput
+                      placeholder="Descripción del torneo"
+                      placeholderTextColor={colores.domin_2_2}
+                      multiline
+                      numberOfLines={4}
+                      value={value}
+                      onChangeText={(text) => onChange(text)}
+                      style={[stylesAdmin3.input, { height: 120 }]}
+                    />
+                    {errors.descripcion && (
+                      <Text style={[formStyle.errText]}>
+                        {errors.descripcion.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <Controller
+                control={control}
+                name="premio"
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TextInput
+                      placeholder="Premio disputado"
                       placeholderTextColor={colores.domin_2_2}
                       value={value}
-                      style={[stylesAdmin3.input]}
+                      onChangeText={(text) => onChange(text)}
+                      style={stylesAdmin3.input}
                     />
+                    {errors.premio && (
+                      <Text style={[formStyle.errText]}>
+                        {errors.premio.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
+                <Controller
+                  control={control}
+                  name="fechaInicio"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          {
+                            backgroundColor: colores.domin_2_2,
+                            borderRadius: 5,
+                            width: "19%",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          },
+                        ]}
+                        onPress={() => setShow(true)}
+                      >
+                        <Ionicons name="calendar" size={24} color={"white"} />
+                      </TouchableOpacity>
 
-                    {/* <Text style={styles.fechaTexto}>
+                      <View style={{ flexDirection: "column", width: "79%" }}>
+                        <TextInput
+                          placeholder="Seleccionar fecha"
+                          placeholderTextColor={colores.domin_2_2}
+                          value={value}
+                          style={[stylesAdmin3.input]}
+                          readOnly={true}
+                        />
+
+                        {/* <Text style={styles.fechaTexto}>
                     {value || "Seleccionar Fecha"}{" "}
                   </Text> */}
 
-                    {errors.fechaInicio && (
-                      <Text style={[formStyle.errText]}>
-                        {errors.fechaInicio.message}
-                      </Text>
-                    )}
-                  </View>
+                        {errors.fechaInicio && (
+                          <Text style={[formStyle.errText]}>
+                            {errors.fechaInicio.message}
+                          </Text>
+                        )}
+                      </View>
 
-                  <DateTimePickerModal
-                    isVisible={show}
-                    mode="date"
-                    themeVariant="dark" // Usa el tema oscuro en iOS
-                    accentColor={colores.domin_1_1}
-                    textColor={colores.domin_1_1}
-                    onConfirm={(date) => handleConfirm(date, onChange)}
-                    onCancel={() => setShow(false)}
-                  />
-                </>
-              )}
-            />
-          </View>
-          <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
-            <Controller
-              control={control}
-              name="maxEquipos"
-              render={({ field: { onChange, value } }) => (
-                <View style={{ flexDirection: "column", width: "33%" }}>
-                  <TextInput
-                    placeholder="Máximo de equipos"
-                    placeholderTextColor={colores.domin_2_2}
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={(text) => onChange(text)}
-                    style={[stylesAdmin3.input, {}]}
-                  />
-                  {errors.maxEquipos && (
-                    <Text style={[formStyle.errText]}>
-                      {errors.maxEquipos.message}
-                    </Text>
+                      <DateTimePickerModal
+                        isVisible={show}
+                        mode="date"
+                        themeVariant="dark" // Usa el tema oscuro en iOS
+                        accentColor={colores.domin_1_1}
+                        textColor={colores.domin_1_1}
+                        onConfirm={(date) =>
+                          handleConfirm(date, onChange, value)
+                        }
+                        onCancel={() => setShow(false)}
+                      />
+                    </>
                   )}
-                </View>
-              )}
-            />
-            <Controller
-              control={control}
-              name="minEquipos"
-              style={{ flexDirection: "column" }}
-              render={({ field: { onChange, value } }) => (
-                <View style={{ flexDirection: "column", width: "33%" }}>
-                  <TextInput
-                    placeholder="Mínimo de equipos"
-                    placeholderTextColor={colores.domin_2_2}
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={(text) => onChange(text)}
-                    style={[stylesAdmin3.input, {}]}
-                  />
-                  {errors.minEquipos && (
-                    <Text style={[formStyle.errText]}>
-                      {errors.minEquipos.message}
-                    </Text>
+                />
+              </View>
+              <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
+                <Controller
+                  control={control}
+                  name="maxEquipos"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={{ flexDirection: "column", width: "33%" }}>
+                      <TextInput
+                        placeholder="Máximo de equipos"
+                        placeholderTextColor={colores.domin_2_2}
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, {}]}
+                      />
+                      {errors.maxEquipos && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.maxEquipos.message}
+                        </Text>
+                      )}
+                    </View>
                   )}
-                </View>
-              )}
-            />
-            <Controller
-              control={control}
-              name="vueltas"
-              style={{ flexDirection: "column" }}
-              render={({ field: { onChange, value } }) => (
-                <View style={{ flexDirection: "column", width: "31%" }}>
-                  <TextInput
-                    placeholder="Vueltas"
-                    placeholderTextColor={colores.domin_2_2}
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={(text) => onChange(text)}
-                    style={[stylesAdmin3.input, {}]}
-                  />
-                  {errors.vueltas && (
-                    <Text style={[formStyle.errText]}>
-                      {errors.vueltas.message}
-                    </Text>
+                />
+                <Controller
+                  control={control}
+                  name="minEquipos"
+                  style={{ flexDirection: "column" }}
+                  render={({ field: { onChange, value } }) => (
+                    <View style={{ flexDirection: "column", width: "33%" }}>
+                      <TextInput
+                        placeholder="Mínimo de equipos"
+                        placeholderTextColor={colores.domin_2_2}
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, {}]}
+                      />
+                      {errors.minEquipos && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.minEquipos.message}
+                        </Text>
+                      )}
+                    </View>
                   )}
-                </View>
-              )}
-            />
-          </View>
-        </View>
-        {/*<View style={stylesAdmin3.grid}>
+                />
+                <Controller
+                  control={control}
+                  name="vueltas"
+                  style={{ flexDirection: "column" }}
+                  render={({ field: { onChange, value } }) => (
+                    <View style={{ flexDirection: "column", width: "31%" }}>
+                      <TextInput
+                        placeholder="Vueltas"
+                        placeholderTextColor={colores.domin_2_2}
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, {}]}
+                      />
+                      {errors.vueltas && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.vueltas.message}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                />
+              </View>
+            </View>
+            {/*<View style={stylesAdmin3.grid}>
           <View style={stylesAdmin3.card}>Hola</View>
           <View style={stylesAdmin3.card}>Hola</View>
           <View style={stylesAdmin3.card}>Hola</View>
           <View style={stylesAdmin3.card}>Hola</View>
         </View>*/}
-        <View
-          style={{
-            alignItems: "center",
-            gap: 5,
-            paddingVertical: 5,
-            width: "100%",
-          }}
-        >
-          <TouchableOpacity
-            style={stylesAdmin3.botTorneo}
-            onPress={handleSubmit(onSubmit)}
-          >
-            <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-              Crear Torneo
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <View
+              style={{
+                gap: 5,
+                paddingVertical: 5,
+                width: "100%",
+                alignSelf: "center",
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  stylesAdmin3.botTorneo,
+                  { opacity: isValid ? 1 : 0.5, width: 150 },
+                ]}
+                onPress={async () => registrarTorneo("Waa", image)}
+                disabled={isValid}
+              >
+                <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                  Crear Torneo
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <Modal
