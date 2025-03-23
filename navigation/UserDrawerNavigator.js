@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import ResultadoPartidos from "../screens/user0/ResultadoPartidos";
+import Partidos from "../screens/user0/Partidos";
 import TabladeClasificacion from "../screens/user0/TabladeClasificacion";
 import TabladeGoleo from "../screens/user0/TablaGoleo";
 import CustomDrawerContent from "./CustomDrawerContent";
@@ -8,6 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import UserAppBar from "./UserAppBar";
 import colores from "../style/colors";
 import AuthStackNavigator from "./AuthStackNavigator";
+import ResultadoPartidos from '../screens/user0/ResultadoPartidos'
+import Convocatoria from "../screens/user0/Convocatoria"
 
 const Drawer = createDrawerNavigator();
 import { useContext } from "react";
@@ -29,13 +31,22 @@ const UserDrawerNavigator = () => {
       }}
     >
       <Drawer.Screen
-        name="Resultado de Partidos"
-        component={ResultadoPartidos}
+        name="Partidos"
+        component={Partidos}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="football" size={size} color={color} />
           ),
         }}
+      />
+         <Drawer.Screen
+      name="Resultado de Partidos"
+      component={ResultadoPartidos}
+      options={{
+        drawerIcon: ({ color, size }) => (
+          <Ionicons name="football" size={size} color={color} />
+        ),
+      }}
       />
       <Drawer.Screen
         name="Tabla de Clasificación"
@@ -55,11 +66,21 @@ const UserDrawerNavigator = () => {
           ),
         }}
       />
+       <Drawer.Screen
+        name="Convocatoria"
+        component={Convocatoria}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="trophy" size={size} color={color} />
+          ),
+        }}      />
       <Drawer.Screen
         name="LoginStack"
         component={AuthStackNavigator}
         options={{ drawerItemStyle: { display: "none" }, headerShown: false }} // Ocultar del menú
       />
+      
+   
     </Drawer.Navigator>
   );
 };

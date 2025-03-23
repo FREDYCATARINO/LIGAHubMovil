@@ -3,6 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL_LOCAL } from "@env";
 import api from '../config/api.js'
+import { date } from "yup";
 
 export const AuthContext = createContext();
 
@@ -101,6 +102,7 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post(`/auth/login`, {
         email: username,
         password: pass,
+      
       });
       
       await saveToken(res.data.token);
@@ -150,6 +152,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error al decodificar el token:", error);
+      
       return null;
     }
   }
