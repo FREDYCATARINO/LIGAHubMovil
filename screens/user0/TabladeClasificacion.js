@@ -184,6 +184,9 @@ const ClassificationTable = () => {
       ) : (
         !loading && <Text>No hay equipos disponibles.</Text>
       )}
+        <Text style={styles.footer}>
+  • JJ: Juegos Jugados • JG: Juegos Ganados • JE: Juegos Empatados • JP: Juegos Perdidos • GF: Goles a Favor • GC: Goles en Contra • DIF: Diferencia de Goles • PTS: Puntos
+</Text>
     </ScrollView>
   );
 };
@@ -297,6 +300,12 @@ const styles = StyleSheet.create({
     color: "red",
     textAlign: "center",
     marginTop: 10,
+  },
+  footer: {
+    textAlign: "center",
+    padding: 5,
+    fontSize: 12,
+    color: "#555",
   },
 });
 
