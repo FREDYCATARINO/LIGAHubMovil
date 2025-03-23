@@ -119,6 +119,8 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       console.log("Error: No hay imagen seleccionada.");
       return Alert.alert("Error", "Debes seleccionar una imagen válida.");
     }
+
+    await registrarTorneo(data, image)
   };
 
   const [showInicio, setShowInicio] = useState(false);
@@ -142,30 +144,43 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     setShow(false); // Cierra el modal
   };
 
-  //---------------
-  const onChange = (event, selectedDate) => {
-    setShow(false); // Cierra el DatePicker después de seleccionar
-    if (selectedDate) {
-      setFechaInicio(selectedDate); // Establece la fecha seleccionada
-    }
-  };
-
-  const onChangeFechaInicio = (event, selectedDate) => {
-    if (selectedDate) {
-      setFechaInicio(selectedDate);
-      setValue("fechaInicio", selectedDate);
-    }
-  };
-  //----------------
-
   const getEstado = (nombre) => {
     for (let i = 0; i < ordenEstados.length; i++) {
-      if (nombre.includes(ordenEstados[i])) {
+      if (nombre.toLowerCase().includes(ordenEstados[i].toLowerCase())) {      
         return i;
       }
     }
     return ordenEstados.length;
   };
+
+  const registrarTorneo = async (data, image) => {
+      const formData = new FormData();
+      
+      formData.append("arbitro", JSON.stringify({
+        email: "arbitro@example.com",
+        password: "123",
+        nombreCompleto: "Árbitro Test 1",
+      }));
+    
+      formData.append("imagen", {
+        uri: image,
+        name: "arbitro.png",
+        type: "image/png",
+      });
+    
+      try {
+        const response = await axios.post("http://192.168.1.67:8080/api/torneos", formData, {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "multipart/form-data",
+          },
+          transformRequest: (data) => data, // Devuelve directamente el FormData
+        });
+        console.log(response.data);
+      } catch (error) {
+        console.error("Error:", error.response.data || error || error.response);
+      }
+    };  
 
   const getEstadoType = (name) => {
     for (let i = 0; i < ordenEstados.length; i++) {

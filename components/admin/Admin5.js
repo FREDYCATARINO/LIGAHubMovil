@@ -141,76 +141,34 @@ const Admin5 = ({ navigation }) => {
     console.log("Estado actualizado:", image);
   }, [image]);
 
-  const registrarArbitro = async (data, imageUri) => {
-    // Obtener el token
-    const tokData = await getToken();
-
-    const myHeaders = new Headers();
-    myHeaders.append("Authorization", `Bearer ${tokData}`); // Token de autorización
-
-    const formdata = new FormData();
-
-    // Agregar el JSON como string
-    formdata.append(
-      "arbitro",
-      JSON.stringify({
-        email: data.email,
-        password: data.password,
-        nombreCompleto: data.nombreCompleto,
-      })
-    );
-
-    // Agregar la imagen si existe
-    if (imageUri) {
-      const fileExtension = imageUri.split(".").pop(); // Obtener la extensión del archivo
-      const mimeType = fileExtension === "png" ? "image/png" : "image/jpeg"; // Tipo MIME correcto
-
-      // Crear el objeto de archivo
-      const imageFile = {
-        uri: Platform.OS === "ios" ? imageUri.replace("file://", "") : imageUri, // Eliminar 'file://' en iOS
-        name: `arbitro.${fileExtension}`, // Nombre del archivo con la extensión correcta
-        type: mimeType, // Tipo MIME adecuado
-      };
-
-      // Agregar la imagen al FormData
-      formdata.append("imagen", imageFile);
-    }
-
-    const requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: formdata,
-      redirect: "follow",
-    };
-
-    fetch("http://192.168.1.67:8080/api/arbitros", requestOptions)
-      .then((response) => {
-        if (response.ok) {
-          return response.json(); // Si la respuesta es exitosa, devuelve el JSON
-        } else {
-          throw new Error(`Error del servidor: ${response.status}`);
-        }
-      })
-      .then((result) => {
-        console.log("Respuesta del servidor:", result);
-        Alert.alert(
-          "Registro exitoso",
-          `Árbitro ${result.nombreCompleto} registrado`
-        );
-      })
-      .catch((error) => {
-        console.error("Error en la petición:", error);
-        Alert.alert("Error", "No se pudo conectar al servidor.");
-        if (error.response && error.response.status === 403) {
-          console.log("⚠️ Token expirado, redirigiendo a login...");
-          Alert.alert(
-            "Sesión expirada",
-            "Por favor, inicia sesión nuevamente."
-          );
-          logout();
-        }
+  const registrarArbitro = async (data, image) => {
+    const formData = new FormData();
+    
+    formData.append("arbitro", JSON.stringify({
+      email: "arbitro@example.com",
+      password: "123",
+      nombreCompleto: "Árbitro Test 1",
+    }));
+  
+    formData.append("imagen", {
+      uri: image,
+      name: "arbitro.png",
+      type: "image/png",
+    });
+  
+    try {
+      const response = await axios.post("http://192.168.1.67:8080/api/arbitros", formData, {
+        headers: {
+          Authorization: `Bearer ${tokData}`,
+          "Content-Type": "multipart/form-data",
+        },
+        transformRequest: (data) => data, // Devuelve directamente el FormData
       });
-  };
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error:", error.response.data || error || error.response);
+    }
+  };  
 
   useEffect(() => {
     const getAbritros = async () => {

@@ -133,7 +133,7 @@ const PerfilScreen = ({ navigation, route }) => {
               Datos personales
             </Text>
             <TextInput
-              style={[FONTS.oswald, stylesPerfil.input]}
+              style={[FONTS.oswald, stylesPerfil.input, {color: colores.domin_3_1, borderColor: colores.domin_3_1}]}
               placeholderTextColor={colores.domin_2_2}
               placeholder="Correo electrónico"
               value={correo}
