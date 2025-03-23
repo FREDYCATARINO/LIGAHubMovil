@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  ImageBackground, // Importa ImageBackground
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
@@ -127,86 +128,96 @@ const Partidos = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Selector de torneos */}
-      <View style={styles.pickerContainer}>
-        <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
-        <Picker
-          selectedValue={selectedTorneo}
-          onValueChange={(itemValue) => {
-            setSelectedTorneo(itemValue);
-            setCurrentPage(0); // Reiniciar la página al cambiar de torneo
-          }}
-          style={styles.picker}
-        >
-          <Picker.Item label="Selecciona un torneo" value={null} />
-          {torneos.map((torneo) => (
-            <Picker.Item
-              key={torneo.id}
-              label={torneo.nombreTorneo}
-              value={torneo.id}
-            />
-          ))}
-        </Picker>
-      </View>
-
-      {/* Mensaje de error */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      {/* Indicador de carga */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007BFF" />
-          <Text>Cargando partidos...</Text>
-        </View>
-      )}
-
-      {/* Lista de partidos */}
-      {!loading && displayedMatches.length > 0 ? (
-        displayedMatches.map((match, index) => (
-          <MatchCard key={index} match={match} />
-        ))
-      ) : (
-        !loading && <Text>No hay partidos disponibles.</Text>
-      )}
-
-      {/* Botones de paginación */}
-      {!loading && matches.length > itemsPerPage && (
-        <View style={styles.paginationContainer}>
-          <TouchableOpacity
-            style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
-            onPress={handlePreviousPage}
-            disabled={currentPage === 0}
+    <ImageBackground
+      source={require('../../assets/fondo.jpg')} // Ruta de la imagen de fondo
+      style={styles.backgroundImage}
+      resizeMode="cover" // Ajusta la imagen al tamaño de la pantalla
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Selector de torneos */}
+        <View style={styles.pickerContainer}>
+          <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
+          <Picker
+            selectedValue={selectedTorneo}
+            onValueChange={(itemValue) => {
+              setSelectedTorneo(itemValue);
+              setCurrentPage(0); // Reiniciar la página al cambiar de torneo
+            }}
+            style={styles.picker}
           >
-            <Text style={styles.paginationButtonText}>Anterior</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageText}>
-            Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.paginationButton,
-              endIndex >= matches.length && styles.disabledButton,
-            ]}
-            onPress={handleNextPage}
-            disabled={endIndex >= matches.length}
-          >
-            <Text style={styles.paginationButtonText}>Siguiente</Text>
-          </TouchableOpacity>
+            <Picker.Item label="Selecciona un torneo" value={null} />
+            {torneos.map((torneo) => (
+              <Picker.Item
+                key={torneo.id}
+                label={torneo.nombreTorneo}
+                value={torneo.id}
+              />
+            ))}
+          </Picker>
         </View>
-      )}
-    </ScrollView>
+
+        {/* Mensaje de error */}
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        {/* Indicador de carga */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007BFF" />
+            <Text style={styles.loadingText}>Cargando partidos...</Text>
+          </View>
+        )}
+
+        {/* Lista de partidos */}
+        {!loading && displayedMatches.length > 0 ? (
+          displayedMatches.map((match, index) => (
+            <MatchCard key={index} match={match} />
+          ))
+        ) : (
+          !loading && <Text style={styles.noMatchesText}>No hay partidos disponibles.</Text>
+        )}
+
+        {/* Botones de paginación */}
+        {!loading && matches.length > itemsPerPage && (
+          <View style={styles.paginationContainer}>
+            <TouchableOpacity
+              style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
+              onPress={handlePreviousPage}
+              disabled={currentPage === 0}
+            >
+              <Text style={styles.paginationButtonText}>Anterior</Text>
+            </TouchableOpacity>
+            <Text style={styles.pageText}>
+              Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                endIndex >= matches.length && styles.disabledButton,
+              ]}
+              onPress={handleNextPage}
+              disabled={endIndex >= matches.length}
+            >
+              <Text style={styles.paginationButtonText}>Siguiente</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
   container: {
     padding: 10,
-    backgroundColor: "#f5f5f5",
     alignItems: "center",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Fondo semitransparente
     padding: 20,
     marginVertical: 10,
     borderRadius: 10,
@@ -250,7 +261,7 @@ const styles = StyleSheet.create({
   vsText: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#007BFF",
+    color: "black",
   },
   field: {
     fontSize: 14,
@@ -267,17 +278,19 @@ const styles = StyleSheet.create({
     color: "green",
   },
   proximo: {
-    color: "blue",
+    color: "black",
   },
   pickerContainer: {
     width: "90%",
     marginBottom: 20,
+    borderRadius: 5,
+    padding: 10,
   },
   pickerLabel: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#333",
+    color: "white",
   },
   picker: {
     width: "100%",
@@ -292,11 +305,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "90%",
     marginTop: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Fondo semitransparente
+    borderRadius: 5,
+    padding: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Fondo semitransparente
+    borderRadius: 5,
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#333",
+  },
+  noMatchesText: {
+    fontSize: 16,
+    color: "#333",
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Fondo semitransparente
+    padding: 10,
+    borderRadius: 5,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 16,
+    marginBottom: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Fondo semitransparente
+    padding: 10,
+    borderRadius: 5,
   },
   paginationButton: {
     padding: 10,
-    backgroundColor: "#007BFF",
-    borderRadius: 5,
+    backgroundColor: "#FF5958",
+    borderRadius: 15,
   },
   disabledButton: {
     backgroundColor: "#ccc",
@@ -309,16 +353,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 16,
-    marginBottom: 20,
   },
 });
 

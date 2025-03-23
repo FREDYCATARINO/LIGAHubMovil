@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  ImageBackground,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
@@ -42,12 +43,10 @@ const MatchCard = ({ match }) => {
         Cancha: {match.cancha?.descripcion || "Cancha no disponible"}
       </Text>
 
-      {/* Árbitro */}
       <Text style={styles.field}>
         Árbitro: {match.arbitro?.nombreCompleto || "Árbitro no disponible"}
       </Text>
 
-      {/* Estado del partido */}
       <Text style={[styles.status, styles.finalizado]}>
         ¡Finalizado!
       </Text>
@@ -56,24 +55,23 @@ const MatchCard = ({ match }) => {
 };
 
 const ResultadoDePartidos = () => {
-  const [torneos, setTorneos] = useState([]); // Lista de torneos iniciados
-  const [selectedTorneo, setSelectedTorneo] = useState(null); // Torneo seleccionado
-  const [matches, setMatches] = useState([]); // Partidos jugados del torneo seleccionado
-  const [loading, setLoading] = useState(true); // Estado de carga
-  const [error, setError] = useState(null); // Manejo de errores
-  const [currentPage, setCurrentPage] = useState(0); // Página actual
-  const itemsPerPage = 10; // Número de partidos por página
+  const [torneos, setTorneos] = useState([]);
+  const [selectedTorneo, setSelectedTorneo] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
-  // Obtener la lista de torneos iniciados
   useEffect(() => {
     const fetchTorneos = async () => {
       try {
         const response = await api.get("/api/torneos/iniciados");
         setTorneos(response.data);
-        setError(null); // Limpiar errores
+        setError(null);
       } catch (error) {
         console.error("Error fetching torneos:", error);
-        setError("Error al cargar los torneos. Intenta de nuevo."); // Mostrar mensaje de error
+        setError("Error al cargar los torneos. Intenta de nuevo.");
       }
     };
 
@@ -88,22 +86,21 @@ const ResultadoDePartidos = () => {
           const response = await api.get(
             `/api/partidos/todos/portorneo/${selectedTorneo}`
           );
-         
           const partidosJugados = response.data.filter((partido) => partido.jugado);
           setMatches(partidosJugados);
-          setError(null); 
+          setError(null);
         } catch (error) {
           console.error("Error fetching matches:", error);
           setError("Error al cargar los partidos. Intenta de nuevo.");
         } finally {
-          setLoading(false); 
+          setLoading(false);
         }
       };
 
       fetchMatches();
     } else {
-      setMatches([]); 
-      setLoading(false); 
+      setMatches([]);
+      setLoading(false);
     }
   }, [selectedTorneo]);
 
@@ -124,85 +121,91 @@ const ResultadoDePartidos = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.pickerContainer}>
-        <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
-        <Picker
-          selectedValue={selectedTorneo}
-          onValueChange={(itemValue) => {
-            setSelectedTorneo(itemValue);
-            setCurrentPage(0);
-          }}
-          style={styles.picker}
-        >
-          <Picker.Item label="Selecciona un torneo" value={null} />
-          {torneos.map((torneo) => (
-            <Picker.Item
-              key={torneo.id}
-              label={torneo.nombreTorneo}
-              value={torneo.id}
-            />
-          ))}
-        </Picker>
-      </View>
-
-      {/* Mensaje de error */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      {/* Indicador de carga */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007BFF" />
-          <Text>Cargando partidos...</Text>
-        </View>
-      )}
-
-      {/* Lista de partidos */}
-      {!loading && displayedMatches.length > 0 ? (
-        displayedMatches.map((match, index) => (
-          <MatchCard key={index} match={match} />
-        ))
-      ) : (
-        !loading && <Text>No hay partidos finalizados disponibles.</Text>
-      )}
-
-      {/* Botones de paginación */}
-      {!loading && matches.length > itemsPerPage && (
-        <View style={styles.paginationContainer}>
-          <TouchableOpacity
-            style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
-            onPress={handlePreviousPage}
-            disabled={currentPage === 0}
+    <ImageBackground
+      source={require("../../assets/fondo.jpg")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.pickerContainer}>
+          <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
+          <Picker
+            selectedValue={selectedTorneo}
+            onValueChange={(itemValue) => {
+              setSelectedTorneo(itemValue);
+              setCurrentPage(0);
+            }}
+            style={styles.picker}
           >
-            <Text style={styles.paginationButtonText}>Anterior</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageText}>
-            Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.paginationButton,
-              endIndex >= matches.length && styles.disabledButton,
-            ]}
-            onPress={handleNextPage}
-            disabled={endIndex >= matches.length}
-          >
-            <Text style={styles.paginationButtonText}>Siguiente</Text>
-          </TouchableOpacity>
+            <Picker.Item label="Selecciona un torneo" value={null} />
+            {torneos.map((torneo) => (
+              <Picker.Item
+                key={torneo.id}
+                label={torneo.nombreTorneo}
+                value={torneo.id}
+              />
+            ))}
+          </Picker>
         </View>
-      )}
-    </ScrollView>
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007BFF" />
+            <Text style={styles.loadingText}>Cargando partidos...</Text>
+          </View>
+        )}
+
+        {!loading && displayedMatches.length > 0 ? (
+          displayedMatches.map((match, index) => (
+            <MatchCard key={index} match={match} />
+          ))
+        ) : (
+          !loading && <Text style={styles.noMatchesText}>No hay partidos finalizados disponibles.</Text>
+        )}
+
+        {!loading && matches.length > itemsPerPage && (
+          <View style={styles.paginationContainer}>
+            <TouchableOpacity
+              style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
+              onPress={handlePreviousPage}
+              disabled={currentPage === 0}
+            >
+              <Text style={styles.paginationButtonText}>Anterior</Text>
+            </TouchableOpacity>
+            <Text style={styles.pageText}>
+              Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                endIndex >= matches.length && styles.disabledButton,
+              ]}
+              onPress={handleNextPage}
+              disabled={endIndex >= matches.length}
+            >
+              <Text style={styles.paginationButtonText}>Siguiente</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
   container: {
     padding: 10,
-    backgroundColor: "#f5f5f5",
     alignItems: "center",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     padding: 20,
     marginVertical: 10,
     borderRadius: 10,
@@ -265,6 +268,9 @@ const styles = StyleSheet.create({
   pickerContainer: {
     width: "90%",
     marginBottom: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 5,
+    padding: 10,
   },
   pickerLabel: {
     fontSize: 16,
@@ -285,6 +291,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "90%",
     marginTop: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 5,
+    padding: 10,
   },
   paginationButton: {
     padding: 10,
@@ -307,11 +316,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 5,
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#333",
   },
   errorText: {
     color: "red",
     fontSize: 16,
     marginBottom: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    padding: 10,
+    borderRadius: 5,
+  },
+  noMatchesText: {
+    fontSize: 16,
+    color: "#333",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    padding: 10,
+    borderRadius: 5,
   },
 });
 
