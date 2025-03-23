@@ -14,10 +14,12 @@ import api from "../../config/api";
 const MatchCard = ({ match }) => {
   return (
     <View style={styles.card}>
+      {/* Fecha y hora */}
       <Text style={styles.date}>
         {match.fechaPartido || "Fecha no disponible"} - {match.hora || "Hora no disponible"}
       </Text>
 
+      {/* Equipos y "VS" */}
       <View style={styles.teamsContainer}>
         <View style={styles.teamContainer}>
           <Image
@@ -26,9 +28,7 @@ const MatchCard = ({ match }) => {
           />
           <Text style={styles.teamName}>{match.equipoLocal?.nombreEquipo || "Equipo Local"}</Text>
         </View>
-        <Text style={styles.score}>
-          {match.golesLocal} - {match.golesVisitante}
-        </Text>
+        <Text style={styles.vsText}>VS</Text>
         <View style={styles.teamContainer}>
           <Image
             source={{ uri: match.equipoVisitante?.logo || "https://via.placeholder.com/40" }}
@@ -38,6 +38,7 @@ const MatchCard = ({ match }) => {
         </View>
       </View>
 
+      {/* Cancha */}
       <Text style={styles.field}>
         Cancha: {match.cancha?.descripcion || "Cancha no disponible"}
       </Text>
@@ -48,17 +49,17 @@ const MatchCard = ({ match }) => {
       </Text>
 
       {/* Estado del partido */}
-      <Text style={[styles.status, styles.finalizado]}>
-        ¡Finalizado!
+      <Text style={[styles.status, match.jugado ? styles.finalizado : styles.proximo]}>
+        {match.jugado ? "¡Finalizado!" : "¡Próximo!"}
       </Text>
     </View>
   );
 };
 
-const ResultadoDePartidos = () => {
+const Partidos = () => {
   const [torneos, setTorneos] = useState([]); // Lista de torneos iniciados
   const [selectedTorneo, setSelectedTorneo] = useState(null); // Torneo seleccionado
-  const [matches, setMatches] = useState([]); // Partidos jugados del torneo seleccionado
+  const [matches, setMatches] = useState([]); // Todos los partidos no jugados del torneo seleccionado
   const [loading, setLoading] = useState(true); // Estado de carga
   const [error, setError] = useState(null); // Manejo de errores
   const [currentPage, setCurrentPage] = useState(0); // Página actual
@@ -80,43 +81,45 @@ const ResultadoDePartidos = () => {
     fetchTorneos();
   }, []);
 
+  // Obtener los partidos no jugados del torneo seleccionado
   useEffect(() => {
     if (selectedTorneo) {
-      setLoading(true);
+      setLoading(true); // Activar el estado de carga
       const fetchMatches = async () => {
         try {
           const response = await api.get(
-            `/api/partidos/todos/portorneo/${selectedTorneo}`
+            `/api/partidos/todos/portorneo/nojugados/${selectedTorneo}`
           );
-         
-          const partidosJugados = response.data.filter((partido) => partido.jugado);
-          setMatches(partidosJugados);
-          setError(null); 
+          setMatches(response.data);
+          setError(null); // Limpiar errores
         } catch (error) {
           console.error("Error fetching matches:", error);
-          setError("Error al cargar los partidos. Intenta de nuevo.");
+          setError("Error al cargar los partidos. Intenta de nuevo."); // Mostrar mensaje de error
         } finally {
-          setLoading(false); 
+          setLoading(false); // Desactivar el estado de carga
         }
       };
 
       fetchMatches();
     } else {
-      setMatches([]); 
-      setLoading(false); 
+      setMatches([]); // Limpiar partidos si no hay torneo seleccionado
+      setLoading(false); // Desactivar el estado de carga
     }
   }, [selectedTorneo]);
 
+  // Calcular los partidos que se deben mostrar en la página actual
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const displayedMatches = matches.slice(startIndex, endIndex);
 
+  // Función para avanzar a la siguiente página
   const handleNextPage = () => {
     if (endIndex < matches.length) {
       setCurrentPage(currentPage + 1);
     }
   };
 
+  // Función para retroceder a la página anterior
   const handlePreviousPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
@@ -125,13 +128,14 @@ const ResultadoDePartidos = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Selector de torneos */}
       <View style={styles.pickerContainer}>
         <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
         <Picker
           selectedValue={selectedTorneo}
           onValueChange={(itemValue) => {
             setSelectedTorneo(itemValue);
-            setCurrentPage(0);
+            setCurrentPage(0); // Reiniciar la página al cambiar de torneo
           }}
           style={styles.picker}
         >
@@ -163,7 +167,7 @@ const ResultadoDePartidos = () => {
           <MatchCard key={index} match={match} />
         ))
       ) : (
-        !loading && <Text>No hay partidos finalizados disponibles.</Text>
+        !loading && <Text>No hay partidos disponibles.</Text>
       )}
 
       {/* Botones de paginación */}
@@ -243,8 +247,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#555",
   },
-  score: {
-    fontSize: 18,
+  vsText: {
+    fontSize: 20,
     fontWeight: "bold",
     color: "#007BFF",
   },
@@ -261,6 +265,9 @@ const styles = StyleSheet.create({
   },
   finalizado: {
     color: "green",
+  },
+  proximo: {
+    color: "blue",
   },
   pickerContainer: {
     width: "90%",
@@ -315,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ResultadoDePartidos;
+export default Partidos;
