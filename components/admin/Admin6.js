@@ -1,47 +1,68 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import FONTS from "../../style/fonts";
+import colores from "../../style/colors";
 
 const Admin6 = ({ navigation }) => {
   const [tipoPago, setTipoPago] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
+  const [torneoFiltro, setTorneoFiltro] = useState("");
+  const [equipoFiltro, setEquipoFiltro] = useState("");
+  const [pagos, setPagos] = useState([]);
+  const [loadPagos, setLoadPagos] = useState(false);
+  const [fallo, setFallo] = useState("");
 
-  const productosSimulados = [
+  const listaPagos = [
     {
-      id: "prod_1",
-      nombre: "Cancha 1",
-      tipoPago: "Cancha",
-      estado: "Pagado",
-      equipo: "Equipo A",
+      id: 37,
+      tipoPago: "Inscripción",
+      descripcion: "Inscripción Torneo Sub-12 Finalizado",
+      monto: 850.0,
+      fechaPago: null,
+      fechaLimitePago: "2024-12-11",
+      estatusPago: false,
+      equipo: { id: 4, nombreEquipo: "Real Madrid Sub-12" },
     },
     {
-      id: "prod_2",
-      nombre: "Arbitraje 1",
-      tipoPago: "Arbitraje",
-      estado: "Pendiente",
-      equipo: "Equipo B",
-    },
-    {
-      id: "prod_3",
-      nombre: "Inscripción 1",
-      tipoPago: "Inscripción",
-      estado: "Pagado",
-      equipo: "Equipo C",
-    },
-    {
-      id: "prod_4",
-      nombre: "Cancha 2",
-      tipoPago: "Cancha",
-      estado: "Pendiente",
-      equipo: "Equipo D",
+      id: 38,
+      tipoPago: "Inscripción",
+      descripcion: "Inscripción Torneo Sub-12 Finalizado",
+      monto: 850.0,
+      fechaPago: null,
+      fechaLimitePago: "2024-12-11",
+      estatusPago: false,
+      equipo: { id: 4, nombreEquipo: "Real Madrid Sub-12" },
     },
   ];
 
-  const productosFiltrados = productosSimulados.filter((producto) => {
+  // Extraer torneos únicos de la lista de pagos
+  const torneosUnicos = [
+    ...new Set(listaPagos.map((pago) => pago.descripcion)),
+  ];
+
+  // Extraer equipos únicos de la lista de pagos
+  const equiposUnicos = [
+    ...new Set(listaPagos.map((pago) => pago.equipo.nombreEquipo)),
+  ];
+
+  // Filtrado de pagos según selecciones
+  const pagosFiltrados = listaPagos.filter((pago) => {
     return (
-      (!tipoPago || producto.tipoPago === tipoPago) &&
-      (!estadoFiltro || producto.estado === estadoFiltro)
+      (!tipoPago || pago.tipoPago === tipoPago) &&
+      (!estadoFiltro ||
+        (estadoFiltro === "Pagado" && pago.estatusPago) ||
+        (estadoFiltro === "Pendiente" && !pago.estatusPago)) &&
+      (!torneoFiltro || pago.descripcion === torneoFiltro) &&
+      (!equipoFiltro || pago.equipo.nombreEquipo === equipoFiltro)
     );
   });
 
@@ -60,52 +81,166 @@ const Admin6 = ({ navigation }) => {
       >
         Gestión de pagos
       </Text>
+
       <View style={styles.filtrosContainer}>
-        <Text style={[FONTS.nunitoNegrita, styles.titulo]}>Filtrar Productos</Text>
+        <Text style={[FONTS.nunitoNegrita, styles.titulo]}>Filtrar Pagos</Text>
+
+        {/* Picker Tipo de Pago */}
         <Text style={[FONTS.oswald, styles.label]}>Tipo de Pago:</Text>
         <Picker
           selectedValue={tipoPago}
-          onValueChange={(itemValue) => setTipoPago(itemValue)}
-          style={[styles.picker]}
-          itemStyle={FONTS.nunito}
+          onValueChange={setTipoPago}
+          style={styles.picker}
+          itemStyle={FONTS.nunitoNegrita}
         >
-          <Picker.Item label="Todos" value="" style={FONTS.nunito}/>
-          <Picker.Item label="Cancha" value="Cancha" style={FONTS.nunito} />
-          <Picker.Item label="Arbitraje" value="Arbitraje" style={FONTS.nunito} />
-          <Picker.Item label="Inscripción" value="Inscripción" style={FONTS.nunito} />
+          <Picker.Item label="Todos" value="" />
+          <Picker.Item label="Inscripción" value="Inscripción" />
+          <Picker.Item label="Arbitraje" value="Arbitraje" />
+          <Picker.Item label="Cancha" value="Cancha" />
         </Picker>
 
+        {/* Picker Estado */}
         <Text style={[FONTS.oswald, styles.label]}>Estado:</Text>
         <Picker
           selectedValue={estadoFiltro}
-          onValueChange={(itemValue) => setEstadoFiltro(itemValue)}
+          onValueChange={setEstadoFiltro}
           style={styles.picker}
           itemStyle={FONTS.nunito}
         >
-          <Picker.Item label="Todos" value="" style={FONTS.nunito} />
-          <Picker.Item label="Pagado" value="Pagado" style={FONTS.nunito} />
-          <Picker.Item label="Pendiente" value="Pendiente" style={FONTS.nunito} />
+          <Picker.Item label="Todos" value="" />
+          <Picker.Item label="Pagado" value="Pagado" />
+          <Picker.Item label="Pendiente" value="Pendiente" />
+        </Picker>
+
+        {/* Picker Torneo */}
+        <Text style={[FONTS.oswald, styles.label]}>Torneo:</Text>
+        <Picker
+          selectedValue={torneoFiltro}
+          onValueChange={setTorneoFiltro}
+          style={styles.picker}
+          itemStyle={FONTS.nunito}
+        >
+          <Picker.Item label="Todos" value="" />
+          {torneosUnicos.map((torneo, index) => (
+            <Picker.Item key={index} label={torneo} value={torneo} />
+          ))}
+        </Picker>
+
+        {/* Picker Equipo */}
+        <Text style={[FONTS.oswald, styles.label]}>Equipo:</Text>
+        <Picker
+          selectedValue={equipoFiltro}
+          onValueChange={setEquipoFiltro}
+          style={styles.picker}
+          itemStyle={FONTS.nunito}
+        >
+          <Picker.Item label="Todos" value="" />
+          {equiposUnicos.map((equipo, index) => (
+            <Picker.Item key={index} label={equipo} value={equipo} />
+          ))}
         </Picker>
       </View>
 
-      <View style={styles.card}>
-        <View style={styles.tabla}>
-          <View style={styles.fila}>
-            <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>Nombre</Text>
-            <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>Tipo de Pago</Text>
-            <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>Estado</Text>
-            <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>Equipo</Text>
-          </View>
-          {productosFiltrados.map((producto) => (
-            <View key={producto.id} style={styles.fila}>
-              <Text style={[FONTS.oswald, styles.celda]}>{producto.nombre}</Text>
-              <Text style={[FONTS.oswald, styles.celda]}>{producto.tipoPago}</Text>
-              <Text style={[FONTS.oswald, styles.celda]}>{producto.estado}</Text>
-              <Text style={[FONTS.oswald, styles.celda]}>{producto.equipo}</Text>
+      {/* Tabla de resultados */}
+      <ScrollView horizontal={true}>
+        <View style={styles.card}>
+          <View style={styles.tabla}>
+            {/* <View style={styles.fila}>
+              <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>
+                Descripción
+              </Text>
+              <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>
+                Tipo de Pago
+              </Text>
+              <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>
+                Estado
+              </Text>
+              <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>
+                Equipo
+              </Text>
+              <Text style={[FONTS.oswaldNegrita, styles.celdaEncabezado]}>
+                Opciones
+              </Text>
+            </View> */}
+            <View style={styles.headerRow}>
+              <Text style={[styles.headerCell, FONTS.oswaldNegrita]}>
+                Descripción
+              </Text>
+              <Text style={[styles.headerCell, FONTS.oswaldNegrita]}>
+                Tipo de pago
+              </Text>
+              <Text style={[styles.headerCell, FONTS.oswaldNegrita]}>
+                Estado
+              </Text>
+              <Text
+                style={[
+                  styles.headerCell,
+                  styles.partidoCell,
+                  FONTS.oswaldNegrita,
+                ]}
+              >
+                Equipo
+              </Text>
+              <Text
+                style={[
+                  styles.headerCell,
+                  styles.buttonCell,
+                  FONTS.oswaldNegrita,
+                  { width: 60 },
+                ]}
+              >
+                Opciones
+              </Text>
             </View>
-          ))}
+            {pagosFiltrados.map((pago) => (
+              <View key={pago.id} style={styles.fila}>
+                <Text
+                  style={[FONTS.oswald, styles.celda]}
+                  numberOfLines={3}
+                  ellipsizeMode="tail"
+                >
+                  {pago.descripcion}
+                </Text>
+                <Text
+                  style={[FONTS.oswald, styles.celda]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {pago.tipoPago}
+                </Text>
+                <Text
+                  style={[FONTS.oswald, styles.celda]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {pago.estatusPago ? "Pagado" : "Pendiente"}
+                </Text>
+                <Text
+                  style={[FONTS.oswald, styles.celda]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {pago.equipo.nombreEquipo}
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: colores.acento_1_2,
+                    width: 80,
+                    height: "50%",
+                    justifyContent: "center",
+                    alignSelf: "center",
+                    alignItems: "center",
+                    borderRadius: 10,
+                  }}
+                >
+                  {/* <Ionicons name="wallet" size={24} color={colores.blanco} /> */}
+                  <Text style={[FONTS.oswaldNegrita, {color: colores.blanco}]}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </ScrollView>
   );
 };
@@ -140,7 +275,7 @@ const styles = StyleSheet.create({
     height: 50,
     width: "100%",
     marginBottom: 10,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: colores.base_2_5,
     borderRadius: 5,
     borderColor: "#ccc",
     borderWidth: 1,
@@ -166,17 +301,61 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ccc",
   },
   celda: {
-    flex: 1,
+    width: 100,
     textAlign: "center",
     paddingVertical: 8,
     fontSize: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
   celdaEncabezado: {
-    flex: 1,
     textAlign: "center",
     backgroundColor: "#f1f1f1",
-    padding: 10,
+    padding: 12,
   },
+
+  buttonText: {
+    fontSize: 14,
+    color: colores.blanco,
+  },
+
+  registerButton: {
+    backgroundColor: colores.domin_2_3,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  registerButtonText: {
+    color: "white",
+  },
+
+  headerRow: {
+    flexDirection: "row",
+    backgroundColor: colores.domin_2_2,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderTopRightRadius: 5,
+    borderTopLeftRadius: 5,
+  },
+  headerCell: {
+    flex: 1,
+    textAlign: "center",
+    paddingHorizontal: 10,
+    color: "white",
+    width: 80,
+  },
+  row: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    padding: 10,
+    alignItems: "center",
+    borderBottomColor: colores.base_2_4,
+  },
+  cell: { flex: 1, textAlign: "left", paddingHorizontal: 10 },
+
+  editButton: { backgroundColor: colores.acento_2_3 },
+  deleteButton: { backgroundColor: colores.domin_2_2 },
+  reactiveButton: { backgroundColor: colores.acento_3_1 },
 });
 
 export default Admin6;
