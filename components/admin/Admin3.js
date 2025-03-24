@@ -467,6 +467,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         ref={scrollViewRef}
+        showsVerticalScrollIndicator={false}
       >
         <View
           style={{

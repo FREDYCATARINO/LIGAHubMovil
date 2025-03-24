@@ -67,7 +67,7 @@ const Admin6 = ({ navigation }) => {
   });
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <Text
         style={[
           styles.title,
@@ -142,7 +142,7 @@ const Admin6 = ({ navigation }) => {
       </View>
 
       {/* Tabla de resultados */}
-      <ScrollView horizontal={true}>
+      <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
         <View style={styles.card}>
           <View style={styles.tabla}>
             {/* <View style={styles.fila}>

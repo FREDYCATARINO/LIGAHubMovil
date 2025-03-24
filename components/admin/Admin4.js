@@ -688,7 +688,7 @@ const Admin4 = ({ navigation }) => {
 
   return (
     <GestureHandlerRootView>
-      <SafeAreaView style={stylesAdmin4.container}>
+      <SafeAreaView style={stylesAdmin4.container} showsVerticalScrollIndicator={false}>
         <Animated.ScrollView
           style={{ gap: 5 }}
           ref={scrollViewRef}

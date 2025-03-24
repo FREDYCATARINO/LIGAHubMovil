@@ -112,7 +112,7 @@ const EqiposScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={stylesTeamDet.container}>
-      <ScrollView contentContainerStyle={stylesTeamDet.scrollContent}>
+      <ScrollView contentContainerStyle={stylesTeamDet.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}>
           Detalles del equipo {team.nombreEquipo}:
         </Text>
@@ -159,7 +159,7 @@ const EqiposScreen = ({ navigation, route }) => {
         <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}>
           Jugadores
         </Text>
-        <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled={true}>
+        <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={false}>
           {loadPlayers ? (
             <ActivityIndicator
               size="large"

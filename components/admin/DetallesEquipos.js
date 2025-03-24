@@ -152,6 +152,7 @@ const EquipoScreen = ({ navigation, route }) => {
       <ScrollView
         contentContainerStyle={stylesTeamDet.scrollContent}
         nestedScrollEnabled={true}
+        showsVerticalScrollIndicator={false}
       >
         <Text
           style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}
@@ -228,6 +229,7 @@ const EquipoScreen = ({ navigation, route }) => {
             <ScrollView
               style={{ maxHeight: 300, minHeight: 100, padding: 5 }}
               nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={false}
             >
               {loadPlayers ? (
                 <ActivityIndicator

@@ -115,7 +115,7 @@ const Admin2 = ({ navigation }) => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={stylesAdmin2.container}>
-        <ScrollView contentContainerStyle={stylesAdmin2.scrollContent}>
+        <ScrollView contentContainerStyle={stylesAdmin2.scrollContent} showsVerticalScrollIndicator={false}>
           <Text
             style={[
               styles.TextField,

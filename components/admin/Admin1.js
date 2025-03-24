@@ -377,7 +377,7 @@ const Admin1 = ({ navigation, route }) => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={[styless.scrollContent]}>
-        <ScrollView contentContainerStyle={styless.myScrollContent}>
+        <ScrollView contentContainerStyle={styless.myScrollContent} showsVerticalScrollIndicator={false}>
           <Text
             style={[
               styles.TextField,
@@ -608,6 +608,7 @@ const Admin1 = ({ navigation, route }) => {
                   keyExtractor={(item) => item.id.toString()} // Usar equipoId en lugar de id
                   numColumns={3}
                   nestedScrollEnabled={true}
+                  showsVerticalScrollIndicator={false}
                   renderItem={({ item }) => {
                     return (
                       <TouchableOpacity
