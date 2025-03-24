@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { Alert } from "react-native";
 import formStyle from "../../style/formStyles";
 //import DateTimePicker from "@react-native-community/datetimepicker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -70,13 +71,13 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const ordenEstados = ["En Juego", "En Espera", "Finalizado"];
 
   const torneo = yup.object().shape({
-    nombreTorneo: yup.string().required("El nombre es requerido"),
+    nombreTorneo: yup.string("No válido"), //.required("El nombre es requerido"),
     descripcion: yup
-      .string()
+      .string("No válido")
       .max(500, "Tamaño de descripción excedido")
       .required("La descripción del torneo es requerida"),
     fechaInicio: yup
-      .string()
+      .string("No válido")
       .required("La fecha de inicio es requerida")
       .test("es-futura", "La fecha debe ser hoy o en el futuro", (value) => {
         const fechaIngresada = new Date(value);
@@ -85,7 +86,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         return fechaIngresada >= fechaActual;
       }),
     minEquipos: yup
-      .number()
+      .number("No válido")
       .typeError("Debe ser un número")
       .integer("Se requiere un número entero")
       .min(2, "Debe ser al menos 2")
@@ -95,7 +96,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         return value <= this.parent.maxEquipos;
       }),
     maxEquipos: yup
-      .number()
+      .number("No válido")
       .typeError("Debe ser un número")
       .integer("Se requiere un número entero")
       .min(2, "Debe ser al menos 2")
@@ -108,10 +109,13 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       .number()
       .typeError("Debe ser un número")
       .integer("Debe ser un número entero")
-      .required("Debes especificar cuántos pasan a liguilla"),
-
+      .required("Debes especificar cuántos pasan a liguilla")
+      .max(
+        yup.ref("maxEquipos"),
+        "No puede ser mayor que el máximo de equipos"
+      ),
     vueltas: yup
-      .number()
+      .number("No válido")
       .typeError("Debe ser un número")
       .integer("Debe ser un número entero")
       .required("Se requieren las vueltas"),
@@ -163,7 +167,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     console.log(value);
   };
 
-  const getEstado = (nombre) => {
+  const getEstadoName = (nombre) => {
     for (let i = 0; i < ordenEstados.length; i++) {
       if (nombre.toLowerCase().includes(ordenEstados[i].toLowerCase())) {
         return i;
@@ -174,46 +178,64 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
   const registrarTorneo = async (data, image) => {
     const formData = new FormData();
-    console.log(data);
+    console.log(errors);
+    console.log(image);
 
-    formData.append(
-      "torneo",
-      JSON.stringify({
-        nombreTorneo: "Ultra Torneo",
-        descripcion: "Torneo anual con los mejores equipos de la UEFA.",
-        fechaInicio: "2025-05-11",
-        maxEquipos: 16,
-        minEquipos: 8,
-        equiposLiguilla: 4,
-        premio: "1000 pesos y medallas individuales de oro para cada jugador",
-        vueltas: 2,
-      })
-    );
+    formData.append("torneo", JSON.stringify({
+      nombreTorneo: `${data.nombreTorneo} En Espera`,
+      descripcion: data.descripcion,
+      fechaInicio: data.fechaInicio,
+      maxEquipos: data.maxEquipos,
+      minEquipos: data.minEquipos,
+      equiposLiguilla: data.equiposLiguilla,
+      premio: data.premio,
+      vueltas: data.vueltas,
+    }), "torneo.json"); // <-- Añadir nombre del archivo ayuda a algunos servidores    
 
-    formData.append("imagen", {
-      uri: image,
-      name: "arbitro.png",
-      type: "image/png",
-    });
+    //formData.append("torneo", new Blob([JSON.stringify(data)], { type: "application/json" }));
+
+    if (image) {
+      console.log("📸 Imagen antes de enviar:", image);
+
+      formData.append("imagen", {
+        uri: image.startsWith("file://") ? image : `file://${image}`,
+        name: `${data.nombreTorneo}.png`,
+        type: "image/png",
+      });
+    }
 
     try {
       const tokData = await getToken();
-      const response = await axios.post(
-        "http://192.168.1.67:8080/api/torneos",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${tokData}`,
-            "Content-Type": "multipart/form-data",
-          },
-          transformRequest: (data) => data, // Devuelve directamente el FormData
-        }
-      );
+      const response = await api.post("/api/torneos", formData, {
+        headers: {
+          Authorization: `Bearer ${tokData}`,
+          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
+        },
+        transformRequest: (data) => data
+      });
       console.log(response.data);
     } catch (error) {
-      console.log("At");
-      console.log(error);
+      console.log("?");
+      if (error.config)
+        console.log(
+          error.config,
+          "-----",
+          error.config.headers,
+          "-----",
+          error.config.data,
+          "-----",
+          error.config.data._parts
+        );
       console.error("Error:", error.response.data || error || error.response);
+      if (error.response.message) Alert.alert("Error", error.response.message);
+      Alert.alert("Error", "Error al registrar el torneo");
+      if (error.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        //logout();
+        return;
+      }
     }
   };
 
@@ -226,18 +248,25 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     return "";
   };
 
+  const getEstado = (tor) => {
+    if (tor.motivoFinalizacion) return 4; // Cancelado
+    if (!tor.estatusTorneo) return 3; // Finalizado con ganador
+    if (tor.iniciado && tor.esliguilla) return 0; // En liguilla
+    if (tor.iniciado) return 1; // En juego
+    if (!tor.estatusLlenado) return 2; // En espera
+    return 5; // Otros casos
+  };
+
   const torneosOrdenados = torneos.sort((a, b) => {
-    const estadoA = getEstado(a.nombreTorneo);
-    const estadoB = getEstado(b.nombreTorneo);
+    const estadoA = getEstado(a);
+    const estadoB = getEstado(b);
 
     if (estadoA !== estadoB) {
-      return estadoA - estadoB;
+      return estadoA - estadoB; // Ordena por estado según la prioridad definida
     }
 
-    const fechaA = new Date(a.fechaInicio);
-    const fechaB = new Date(b.fechaInicio);
-
-    return fechaA - fechaB;
+    // Si están en el mismo estado, ordena por fecha de inicio
+    return new Date(a.fechaInicio) - new Date(b.fechaInicio);
   });
 
   //Borrar despues
@@ -249,33 +278,9 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     setLog;
   }, []);
 
+  const [reload, setReload] = useState(false);
+
   useEffect(() => {
-    // const getUserAll = async () => {
-    //   const id = await getUserRole();
-    //   const rolo = await getUserId();
-    //   const tok = await getToken();
-    //   setTokData(tok);
-
-    //   setLoadSolids(true);
-    //   api
-    //     .get(`/api/solicitudes/admin/pendientes`, {
-    //       headers: {
-    //         Authorization: `Bearer ${tok}`,
-    //       },
-    //     })
-    //     .then((res) => {
-    //       if (res.data.length === 0) setFallo("No hay solicitudes pendientes");
-    //       else setSolicitudes(res.data);
-    //     })
-    //     .catch((e) => {
-    //       console.error(e, e.res.message);
-    //       if (e.res.message) setFallo(e.res.message);
-    //       else setFallo("Error al obtener solicitudes");
-    //     })
-    //     .finally(() => setLoadSolids(false));
-    // };
-    // getUserAll();
-
     setLoadTors(true);
     api
       .get(`/api/torneos`)
@@ -299,9 +304,84 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         else setFalloT("Error al obtener torneos");
       })
       .finally(() => setLoadTors(false));
-  }, []);
+  }, [reload]);
 
-  const showModal1 = (name) => {
+  const iniciarTorneo = async (id) => {
+    const tokData = await getToken();
+    await api
+      .post(
+        `/api/partidos/admin/iniciartorneo/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+          },
+        }
+      )
+      .then((res) => {
+        Alert.alert("Éxito", res.data || "Torneo iniciado correctamente");
+        setReload(!reload);
+      })
+      .catch((error) => {
+        console.error("Error completo:", error);
+        if (error.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+        console.error("Respuesta del servidor:", error.response?.data.message);
+        Alert.alert(
+          "Denegado",
+          error.response?.data?.message || "Error desconocido"
+        );
+      });
+  };
+
+  const cancelarTorneo = async (id) => {
+    const tokData = await getToken();
+    console.log(id);
+    await api
+      .patch(
+        `/api/torneos/${id}/cancelar`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+          },
+        }
+      )
+      .then((res) => {
+        Alert.alert("Éxito", res.data || "Torneo cancelado correctamente");
+        setReload(!reload);
+      })
+      .catch((error) => {
+        console.error(error, error.response?.data?.message);
+        console.log(error.toJSON());
+        if (error.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+        Alert.alert(
+          "Denegado",
+          error.response?.data?.message || "Error desconocido"
+        );
+      })
+      .finally(() => setModalVisible1(false));
+  };
+
+  const [id, setId] = useState(0);
+
+  const showModal1 = (name, id) => {
+    setId(id);
     setModalVisible1(true);
     setModalVisible2(false);
     setModalVisible3(false);
@@ -323,21 +403,14 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     setTournamentData(tor);
   };
 
-  const getEstilo = (nombreTorneo, motivo) => {
-    if (motivo !== null) return stylesAdmin3.torneoCancelado; // Si tiene motivo, está cancelado
+  const getEstilo = (tor) => {
+    if (tor.motivoFinalizacion) return stylesAdmin3.torneoCancelado; // Cancelado
+    if (!tor.estatusTorneo) return stylesAdmin3.torneoFinalizado; // Finalizado con ganador
+    if (tor.iniciado && tor.esliguilla) return stylesAdmin3.torneoLiguilla; // En liguilla
+    if (tor.iniciado) return stylesAdmin3.torneoActivo; // En juego
+    if (!tor.estatusLlenado) return stylesAdmin3.torneoInactivo; // En espera
 
-    const estado = getEstado(nombreTorneo); // Obtener el índice del estado
-
-    switch (estado) {
-      case 0: // "En Juego"
-        return stylesAdmin3.torneoActivo;
-      case 1: // "En Espera"
-        return stylesAdmin3.torneoInactivo;
-      case 2: // "Finalizado"
-        return stylesAdmin3.torneoFinalizado;
-      default:
-        return styles.defaultText;
-    }
+    return stylesAdmin3.defaultTorneo; // Por defecto
   };
 
   // Crear una referencia para el ScrollView
@@ -427,22 +500,6 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
           style={[stylesAdmin3.scrollContainer, { paddingHorizontal: 2 }]}
           showsHorizontalScrollIndicator={false}
         >
-          {/*<WebView
-                originWhitelist={["*"]}
-                source={{
-                  html: `<script src="https://cdn.lordicon.com/lordicon.js"></script>
-          <lord-icon
-              src="https://cdn.lordicon.com/lewtedlh.json"
-              trigger="loop"
-              stroke="bold"
-              state="loop-roll"
-              colors="primary:#242424,secondary:#c71f16"
-              style="width:450px;height:450px;align-items:center;justify-content:center">
-          </lord-icon>`,
-                }}
-                style={styles.webview}
-              />*/}
-
           {loadTors ? (
             <View>
               <Text
@@ -456,16 +513,14 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             torneosOrdenados.map((tor) => {
               return (
                 <TouchableOpacity
-                  style={[
-                    stylesAdmin3.box,
-                    getEstilo(tor.nombreTorneo, tor.motivoFinalizacion),
-                  ]}
+                  style={[stylesAdmin3.box, getEstilo(tor)]}
                   onPress={() =>
                     tor.esliguilla ? showModal3(tor.nombreTorneo, tor) : null
                   }
                   key={tor.id}
                 >
-                  <View style={stylesAdmin3.boxHeader} key={tor.id}>
+                  {/* Encabezado */}
+                  <View style={stylesAdmin3.boxHeader}>
                     <Text style={[stylesAdmin3.textHead1, FONTS.oswaldNegrita]}>
                       A liguilla: {tor.equiposLiguilla}
                     </Text>
@@ -473,17 +528,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                       {tor.fechaInicio}
                     </Text>
                   </View>
+
+                  {/* Imagen o animación */}
                   <View style={stylesAdmin3.lordContainer}>
-                    {tor.logoTorneo === "" ? (
-                      <LottieView
-                        source={require("../../assets/copa.json")}
-                        autoPlay
-                        loop
-                        style={stylesAdmin3.icon}
-                        speed={1}
-                        color={colores.base_3_1}
-                      />
-                    ) : (
+                    {tor.logoTorneo ? (
                       <Image
                         source={{ uri: tor.logoTorneo }}
                         style={{
@@ -494,26 +542,37 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                           borderRadius: 15,
                         }}
                       />
+                    ) : (
+                      <LottieView
+                        source={require("../../assets/copa.json")}
+                        autoPlay
+                        loop
+                        style={stylesAdmin3.icon}
+                        speed={1}
+                        color={colores.base_3_1}
+                      />
                     )}
                   </View>
+
+                  {/* Nombre del torneo */}
                   <Text style={[FONTS.oswaldNegrita, stylesAdmin3.torneoTitle]}>
                     Torneo "{tor.nombreTorneo}"
                   </Text>
-                  {tor.motivoFinalizacion !== null ? (
+
+                  {/* Estado del torneo */}
+                  {tor.motivoFinalizacion ? (
                     <View style={stylesAdmin3.cancel}>
                       <Text style={[FONTS.oswaldNegrita, stylesAdmin3.redText]}>
-                        Cancelado debido a: {tor.motivoFinalizacion}
+                        Cancelado: {tor.motivoFinalizacion}
                       </Text>
                     </View>
-                  ) : (
-                    <View>
-                      {getEstadoType(tor.nombreTorneo) === "Finalizado" ? (
-                        <Text style={[FONTS.oswald, stylesAdmin3.torneoDet]}>
-                          Ganador: {tor.ganador}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
+                  ) : tor.ganador ? (
+                    <Text style={[FONTS.oswald, stylesAdmin3.torneoDet]}>
+                      Ganador: {tor.ganador}
+                    </Text>
+                  ) : null}
+
+                  {/* Liguilla */}
                   {tor.esliguilla ? (
                     <View style={stylesAdmin3.successBack}>
                       <Text
@@ -524,44 +583,59 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                     </View>
                   ) : (
                     <View style={stylesAdmin3.botonRow}>
+                      {/* Botón Editar/Detalles */}
                       <TouchableOpacity
                         style={stylesAdmin3.botTorneo}
                         onPress={() =>
-                          getEstadoType(tor.nombreTorneo) === "En Juego"
-                            ? alert("Hola")
+                          !tor.estatusTorneo || tor.motivoFinalizacion
+                            ? showModal3(tor.nombreTorneo, tor)
+                            : tor.iniciado
+                            ? alert("Editar")
                             : showModal3(tor.nombreTorneo, tor)
                         }
                       >
                         <Text
                           style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}
                         >
-                          {getEstadoType(tor.nombreTorneo) === "En Juego"
-                            ? "Editar"
+                          {tor.estatusTorneo
+                            ? tor.iniciado
+                              ? "Editar"
+                              : "Detalles"
                             : "Detalles"}
                         </Text>
                       </TouchableOpacity>
 
-                      {getEstadoType(tor.nombreTorneo) ===
-                      "Finalizado" ? null : (
-                        <TouchableOpacity
-                          style={stylesAdmin3.botTorneo}
-                          onPress={() =>
-                            tor.estado === "En Juego"
-                              ? showModal1(tor.nombreTorneo)
-                              : showModal2(tor.nombreTorneo)
-                          }
-                        >
-                          <Text
-                            style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}
-                          >
-                            {getEstadoType(tor.nombreTorneo) === "En Espera"
-                              ? "Iniciar"
-                              : getEstadoType(tor.nombreTorneo) === "En Juego"
-                              ? "Cancelar"
-                              : "Remover"}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                      {/* Botón Iniciar/Cancelar/Remover */}
+                      {tor.estatusTorneo || tor.motivoFinalizacion
+                        ? !tor.ganador &&
+                          !tor.motivoFinalizacion && (
+                            <TouchableOpacity
+                              style={stylesAdmin3.botTorneo}
+                              onPress={() => {
+                                if (!tor.iniciado) {
+                                  iniciarTorneo(tor.id);
+                                } else if (tor.iniciado) {
+                                  showModal1(tor.nombreTorneo, tor.id);
+                                } else {
+                                  showModal2(tor.nombreTorneo);
+                                }
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  FONTS.oswald,
+                                  stylesAdmin3.botonTorneoText,
+                                ]}
+                              >
+                                {!tor.iniciado
+                                  ? "Iniciar"
+                                  : tor.iniciado
+                                  ? "Cancelar"
+                                  : "Remover"}
+                              </Text>
+                            </TouchableOpacity>
+                          )
+                        : null}
                     </View>
                   )}
                 </TouchableOpacity>
@@ -702,6 +776,27 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                     {errors.premio && (
                       <Text style={[formStyle.errText]}>
                         {errors.premio.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <Controller
+                control={control}
+                name="equiposLiguilla"
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TextInput
+                      placeholder="Equipos en liguilla"
+                      placeholderTextColor={colores.domin_2_2}
+                      value={value}
+                      keyboardType="numeric"
+                      onChangeText={(text) => onChange(text)}
+                      style={stylesAdmin3.input}
+                    />
+                    {errors.equiposLiguilla && (
+                      <Text style={[formStyle.errText]}>
+                        {errors.equiposLiguilla.message}
                       </Text>
                     )}
                   </>
@@ -850,8 +945,8 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                   stylesAdmin3.botTorneo,
                   { opacity: isValid ? 1 : 0.5, width: 150 },
                 ]}
-                onPress={async () => registrarTorneo("Waa", image)}
-                disabled={isValid}
+                onPress={handleSubmit(onSubmit)}
+                disabled={!isValid}
               >
                 <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
                   Crear Torneo
@@ -895,19 +990,15 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             <View style={stylesModal.modalButRow}>
               <TouchableOpacity
                 style={[stylesModal.buttonBack, FONTS.oswald]}
-                onPress={() => setModalVisible2(false)}
+                onPress={async () => cancelarTorneo(id)}
               >
-                <Text style={[stylesModal.buttonText, FONTS.oswald]}>
-                  Cancelar
-                </Text>
+                <Text style={[stylesModal.buttonText, FONTS.oswald]}>Si</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[stylesModal.buttonBack, FONTS.oswald]}
-                onPress={() => setModalVisible2(false)}
+                onPress={() => setModalVisible1(false)}
               >
-                <Text style={[stylesModal.buttonText, FONTS.oswald]}>
-                  Cancelar
-                </Text>
+                <Text style={[stylesModal.buttonText, FONTS.oswald]}>No</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1031,6 +1122,12 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             <Text style={[FONTS.oswaldNegrita, stylesModal.modalDato]}>
               Premio: <Text style={FONTS.oswald}>{tournamentData.premio}</Text>
             </Text>
+            {tournamentData.ganador !== null && (
+              <Text style={[FONTS.oswaldNegrita, stylesModal.modalDato]}>
+                Ganador: {tournamentData.ganador}
+                <Text style={FONTS.oswald}>{tournamentData.premio}</Text>
+              </Text>
+            )}
             <TouchableOpacity
               style={[
                 stylesModal.buttonBack,
@@ -1256,6 +1353,9 @@ const stylesAdmin3 = StyleSheet.create({
   torneoDet: {
     fontSize: 20,
   },
+  torneoLiguilla: {
+    backgroundColor: colores.acento_3_1,
+  },
   torneoInactivo: {
     backgroundColor: colores.base_1_2,
   },
@@ -1272,7 +1372,7 @@ const stylesAdmin3 = StyleSheet.create({
     color: colores.domin_2_1,
   },
   greenText: {
-    color: colores.acento_3_1,
+    color: colores.acento_2_5,
   },
   cancel: {
     padding: 5,
@@ -1290,7 +1390,7 @@ const stylesAdmin3 = StyleSheet.create({
     alignItems: "center",
   },
   successText: {
-    color: colores.acento_3_1,
+    color: colores.acento_2_1,
     fontSize: 25,
   },
   input: {

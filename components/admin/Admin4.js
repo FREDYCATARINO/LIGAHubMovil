@@ -12,6 +12,8 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  Alert,
+  Modal,
 } from "react-native";
 import { useState } from "react";
 import MapView from "react-native-maps";
@@ -35,6 +37,13 @@ import { AuthContext } from "../../context/AuthContext";
 const Admin4 = ({ navigation }) => {
   const { getUserId, getUserRole, getToken } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
+  const [vis, setVis] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [campoEdit, setCampoEdit] = useState({});
+  const [canchasEdit, setCanchasEdit] = useState([]);
+
+  const [idCancha, setIdCancha] = useState({});
+  const [modalCancha, setModalCancha] = useState(false);
 
   const [lugar, setLugar] = useState("");
   const [elecc, setElecc] = useState("");
@@ -52,6 +61,233 @@ const Admin4 = ({ navigation }) => {
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [slideAnim] = useState(new Animated.Value(-400));
   const [rows, setRows] = useState(1);
+  const [rowsEdit, setRowsEdit] = useState(1);
+
+  const [id, setId] = useState(0);
+
+  const [reload, setReload] = useState(false);
+
+  //esquema para validaciones
+  const campo = yup.object().shape({
+    id: yup.number(),
+    nombre: yup.string().required("El nombre es requerido"),
+    direccion: yup.string().required("La dirección es requerida"),
+    latitud: yup
+      .number("No válido")
+      .typeError("Debe ser un número")
+      .required("Latitud Requerida"),
+    longitud: yup
+      .number("No válido")
+      .typeError("Debe ser un número")
+      .required("Longitud Requerida"),
+    cancha: yup.string().required("Debes registrar al menos 1 cancha"),
+  });
+
+  // Al momento de editar, puedes establecer estos valores como predeterminados
+  const setEdicion = (campo, cancha, canchas) => {
+    setId(campo.id);
+    setEditando(true);
+    // Usamos setValue para rellenar el formulario con los valores de miCampo
+    setValue("id", campo.id);
+    setValue("nombre", campo.nombre);
+    setValue("direccion", campo.direccion);
+    setValue("latitud", campo.latitud);
+    setValue("longitud", campo.longitud);
+    setValue("cancha", cancha);
+    setCanchasEdit(canchas);
+    canchas.map((c) => {
+      console.log(c);
+    });
+  };
+
+  // Al momento de editar, puedes establecer estos valores como predeterminados
+  const removeEdicion = () => {
+    // Usamos setValue para rellenar el formulario con los valores de miCampo
+    setId(0);
+    setValue("nombre", "");
+    setValue("direccion", "");
+    setValue("latitud", "");
+    setValue("longitud", "");
+    setValue("cancha", "");
+    setEditando(false);
+  };
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: yupResolver(campo),
+    mode: "onChange",
+  });
+
+  const crearCampo = async (data) => {
+    try {
+      const res = await api.post(
+        `/api/campos`,
+        JSON.stringify({
+          nombre: data.nombre,
+          direccion: data.direccion,
+          latitud: data.latitud,
+          longitud: data.longitud,
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(res.data);
+      if (res.data.id) {
+        canchas.map((c) => {
+          registrarCancha(c.desc, c.pos, res.data.id);
+        });
+      }
+      Alert.alert("¡Éxito!", "Campo registrado exitosamente");
+      setReload(!reload);
+    } catch (err) {
+      console.error(err, err.res.message);
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+    }
+  };
+
+  const registrarCancha = async (desc, pos, id) => {
+    try {
+      const res = await api.post(
+        `/api/canchas`,
+        JSON.stringify({
+          numeroCancha: pos,
+          descripcion: desc,
+          idCampo: id,
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(res.data);
+    } catch (err) {
+      console.log(err.toJSON());
+      console.error(err, err.response.message);
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+    }
+  };
+
+  const quitarCancha = async (id) => {
+    try {
+      const res = await api.put(
+        `/api/canchas/estatus/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(res.data);
+      Alert.alert("¡Éxito!", "operación exitosa");
+      setReload(!reload);
+    } catch (err) {
+      console.log(err.toJSON());
+      console.error(err, err.response.message);
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+    } finally {
+      setModalCancha(false);
+    }
+  };
+
+  const updateCampo = async (data) => {
+    console.log(data, "Wey");
+    const token = await getToken();
+    try {
+      const res = await api.put(
+        `/api/campos/${data.id || id}`,
+        JSON.stringify({
+          nombre: data.nombre,
+          direccion: data.direccion,
+          latitud: data.latitud,
+          longitud: data.longitud,
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(res.data);
+      if (res.data.id) {
+        canchasEdit.map((c) => {
+          updateCancha(c.descripcion, c.numeroCancha, res.data.id, c.id);
+          console.log(c);
+        });
+      }
+      Alert.alert("¡Éxito!", "Campo actualizado exitosamente");
+      setReload(!reload);
+      removeEdicion();
+      setCampoEdit({});
+      setCanchasEdit([]);
+    } catch (err) {
+      console.error(err, err.response.message, err.toJSON());
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+    }
+  };
+
+  const updateCancha = async (desc, pos, id, idCan) => {
+    const token = await getToken();
+    try {
+      const res = await api.put(
+        `/api/canchas/${idCan}`,
+        JSON.stringify({
+          numeroCancha: pos,
+          descripcion: desc,
+          idCampo: id,
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(res.data);
+    } catch (err) {
+      console.log(err.toJSON());
+      console.error(err, err.response.message);
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+    }
+  };
 
   useEffect(() => {
     const getCampos = async () => {
@@ -62,7 +298,7 @@ const Admin4 = ({ navigation }) => {
 
       setLoadCamps(true);
       api
-        .get(`/api/campos`, {
+        .get(`/api/campos/activos`, {
           headers: {
             Authorization: `Bearer ${tok}`,
           },
@@ -73,7 +309,7 @@ const Admin4 = ({ navigation }) => {
         })
         .catch((e) => {
           console.error(e, e.res.message);
-          if (err.response.status === 403) {
+          if (e.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
               "Sesión expirada",
@@ -88,7 +324,8 @@ const Admin4 = ({ navigation }) => {
         .finally(() => setLoadCamps(false));
     };
     getCampos();
-  }, []);
+    setCanchas([{ id: Date.now(), pos: 0, desc: "" }]);
+  }, [reload]);
 
   // Crear una referencia para el ScrollView
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -96,19 +333,19 @@ const Admin4 = ({ navigation }) => {
 
   // Función para manejar el desplazamiento programático
   const scrollToPosition = (position, duration = 500) => {
+    setVis(!vis);
     Animated.timing(scrollY, {
       toValue: position,
       duration: duration,
       useNativeDriver: false, // Necesario para ScrollView
     }).start();
-  
+
     scrollViewRef.current?.scrollTo({ y: position, animated: true });
   };
 
   // Escuchar cambios en la animación y actualizar el estado si es necesario
   useEffect(() => {
-    const listenerId = scrollY.addListener(({ value }) => {
-    });
+    const listenerId = scrollY.addListener(({ value }) => {});
 
     return () => {
       scrollY.removeListener(listenerId);
@@ -205,6 +442,8 @@ const Admin4 = ({ navigation }) => {
 
     setElecc(lugarNombre);
     setDireccion([{ lat: latitude, long: longitude }]);
+    setValue("latitud", latitude);
+    setValue("longitud", longitude);
   };
 
   const handleLongPress = async (event) => {
@@ -274,7 +513,14 @@ const Admin4 = ({ navigation }) => {
     setElecc("");
     setLugar("");
     setAddress("");
+    setValue("nombre", "");
+    setValue("direccion", "");
+    setValue("latitud", "");
+    setValue("longitud", "");
+    setValue("cancha", "");
     setDireccion([{ lat: 0, long: 0 }]);
+    if (canchasEdit.length !== 0)
+      setCanchasEdit([[{ id: Date.now(), pos: 0, desc: "" }]]);
   };
 
   const getPlaceData = async (latitude, longitude) => {
@@ -288,28 +534,72 @@ const Admin4 = ({ navigation }) => {
         throw new Error("No se encontraron datos de ubicación");
       }
 
-      // Obtener nombre del lugar
-      const lugarNombre = data.display_name || "Lugar desconocido";
+      // Obtener la dirección completa
+      const direccionCompleta =
+        data.display_name ||
+        `${data.address.road || ""}, ${data.address.city || ""}, ${
+          data.address.state || ""
+        }, ${data.address.country || ""}`;
 
-      // Obtener dirección detallada
-      const road = data.address.road || "Calle desconocida";
-      const city =
-        data.address.city ||
-        data.address.town ||
-        data.address.village ||
-        "Ciudad desconocida";
+      // Tratar de obtener el nombre del lugar
+      let lugarNombre = "Nombre desconocido";
 
-      const direccionCompleta = `${road}, ${city}`;
+      // 1. Si el display_name ya tiene un nombre claro, usarlo
+      if (data.display_name) {
+        const partes = data.display_name.split(",");
+        if (partes.length > 1) {
+          // Tratar de separar nombre de la dirección
+          lugarNombre = partes[0].trim(); // Usar el primer fragmento como el nombre
+        }
+      }
 
-      // Guardar en estados
-      setLugar(lugarNombre);
-      setAddress(direccionCompleta);
+      // 2. Si no tiene un nombre claro, tratar de identificar un nombre dentro de la dirección
+      if (lugarNombre === "Nombre desconocido" && direccionCompleta) {
+        const partesDireccion = direccionCompleta.split(",");
 
-      return { lugarNombre, direccionCompleta };
+        // Usamos el primer fragmento como el nombre si no contiene palabras clave de dirección
+        const palabrasClave = [
+          "Avenida",
+          "Calle",
+          "Plaza",
+          "Boulevard",
+          "Camino",
+          "Paseo",
+          "Ruta",
+        ];
+        const posibleNombre = partesDireccion[0].trim();
+        const tienePalabrasClave = palabrasClave.some((palabra) =>
+          posibleNombre.includes(palabra)
+        );
+
+        if (!tienePalabrasClave) {
+          lugarNombre = posibleNombre; // Si no tiene palabras clave, lo consideramos un nombre
+        }
+      }
+
+      // Si sigue siendo "Nombre desconocido", se le permite al usuario ingresar el nombre
+      if (lugarNombre === "Nombre desconocido") {
+        lugarNombre = "Nombre desconocido"; // Esto se usará para activar el campo de texto
+      }
+
+      // Quitar el nombre del lugar de la dirección
+      let direccionSinNombre = direccionCompleta;
+      if (direccionSinNombre.includes(lugarNombre)) {
+        // Si la dirección incluye el nombre, lo quitamos
+        direccionSinNombre = direccionSinNombre.replace(lugarNombre, "").trim();
+      }
+
+      // Guardar en los estados
+      setLugar(lugarNombre); // Nombre del lugar
+      setAddress(direccionSinNombre); // Dirección sin el nombre
+      setValue("nombre", lugarNombre); // Actualiza el formulario con el nombre del lugar
+      setValue("direccion", direccionSinNombre); // Actualiza el formulario con la dirección sin el nombre
+
+      return { lugarNombre, direccionSinNombre };
     } catch (error) {
       console.error("Error al obtener los datos de la ubicación", error);
       return {
-        lugarNombre: "Lugar desconocido",
+        lugarNombre: "Nombre desconocido",
         direccionCompleta: "Dirección desconocida",
       };
     }
@@ -343,12 +633,29 @@ const Admin4 = ({ navigation }) => {
 
   const addRow = () => {
     setRows(rows + 1);
-    setCanchas([...canchas, { id: Date.now(), pos: rows, desc: "" }]); // Agrega una nueva fila con id único
+    setCanchas([...canchas, { id: Date.now(), pos: rows + 1, desc: "" }]); // Agrega una nueva fila con id único
+  };
+
+  const addRowEdit = () => {
+    setRows(canchasEdit.length);
+    setRowsEdit(rows + 1);
+    setCanchasEdit([
+      ...canchasEdit,
+      { id: Date.now(), pos: rows + 1, desc: "" },
+    ]); // Agrega una nueva fila con id único
   };
 
   const updateDescription = (id, text) => {
     setCanchas(
       canchas.map(
+        (cancha) => (cancha.id === id ? { ...cancha, desc: text } : cancha) // Actualiza la descripción de la cancha
+      )
+    );
+  };
+
+  const updateDescriptionWithCount = (id, text) => {
+    setCanchasEdit(
+      canchasEdit.map(
         (cancha) => (cancha.id === id ? { ...cancha, desc: text } : cancha) // Actualiza la descripción de la cancha
       )
     );
@@ -361,18 +668,36 @@ const Admin4 = ({ navigation }) => {
     }
   };
 
+  const removeRowEdit = (id) => {
+    setRows(canchasEdit.length);
+    if (rows > 1) {
+      setRowsEdit(rows - 1);
+      setCanchasEdit(canchasEdit.filter((cancha) => cancha.id !== id)); // Elimina la fila con el id correspondiente
+    }
+  };
+
+  useEffect(() => console.log(errors), [errors]);
+
+  const onSubmit = async (data) => {
+    console.log(data);
+    console.log(markers2);
+    resetMarkers2;
+    console.log(canchas);
+    editando ? updateCampo(data) : crearCampo(data);
+  };
+
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={stylesAdmin4.container}>
         <Animated.ScrollView
-        style={{ gap: 5 }}
-        ref={scrollViewRef}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
+          style={{ gap: 5 }}
+          ref={scrollViewRef}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
         >
           <View
             style={{
@@ -393,7 +718,7 @@ const Admin4 = ({ navigation }) => {
             >
               Campos
             </Text>
-            <TouchableOpacity onPress={() => scrollToPosition(600,1000)}>
+            <TouchableOpacity onPress={() => scrollToPosition(600, 1000)}>
               <Ionicons
                 name="add-circle-sharp"
                 size={30}
@@ -404,6 +729,7 @@ const Admin4 = ({ navigation }) => {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled={true}
             contentContainerStyle={{
               alignItems: "center",
               justifyContent: "center",
@@ -463,7 +789,7 @@ const Admin4 = ({ navigation }) => {
                   >
                     Editar
                   </Text>
-                  <Text
+                  {/* <Text
                     style={[
                       stylesAdmin4.headerCell,
                       FONTS.oswaldNegrita,
@@ -472,7 +798,7 @@ const Admin4 = ({ navigation }) => {
                     ]}
                   >
                     Eliminar
-                  </Text>
+                  </Text> */}
                 </View>
 
                 <View style={{ maxHeight: 250, padding: 5 }}>
@@ -523,6 +849,13 @@ const Admin4 = ({ navigation }) => {
                             stylesAdmin4.editButton,
                             stylesAdmin4.buttonCell,
                           ]}
+                          onPress={() =>
+                            setEdicion(
+                              item,
+                              item.canchas[0].descripcion,
+                              item.canchas
+                            )
+                          }
                         >
                           <Ionicons
                             name="pencil"
@@ -530,7 +863,7 @@ const Admin4 = ({ navigation }) => {
                             color={colores.blanco}
                           />
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                           style={[
                             stylesAdmin4.button,
                             stylesAdmin4.deleteButton,
@@ -542,7 +875,7 @@ const Admin4 = ({ navigation }) => {
                             size={24}
                             color={colores.blanco}
                           />
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                       </View>
                     )}
                   />
@@ -662,66 +995,382 @@ const Admin4 = ({ navigation }) => {
               </View>
             </Animated.View>
           )}
-          {/* <View ref={sectionOneRef}></View> */}
-          <Text
-            style={[
-              styles.TextField,
-              stylesAdmin4.title,
-              FONTS.nunitoNegrita,
-              { paddingVertical: 15, paddingHorizontal: 5 },
-            ]}
-          >
-            Registrar campo
-          </Text>
-          <View style={stylesAdmin4.form}>
-            <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-              Elege buscando el lugar o en el mapa
-            </Text>
-            {Platform.OS !== "web" && (
-              <View
-                style={{
-                  width: "100%",
-                  height: 200,
-                  borderColor: colores.acento_3_1,
-                  borderRadius: 5,
-                  borderWidth: 2,
-                }}
-              >
-                <MapView
-                  provider={MapView.PROVIDER_GOOGLE}
-                  style={{ flex: 1, width: "100%", height: "100%" }}
-                  onLongPress={handleLongPress2}
-                  region={region2}
-                  onRegionChangeComplete={setRegion2}
-                  mapType="hybrid"
-                  onPoiClick={async (event) => {
-                    const { placeId, coordinate, name } = event.nativeEvent;
-                    handleLongPress2(event);
-                    setLugar(name);
-                  }}
+          {vis ? (
+            <View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text
+                  style={[
+                    styles.TextField,
+                    stylesAdmin4.title,
+                    FONTS.nunitoNegrita,
+                    { paddingVertical: 15, paddingHorizontal: 5 },
+                  ]}
                 >
-                  {markers2.map((marker) => (
-                    <Marker
-                      key={marker.id}
-                      coordinate={{
-                        latitude: marker.latitude,
-                        longitude: marker.longitude,
-                      }}
-                      title={marker.title}
+                  {editando ? "Editar campo" : "Registrar campo"}
+                </Text>
+                {!editando ? null : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditando(false);
+                      removeEdicion();
+                      if (canchasEdit.length !== 0)
+                        setCanchasEdit([
+                          [{ id: Date.now(), pos: 0, desc: "" }],
+                        ]);
+                    }}
+                  >
+                    <Ionicons
+                      name="refresh-circle"
+                      size={30}
+                      color={colores.acento_2_2}
                     />
-                  ))}
-                </MapView>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={stylesAdmin4.form}>
+                <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                  Elege buscando el lugar en el mapa
+                </Text>
+                {Platform.OS !== "web" && (
+                  <View
+                    style={{
+                      width: "100%",
+                      height: 200,
+                      borderColor: colores.acento_3_1,
+                      borderRadius: 5,
+                      borderWidth: 2,
+                    }}
+                  >
+                    <MapView
+                      provider={MapView.PROVIDER_GOOGLE}
+                      style={{ flex: 1, width: "100%", height: "100%" }}
+                      onLongPress={handleLongPress2}
+                      region={region2}
+                      onRegionChangeComplete={setRegion2}
+                      mapType="hybrid"
+                      onPoiClick={async (event) => {
+                        const { placeId, coordinate, name } = event.nativeEvent;
+                        handleLongPress2(event);
+                        setLugar(name);
+                      }}
+                    >
+                      {markers2.map((marker) => (
+                        <Marker
+                          key={marker.id}
+                          coordinate={{
+                            latitude: marker.latitude,
+                            longitude: marker.longitude,
+                          }}
+                          title={marker.title}
+                        />
+                      ))}
+                    </MapView>
+                    <TouchableOpacity
+                      onPress={resetMarkers2}
+                      style={{
+                        width: "30%",
+                        backgroundColor: colores.domin_1_4,
+                        alignSelf: "flex-end",
+                        alignItems: "center",
+                        padding: 10,
+                        margin: 5,
+                        borderRadius: 10,
+                        marginTop: -50,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          FONTS.oswald,
+                          { fontSize: 15, color: colores.blanco },
+                        ]}
+                      >
+                        Reestablecer
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <Controller
+                  control={control}
+                  name="nombre"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      {value === "Nombre desconocido" ? (
+                        <TextInput
+                          style={[FONTS.oswald, stylesAdmin4.input]}
+                          placeholderTextColor={colores.domin_2_2}
+                          placeholder="Escribe el nombre"
+                          value={value}
+                          onChangeText={onChange}
+                        />
+                      ) : (
+                        <TextInput
+                          style={[FONTS.oswald, stylesAdmin4.input]}
+                          placeholderTextColor={colores.domin_2_2}
+                          value={value}
+                          placeholder="Busca un lugar"
+                          onChangeText={onChange}
+                          disabled={true}
+                        />
+                      )}
+                      {errors.nombre && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.nombre.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="direccion"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TextInput
+                        style={[FONTS.oswald, stylesAdmin4.input]}
+                        placeholderTextColor={colores.domin_2_2}
+                        placeholder="Dirección"
+                        value={value}
+                      />
+                      {errors.direccion && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.direccion.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="latitud"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      {errors.latitud && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.latitud.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="longitud"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      {errors.longitud && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.longitud.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                  Asignación de canchas
+                </Text>
+                <View>
+                  {editando
+                    ? canchasEdit.map((cancha, index) => (
+                        <View
+                          key={cancha.id}
+                          style={{
+                            flexDirection: "row",
+                            height: 50,
+                            gap: 5,
+                            paddingVertical: 3,
+                          }}
+                        >
+                          <TextInput
+                            style={[FONTS.oswald, stylesAdmin4.input2]}
+                            placeholderTextColor={colores.domin_2_2}
+                            placeholder="#"
+                            keyboardType="numeric"
+                            value={(index + 1).toString()} // Muestra el número de la fila
+                            editable={false} // Solo visualización, no editable
+                          />
+                          {index === 0 ? (
+                            <Controller
+                              control={control}
+                              name="cancha"
+                              render={({ field: { onChange, value } }) => (
+                                <View
+                                  style={{
+                                    flexDirection: "column",
+                                    width: "75%",
+                                  }}
+                                >
+                                  <TextInput
+                                    style={[FONTS.oswald, stylesAdmin4.input]}
+                                    placeholderTextColor={colores.domin_2_2}
+                                    placeholder="Descripción"
+                                    onChangeText={(text) => {
+                                      onChange(text);
+                                      updateDescriptionWithCount(
+                                        cancha.id,
+                                        text
+                                      );
+                                    }}
+                                    value={value}
+                                  />
+                                  {errors.cancha && (
+                                    <Text style={[formStyle.errText]}>
+                                      {errors.cancha.message}
+                                    </Text>
+                                  )}
+                                </View>
+                              )}
+                            />
+                          ) : (
+                            <TextInput
+                              style={[
+                                FONTS.oswald,
+                                stylesAdmin4.input,
+                                { width: "75%" },
+                              ]}
+                              placeholderTextColor={colores.domin_2_2}
+                              placeholder="Descripción"
+                              onChangeText={(text) =>
+                                updateDescriptionWithCount(cancha.id, text)
+                              } // Actualiza la descripción
+                              value={cancha.descripcion} // Muestra el valor actual de la descripción
+                            />
+                          )}
+                          {/* <TouchableOpacity
+                            style={[
+                              stylesAdmin4.button2,
+                              stylesAdmin4.editButton,
+                            ]}
+                            onPress={addRowEdit} // Agrega una nueva fila
+                          >
+                            <Ionicons
+                              name="add"
+                              size={18}
+                              color={colores.blanco}
+                            />
+                          </TouchableOpacity> */}
+                          <TouchableOpacity
+                            style={[
+                              stylesAdmin4.button2,
+                              cancha.estatusCancha
+                                ? stylesAdmin4.deleteButton
+                                : stylesAdmin4.redoButton,
+                            ]}
+                            onPress={() => /*removeRowEdit(cancha.id)*/ {
+                              setModalCancha(true), setIdCancha(cancha);
+                            }}
+                          >
+                            <Ionicons
+                              name={cancha.estatusCancha ? "trash" : "reload"}
+                              size={18}
+                              color={colores.blanco}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                    : canchas.map((cancha, index) => (
+                        <View
+                          key={cancha.id}
+                          style={{
+                            flexDirection: "row",
+                            height: 50,
+                            gap: 5,
+                            paddingVertical: 3,
+                          }}
+                        >
+                          <TextInput
+                            style={[FONTS.oswald, stylesAdmin4.input2]}
+                            placeholderTextColor={colores.domin_2_2}
+                            placeholder="#"
+                            keyboardType="numeric"
+                            value={(index + 1).toString()} // Muestra el número de la fila
+                            editable={false} // Solo visualización, no editable
+                          />
+                          {index === 0 ? (
+                            <Controller
+                              control={control}
+                              name="cancha"
+                              render={({ field: { onChange, value } }) => (
+                                <View
+                                  style={{
+                                    flexDirection: "column",
+                                    width: "50%",
+                                  }}
+                                >
+                                  <TextInput
+                                    style={[FONTS.oswald, stylesAdmin4.input]}
+                                    placeholderTextColor={colores.domin_2_2}
+                                    placeholder="Descripción"
+                                    onChangeText={(text) => {
+                                      onChange(text);
+                                      updateDescription(cancha.id, text);
+                                    }}
+                                    value={value}
+                                  />
+                                  {errors.cancha && (
+                                    <Text style={[formStyle.errText]}>
+                                      {errors.cancha.message}
+                                    </Text>
+                                  )}
+                                </View>
+                              )}
+                            />
+                          ) : (
+                            <TextInput
+                              style={[
+                                FONTS.oswald,
+                                stylesAdmin4.input,
+                                { width: "50%" },
+                              ]}
+                              placeholderTextColor={colores.domin_2_2}
+                              placeholder="Descripción"
+                              onChangeText={(text) =>
+                                updateDescription(cancha.id, text)
+                              } // Actualiza la descripción
+                              value={cancha.desc} // Muestra el valor actual de la descripción
+                            />
+                          )}
+                          <TouchableOpacity
+                            style={[
+                              stylesAdmin4.button2,
+                              stylesAdmin4.editButton,
+                            ]}
+                            onPress={addRow} // Agrega una nueva fila
+                          >
+                            <Ionicons
+                              name="add"
+                              size={18}
+                              color={colores.blanco}
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              stylesAdmin4.button2,
+                              stylesAdmin4.deleteButton,
+                            ]}
+                            onPress={() => removeRow(cancha.id)} // Elimina la fila correspondiente
+                          >
+                            <Ionicons
+                              name="remove"
+                              size={18}
+                              color={colores.blanco}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                </View>
                 <TouchableOpacity
-                  onPress={resetMarkers2}
+                  //onPress={handleSubmit(onSubmit)}
+                  disabled={!isValid}
+                  onPress={handleSubmit(onSubmit)}
                   style={{
-                    width: "30%",
+                    width: "50%",
                     backgroundColor: colores.domin_1_4,
-                    alignSelf: "flex-end",
+                    alignSelf: "center",
                     alignItems: "center",
                     padding: 10,
                     margin: 5,
                     borderRadius: 10,
-                    marginTop: -50,
+                    opacity: isValid ? 1 : 0.5,
                   }}
                 >
                   <Text
@@ -730,89 +1379,61 @@ const Admin4 = ({ navigation }) => {
                       { fontSize: 15, color: colores.blanco },
                     ]}
                   >
-                    Reestablecer
+                    {editando ? "Actualizar" : "Registrar"}
                   </Text>
                 </TouchableOpacity>
               </View>
-            )}
-            <TextInput
-              style={[FONTS.oswald, stylesAdmin4.input]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Nombre"
-              value={elecc === "" ? "" : elecc}
-            />
-            <TextInput
-              style={[FONTS.oswald, stylesAdmin4.input]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Dirección"
-              value={address === "" ? "" : address}
-            />
-            <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-              Asignación de canchas
-            </Text>
-            <View>
-              {canchas.map((cancha, index) => (
-                <View
-                  key={cancha.id}
+            </View>
+          ) : null}
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={modalCancha}
+            onRequestClose={() => setModalCancha(false)}
+          >
+            <View style={stylesModal.modalContainer}>
+              <View style={stylesModal.modalContent}>
+                <TouchableOpacity
                   style={{
-                    flexDirection: "row",
-                    height: 50,
-                    gap: 5,
-                    paddingVertical: 3,
+                    alignSelf: "flex-end",
+                    justifyContent: "flex-start",
+                    marginTop: -10,
+                    marginRight: -10,
                   }}
+                  onPress={() => setModalCancha(false)}
                 >
-                  <TextInput
-                    style={[FONTS.oswald, stylesAdmin4.input2]}
-                    placeholderTextColor={colores.domin_2_2}
-                    placeholder="#"
-                    keyboardType="numeric"
-                    value={(index + 1).toString()} // Muestra el número de la fila
-                    editable={false} // Solo visualización, no editable
-                  />
-                  <TextInput
-                    style={[FONTS.oswald, stylesAdmin4.input, { width: "50%" }]}
-                    placeholderTextColor={colores.domin_2_2}
-                    placeholder="Descripción"
-                    onChangeText={(text) => updateDescription(cancha.id, text)} // Actualiza la descripción
-                    value={cancha.desc} // Muestra el valor actual de la descripción
-                  />
+                  <Ionicons name="close" size={24} color={colores.negro} />
+                </TouchableOpacity>
+                <Ionicons name="help" size={48} color={colores.domin_2_1} />
+                <Text style={[stylesModal.modalTitle, FONTS.oswaldNegrita]}>
+                  {idCancha.estatusCancha
+                    ? "¿Deshabilitar cancha?"
+                    : "¿Rehabilitar cancha?"}
+                </Text>
+                <Text style={[FONTS.oswald, stylesModal.modalText]}>
+                  ¿Seguro deseas hacerlo?
+                </Text>
+                <View style={stylesModal.modalButRow}>
                   <TouchableOpacity
-                    style={[stylesAdmin4.button2, stylesAdmin4.editButton]}
-                    onPress={addRow} // Agrega una nueva fila
+                    style={[stylesModal.buttonBack, FONTS.oswald]}
+                    onPress={async () => quitarCancha(idCancha.id) }
                   >
-                    <Ionicons name="add" size={18} color={colores.blanco} />
+                    <Text style={[stylesModal.buttonText, FONTS.oswald]}>
+                      Si
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[stylesAdmin4.button2, stylesAdmin4.deleteButton]}
-                    onPress={() => removeRow(cancha.id)} // Elimina la fila correspondiente
+                    style={[stylesModal.buttonBack, FONTS.oswald]}
+                    onPress={() => setModalCancha(false)}
                   >
-                    <Ionicons name="remove" size={18} color={colores.blanco} />
+                    <Text style={[stylesModal.buttonText, FONTS.oswald]}>
+                      No
+                    </Text>
                   </TouchableOpacity>
                 </View>
-              ))}
+              </View>
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                resetMarkers2;
-                console.log(canchas);
-              }}
-              style={{
-                width: "50%",
-                backgroundColor: colores.domin_1_4,
-                alignSelf: "center",
-                alignItems: "center",
-                padding: 10,
-                margin: 5,
-                borderRadius: 10,
-              }}
-            >
-              <Text
-                style={[FONTS.oswald, { fontSize: 15, color: colores.blanco }]}
-              >
-                Registrar
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </Modal>
         </Animated.ScrollView>
       </SafeAreaView>
     </GestureHandlerRootView>
@@ -880,6 +1501,7 @@ const stylesAdmin4 = StyleSheet.create({
 
   editButton: { backgroundColor: colores.acento_2_3 },
   deleteButton: { backgroundColor: colores.domin_2_2 },
+  redoButton: { backgroundColor: colores.acento_3_1 },
 
   input: {
     borderColor: colores.domin_2_2,
@@ -974,6 +1596,103 @@ const stylesAdmin4 = StyleSheet.create({
     borderRadius: 5,
   },
   closeButtonText: { color: "white", textAlign: "center" },
+});
+
+const stylesModal = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  button: {
+    flexDirection: "row",
+    backgroundColor: colores.domin_2_3,
+    padding: 5,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: 250,
+    gap: 5,
+  },
+  modalContent2: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: 300,
+    gap: 5,
+  },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: "#FF3B30",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: "white",
+    fontSize: 16,
+  },
+  modalTitle: {
+    width: "100%",
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  modalItem: {
+    borderRadius: 5,
+    width: "100%",
+    padding: 5,
+    marginVertical: 3,
+    paddingRight: 8,
+  },
+  modalItemActive: {
+    backgroundColor: colores.domin_2_5,
+    opacity: 0.5,
+  },
+  buttonBack: {
+    flexDirection: "row",
+    backgroundColor: colores.domin_2_3,
+    padding: 5,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "50%",
+    marginBottom: 5,
+  },
+  modalButRow: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 5,
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: colores.blanco,
+    alignItems: "center",
+  },
+  modalText: {
+    textAlign: "justify",
+    paddingVertical: 10,
+  },
+  modalDato: {
+    width: "100%",
+  },
+  fotoEquipo: { width: 100, height: 100, resizeMode: "contain" },
 });
 
 export default Admin4;

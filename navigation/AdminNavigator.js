@@ -55,7 +55,7 @@ import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-function EquiposStack() {
+function EquiposStack({ correo, rol }) {
   return (
     <Stack.Navigator
       screenOptions={({ navigation, route }) => ({
@@ -64,9 +64,12 @@ function EquiposStack() {
             navigation={navigation}
             title={route.name}
             isRoot={route.name === "Menú de equipos"}
+            correo={correo}
+            rol={rol}
+            name={""}
+            img={""}
           />
         ),
-        //headerShown: false
       })}
     >
       <Stack.Screen name="Menú de equipos" component={Admin2} />
@@ -108,11 +111,11 @@ const CustomDrawerContent = (props) => {
     <View style={{ flex: 1, backgroundColor: colores.base_1_1 }}>
       <View style={styles.header}>
         <View style={styles.leave}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={() => navigation.dispatch(DrawerActions.closeDrawer())}
           >
             <Ionicons name="close" size={30} color="white" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <View style={styles.imgTitle}>
           <Image
@@ -131,15 +134,16 @@ const CustomDrawerContent = (props) => {
 
 function AdminDrawerNavigator({ navigation }) {
   const { setToken } = useContext(TokenContext);
-  const { getToken, decodeToken, getUserEmail, getUserRole } = useContext(AuthContext);
+  const { getToken, decodeToken, getUserEmail, getUserRole } =
+    useContext(AuthContext);
   const { logout, removeToken, removeUser } = useContext(AuthContext);
 
   const [tokenData, setTokenData] = useState("");
   const [expire, setExpire] = useState(false);
   const [switcht, setSwitcht] = useState(false);
   const [loadData, setLoadData] = useState(true);
-  const [correo, setCorreo] = useState('');
-  const [rol,setRol] = useState('');
+  const [correo, setCorreo] = useState("");
+  const [rol, setRol] = useState("");
   const [noData, setNoData] = useState(false);
   const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
 
@@ -261,8 +265,8 @@ function AdminDrawerNavigator({ navigation }) {
             isRoot={route.name !== "Equipos" && route.name !== "Perfil"}
             correo={correo}
             rol={rol}
-            name={''}
-            img={''}
+            name={""}
+            img={""}
           />
         ),
       }}
@@ -277,17 +281,17 @@ function AdminDrawerNavigator({ navigation }) {
           drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
       />
-
       <Drawer.Screen
         name="Dueños"
-        component={EquiposStack}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
           drawerLabelStyle: { fontFamily: "Oswald_400Regular" },
         }}
-      />
+      >
+        {() => <EquiposStack correo={correo} rol={rol} />}
+      </Drawer.Screen>
       <Drawer.Screen
         name="Torneos"
         component={Admin3}

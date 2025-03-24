@@ -8,6 +8,7 @@ import {
   View,
   TouchableOpacity,
   Image,
+  Alert
 } from "react-native";
 //import DateTimePicker from '@react-native-community/datetimepicker';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -45,6 +46,7 @@ const Admin7 = ({ navigation }) => {
     //onChange(formattedDate); // Actualiza el valor del formulario con formato YYYY-MM-DD
     setShow(false); // Cierra el modal
     setFechaInicio(formattedDate)
+    setForm({ ...form, fechaInicio: formattedDate })
   };
 
   const onChangeFechaInicio = (event, selectedDate) => {
@@ -60,6 +62,12 @@ const Admin7 = ({ navigation }) => {
       setForm({ ...form, fechaFin: selectedDate });
     }
   };
+
+  async function crearConvocatoria() {
+    if(form.nombre === ''){
+      Alert.alert("Campo vacio", "El campo ")
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -146,14 +154,14 @@ const Admin7 = ({ navigation }) => {
             </View>
             <View style={[styles.row, {gap:2}]}>
               <TextInput
-                style={[FONTS.oswald, styles.input]}
+                style={[FONTS.oswald, styles.input, {width: '25%'}]}
                 placeholder="Max. equipos"
                 value={form.maxEquipos}
                 placeholderTextColor={colores.domin_2_2}
                 onChangeText={(text) => setForm({ ...form, maxEquipos: text })}
               />
               <TextInput
-                style={[FONTS.oswald, styles.input]}
+                style={[FONTS.oswald, styles.input, {width: '25%'}]}
                 placeholder="Min. equipos"
                 value={form.minEquipos}
                 placeholderTextColor={colores.domin_2_2}
@@ -182,7 +190,7 @@ const Admin7 = ({ navigation }) => {
               Previsualizar
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.publishButton}>
+          <TouchableOpacity style={styles.publishButton} onPress={() => console.log(form)}>
             <Text style={[FONTS.oswaldNegrita, styles.buttonText]}>
               Publicar
             </Text>
