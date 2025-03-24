@@ -8,24 +8,20 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { DrawerActions } from '@react-navigation/native'; // Importación crucial
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
 
-const UserAppBar = ({ navigation, title, isRoot }) => {
-  isRoot === true
-  const control = !isRoot;
+const UserAppBar = ({ navigation, title, isRoot = true }) => { // Valor por defecto para isRoot
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.appBar}>
         {/* Botón para abrir el menú */}
         <TouchableOpacity
-          onPress={() =>
-            navigation.dispatch(DrawerActions.openDrawer())
-          }
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         >
           <Ionicons
-            //name={"menu"}
-            name={isRoot ? "menu" : "menu"}
+            name="menu" // Simplificado
             size={24}
             color="white"
           />
@@ -34,25 +30,15 @@ const UserAppBar = ({ navigation, title, isRoot }) => {
         {/* Título de la pantalla actual */}
         <Text style={[styles.encabezado, FONTS.nunitoNegrita]}>{title}</Text>
 
+        {/* Botón de perfil */}
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate(title == "Perfil" ? "Home" : "Perfil", {
-              usuario: "Juan Peréz",
-              rol: "Dueño",
-            })
-          }
+          onPress={() => navigation.navigate(title === "Perfil" ? "Home" : "Perfil")}
         >
           <Image
             source={{
               uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
             }}
-            style={{
-              width: 50,
-              height: 50,
-              backgroundColor: colores.base_1_1,
-              borderRadius: 100,
-              resizeMode: "stretch",
-            }}
+            style={styles.profileImage}
           />
         </TouchableOpacity>
       </View>
@@ -61,7 +47,9 @@ const UserAppBar = ({ navigation, title, isRoot }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colores.base_3_1 },
+  safeArea: { 
+    backgroundColor: colores.base_3_1 
+  },
   appBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -76,15 +64,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingLeft: 20,
   },
-  button: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    backgroundColor: "#FF5958",
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
+  profileImage: {
+    width: 40,
+    height: 40,
+    backgroundColor: colores.base_1_1,
+    borderRadius: 20,
+    resizeMode: "cover",
   },
 });
 

@@ -16,7 +16,7 @@ const UserAppBar = ({ navigation, title }) => {
         {/* Botón para abrir el menú */}
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Ionicons name="menu" size={40} color="white" />
-        </TouchableOpacity>
+        </TouchableOpacity>z
 
         {/* Título de la pantalla actual */}
         <Text style={styles.encabezado}>{title}</Text>

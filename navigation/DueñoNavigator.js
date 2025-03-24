@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import DueñoDashboard from "../screens/dueño/DueñoDashboard";
-import CustomDrawerContent from "./CustomDrawerContent"; // Importar el componente del menú
+import CustomDrawerContent from "./CustomDrawerContent";
 import { Ionicons } from "@expo/vector-icons";
-import colores from "../style/colors"; // Asegúrate de importar colores
+import colores from "../style/colors";
 import { StyleSheet } from "react-native";
 import DuenoBar from "./DuenoAppbar";
 import PerfilScreen from "../screens/Perfil";
@@ -20,6 +20,11 @@ import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ErrorComponent from "../components/ErrorComponent";
+import MisPagosScreen from '../screens/dueño/MisPagos'; // Pantalla de pagos
+import CredencialesScreen from '../screens/dueño/Credenciales'; // Pantalla de credenciales
+import MiEquipoScreen from '../screens/dueño/MiEquipo'; // Pantalla de equipo
+import HistorialPagos from "../screens/dueño/HistorialPagos";
+
 const Drawer = createDrawerNavigator();
 
 const DueñoNavigator = () => {
@@ -34,7 +39,6 @@ const DueñoNavigator = () => {
   const [noData, setNoData] = useState(false);
   const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
 
-  // useRef para mantener el valor más reciente del token
   const tokenRef = useRef("");
 
   useEffect(() => {
@@ -47,7 +51,7 @@ const DueñoNavigator = () => {
         if (fetchedToken) {
           setTokenData(fetchedToken);
           setToken(fetchedToken);
-          tokenRef.current = fetchedToken; // Actualizar el token más reciente
+          tokenRef.current = fetchedToken;
           console.log(fetchedToken, "obtenido");
           validateToken(fetchedToken);
           setNoData(false);
@@ -82,15 +86,14 @@ const DueñoNavigator = () => {
       }
     };
 
-    fetchToken(); // Ejecutar al montar el componente
+    fetchToken();
 
-    // Verificar cada 5 minutos con el token más reciente
     intervalId = setInterval(() => {
       console.log("Revisando expiración del token...");
       validateToken(tokenRef.current);
     }, tokenCheckInterval);
 
-    return () => clearInterval(intervalId); // Limpiar intervalo al desmontar
+    return () => clearInterval(intervalId);
   }, [switcht]);
 
   if (loadData) {
@@ -120,6 +123,7 @@ const DueñoNavigator = () => {
       />
     );
   }
+
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -143,22 +147,49 @@ const DueñoNavigator = () => {
           ),
         }}
       />
+      
       <Drawer.Screen
-        name="Perfil"
-        component={PerfilScreen}
+        name="Mis Pagos"
+        component={MisPagosScreen}
         options={{
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="briefcase" size={size} color={color} />
+            <Ionicons name="wallet" size={size} color={color} />
           ),
-          drawerItemStyle: { display: "none" },
         }}
       />
-    </Drawer.Navigator> // Aquí cierra correctamente el JSX
+      <Drawer.Screen
+        name="Credenciales"
+        component={CredencialesScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="id-card" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Mi Equipo"
+        component={MiEquipoScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+     <Drawer.Screen
+        name="Historial de pagos"
+        component={HistorialPagos}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+  
+    </Drawer.Navigator>
   );
 };
 
 export default DueñoNavigator;
-
 const styles = StyleSheet.create({
   header: {
     height: 150,
