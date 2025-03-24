@@ -248,14 +248,14 @@ const Admin1 = ({ navigation, route }) => {
       });
 
     api
-      .get(`/api/pagos/admin/todos`, {
+      .get(`/api/pagos/admin/contarpendientes`, {
         headers: {
           Authorization: `Bearer ${tokData}`,
         },
       })
       .then((res) => {
-        if (res.data.length === 0) setTotPagos(0);
-        else setTotPagos(res.data.length);
+        if (res.data.length === '') setTotPagos(0);
+        else setTotPagos(res.data);
       })
       .catch((e) => {
         console.error(e, e.res.message);
