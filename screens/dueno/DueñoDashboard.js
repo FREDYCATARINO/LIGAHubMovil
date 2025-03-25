@@ -9,7 +9,9 @@ import torneoImage from '../../assets/poster.png';
 
 const TorneoScreen = () => {
   const navigation = useNavigation();
-  navigation.dispatch(DrawerActions.openDrawer());
+  const openDrawer = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
 
   return (
     <ScrollView style={styles.container}>
