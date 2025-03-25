@@ -342,29 +342,6 @@ const Admin7 = ({ navigation }) => {
             </View>
           ) : (
             <View>
-              <LottieView
-                source={require("../../assets/confetti.json")}
-                autoPlay
-                loop
-                style={styles.icon}
-                speed={1}
-                color={colores.base_3_1}
-              />
-              <Text
-                style={[
-                  FONTS.nunitoNegrita,
-                  styles.errMessCenter,
-                  {
-                    marginTop: 10,
-                    fontSize: 30,
-                    alignContent: "center",
-                    width: "100%",
-                    textAlign: "center",
-                  },
-                ]}
-              >
-                ¡Yuju!
-              </Text>
               <Text
                 style={[
                   FONTS.oswald,
