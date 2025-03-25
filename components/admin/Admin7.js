@@ -128,6 +128,7 @@ const Admin7 = ({ navigation }) => {
         setReload(!reload);
         setImage(res.data);
         setImage2("url");
+        console.log(res.data)
       })
       .catch((error) => {
         console.error(error, error.response?.data?.message);
