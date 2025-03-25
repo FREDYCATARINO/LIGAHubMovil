@@ -833,10 +833,6 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                           readOnly={true}
                         />
 
-                        {/* <Text style={styles.fechaTexto}>
-                    {value || "Seleccionar Fecha"}{" "}
-                  </Text> */}
-
                         {errors.fechaInicio && (
                           <Text style={[formStyle.errText]}>
                             {errors.fechaInicio.message}
@@ -1025,7 +1021,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             >
               <Ionicons name="close" size={24} color={colores.negro} />
             </TouchableOpacity>
-            <Ionicons name="help" size={48} color={colores.domin_2_1} />
+            <Ionicons name="help-circle" size={48} color={colores.domin_2_1} />
             <Text style={[stylesModal.modalTitle, FONTS.oswaldNegrita]}>
               ¿Eliminar torneo?
             </Text>

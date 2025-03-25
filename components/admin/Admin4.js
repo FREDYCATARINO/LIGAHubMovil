@@ -1404,7 +1404,7 @@ const Admin4 = ({ navigation }) => {
                 >
                   <Ionicons name="close" size={24} color={colores.negro} />
                 </TouchableOpacity>
-                <Ionicons name="help" size={48} color={colores.domin_2_1} />
+                <Ionicons name="help-circle" size={48} color={colores.domin_2_1} />
                 <Text style={[stylesModal.modalTitle, FONTS.oswaldNegrita]}>
                   {idCancha.estatusCancha
                     ? "¿Deshabilitar cancha?"

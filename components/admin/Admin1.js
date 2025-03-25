@@ -120,7 +120,7 @@ const Admin1 = ({ navigation, route }) => {
       setTokData(tok);
       setLoadSolids(true);
       api
-        .get(`/api/solicitudes/admin`, {
+        .get(`/api/solicitudes/admin/pendientes`, {
           headers: {
             Authorization: `Bearer ${tok}`,
           },

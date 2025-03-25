@@ -8,7 +8,7 @@ import {
   View,
   TouchableOpacity,
   Image,
-  Alert
+  Alert,
 } from "react-native";
 //import DateTimePicker from '@react-native-community/datetimepicker';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -17,6 +17,9 @@ import FONTS from "../../style/fonts";
 import { Picker } from "@react-native-picker/picker";
 import formStyle from "../../style/formStyles";
 import colores from "../../style/colors";
+
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 const Admin7 = ({ navigation }) => {
   const [form, setForm] = useState({
@@ -33,6 +36,54 @@ const Admin7 = ({ navigation }) => {
 
   const [show, setShow] = useState(false);
 
+  const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
+
+  const [torneo, setTorneo] = useState({});
+  const [listaTorneos, setListaTorneos] = useState([]);
+  const [loadPagos, setLoadPagos] = useState(false);
+  const [fallo, setFallo] = useState("");
+  const [tokData, setTokData] = useState("");
+  const [reload, setReload] = useState(false);
+
+  useEffect(() => {
+    const getPagos = async () => {
+      const id = await getUserRole();
+      const rolo = await getUserId();
+      const tok = await getToken();
+      setTokData(tok);
+      setLoadPagos(true);
+      api
+        .get(`/api/pagos/admin/todos`, {
+          headers: {
+            Authorization: `Bearer ${tok}`,
+          },
+        })
+        .then((res) => {
+          if (res.data.length === 0)
+            setFallo(
+              "No hay torneos en espera, vuelve más tarde"
+            );
+          else setListaTorneos(res.data);
+        })
+        .catch((e) => {
+          console.error(e, e.response.message);
+          if (e.response.status === 403) {
+            console.log("⚠️ Token expirado, redirigiendo a login...");
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout();
+            return;
+          }
+          if (e.response.message) setFallo(e.response.message);
+          else setFallo("Error al obtener pagos");
+        })
+        .finally(() => setLoadPagos(false));
+    };
+    getPagos();
+  }, [reload]);
+
   const formatDate = (date) => {
     // Convierte la fecha en formato YYYY-MM-DD
     const year = date.getFullYear();
@@ -45,8 +96,8 @@ const Admin7 = ({ navigation }) => {
     const formattedDate = formatDate(date);
     //onChange(formattedDate); // Actualiza el valor del formulario con formato YYYY-MM-DD
     setShow(false); // Cierra el modal
-    setFechaInicio(formattedDate)
-    setForm({ ...form, fechaInicio: formattedDate })
+    setFechaInicio(formattedDate);
+    setForm({ ...form, fechaInicio: formattedDate });
   };
 
   const onChangeFechaInicio = (event, selectedDate) => {
@@ -64,14 +115,17 @@ const Admin7 = ({ navigation }) => {
   };
 
   async function crearConvocatoria() {
-    if(form.nombre === ''){
-      Alert.alert("Campo vacio", "El campo ")
+    if (form.nombre === "") {
+      Alert.alert("Campo vacio", "El campo ");
     }
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text
           style={[
             styles.title,
@@ -145,23 +199,23 @@ const Admin7 = ({ navigation }) => {
             </View>
             <View style={styles.row}>
               <TextInput
-                style={[FONTS.oswald, styles.input, {width: '100%'}]}
+                style={[FONTS.oswald, styles.input, { width: "100%" }]}
                 placeholder="Nombre"
                 value={form.nombre}
                 placeholderTextColor={colores.domin_2_2}
                 onChangeText={(text) => setForm({ ...form, nombre: text })}
               />
             </View>
-            <View style={[styles.row, {gap:2}]}>
+            <View style={[styles.row, { gap: 2 }]}>
               <TextInput
-                style={[FONTS.oswald, styles.input, {width: '25%'}]}
+                style={[FONTS.oswald, styles.input, { width: "25%" }]}
                 placeholder="Max. equipos"
                 value={form.maxEquipos}
                 placeholderTextColor={colores.domin_2_2}
                 onChangeText={(text) => setForm({ ...form, maxEquipos: text })}
               />
               <TextInput
-                style={[FONTS.oswald, styles.input, {width: '25%'}]}
+                style={[FONTS.oswald, styles.input, { width: "25%" }]}
                 placeholder="Min. equipos"
                 value={form.minEquipos}
                 placeholderTextColor={colores.domin_2_2}
@@ -190,7 +244,10 @@ const Admin7 = ({ navigation }) => {
               Previsualizar
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.publishButton} onPress={() => console.log(form)}>
+          <TouchableOpacity
+            style={styles.publishButton}
+            onPress={() => console.log(form)}
+          >
             <Text style={[FONTS.oswaldNegrita, styles.buttonText]}>
               Publicar
             </Text>
@@ -256,8 +313,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
   },
-  previewButton: { backgroundColor: colores.acento_4_1, padding: 10, borderRadius: 5 },
-  publishButton: { backgroundColor: colores.domin_2_5, padding: 10, borderRadius: 5 },
+  previewButton: {
+    backgroundColor: colores.acento_4_1,
+    padding: 10,
+    borderRadius: 5,
+  },
+  publishButton: {
+    backgroundColor: colores.domin_2_5,
+    padding: 10,
+    borderRadius: 5,
+  },
   buttonText: { color: "#fff", textAlign: "center" },
 });
 
