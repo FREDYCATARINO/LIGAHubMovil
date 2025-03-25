@@ -67,11 +67,14 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
   const [formVis, setFormVis] = useState(false);
   const [image, setImage] = useState(null);
+  const [motivo, setMotivo] = useState("");
 
   const ordenEstados = ["En Juego", "En Espera", "Finalizado"];
 
   const torneo = yup.object().shape({
-    nombreTorneo: yup.string("No válido"), //.required("El nombre es requerido"),
+    id: yup.number(),
+    foto: yup.string(),
+    nombreTorneo: yup.string("No válido").required("El nombre es requerido"),
     descripcion: yup
       .string("No válido")
       .max(500, "Tamaño de descripción excedido")
@@ -135,12 +138,16 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
   const onSubmit = async (data) => {
     console.log(data);
-    if (!image || typeof image !== "string" || !image.startsWith("file://")) {
-      console.log("Error: No hay imagen seleccionada.");
-      return Alert.alert("Error", "Debes seleccionar una imagen válida.");
+    if (!editar) {
+      if (!image || typeof image !== "string" || !image.startsWith("file://")) {
+        console.log("Error: No hay imagen seleccionada.");
+        return Alert.alert("Error", "Debes seleccionar una imagen válida.");
+      }
     }
 
-    await registrarTorneo(data, image);
+    !editar
+      ? await registrarTorneo(data, image)
+      : await updateTorneo(data, image);
   };
 
   const [showInicio, setShowInicio] = useState(false);
@@ -149,6 +156,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const [fechaInicio, setFechaInicio] = useState(new Date());
 
   const [show, setShow] = useState(false);
+  const [editar, setEditar] = useState(false);
 
   const formatDate = (date) => {
     // Convierte la fecha en formato YYYY-MM-DD
@@ -176,21 +184,60 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     return ordenEstados.length;
   };
 
+  function setEdicion(torneo) {
+    setValue("id", torneo.id);
+    setValue("nombreTorneo", torneo.nombreTorneo);
+    setValue("descripcion", torneo.descripcion);
+    setValue("fechaInicio", torneo.fechaInicio);
+    setValue("maxEquipos", torneo.maxEquipos);
+    setValue("minEquipos", torneo.minEquipos);
+    setValue("equiposLiguilla", torneo.equiposLiguilla);
+    setValue("premio", torneo.premio);
+    setValue("vueltas", torneo.vueltas);
+    setImage(torneo.logoTorneo);
+  }
+
+  function removeEdicion() {
+    setValue("id", "");
+    setValue("nombreTorneo", "");
+    setValue("descripcion", "");
+    setValue("fechaInicio", "");
+    setValue("maxEquipos", "");
+    setValue("minEquipos", "");
+    setValue("equiposLiguilla", "");
+    setValue("premio", "");
+    setValue("vueltas", "");
+    setImage("");
+    setFormVis(false);
+  }
+
+  function editarFunction(torneo) {
+    console.log(torneo);
+    setEdicion(torneo);
+    if (!formVis) setFormVis(!formVis);
+    setEditar(true);
+    console.log(torneo);
+  }
+
   const registrarTorneo = async (data, image) => {
     const formData = new FormData();
     console.log(errors);
     console.log(image);
 
-    formData.append("torneo", JSON.stringify({
-      nombreTorneo: `${data.nombreTorneo} En Espera`,
-      descripcion: data.descripcion,
-      fechaInicio: data.fechaInicio,
-      maxEquipos: data.maxEquipos,
-      minEquipos: data.minEquipos,
-      equiposLiguilla: data.equiposLiguilla,
-      premio: data.premio,
-      vueltas: data.vueltas,
-    }), "torneo.json"); // <-- Añadir nombre del archivo ayuda a algunos servidores    
+    formData.append(
+      "torneo",
+      JSON.stringify({
+        nombreTorneo: `${data.nombreTorneo} En Espera`,
+        descripcion: data.descripcion,
+        fechaInicio: data.fechaInicio,
+        maxEquipos: data.maxEquipos,
+        minEquipos: data.minEquipos,
+        equiposLiguilla: data.equiposLiguilla,
+        premio: data.premio,
+        vueltas: data.vueltas,
+      }),
+      "torneo.json"
+    ); // <-- Añadir nombre del archivo ayuda a algunos servidores
 
     //formData.append("torneo", new Blob([JSON.stringify(data)], { type: "application/json" }));
 
@@ -212,8 +259,9 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
           "Content-Type": "multipart/form-data",
           Accept: "application/json",
         },
-        transformRequest: (data) => data
+        transformRequest: (data) => data,
       });
+      Alert.alert("¡Éxito!", "Torneo creado exitosamente")
       console.log(response.data);
     } catch (error) {
       console.log("?");
@@ -229,6 +277,78 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         );
       console.error("Error:", error.response.data || error || error.response);
       if (error.response.message) Alert.alert("Error", error.response.message);
+      Alert.alert("Error", "Error al registrar el torneo");
+      if (error.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        //logout();
+        return;
+      }
+    }
+  };
+
+  const updateTorneo = async (data, image) => {
+    const formData = new FormData();
+
+    formData.append(
+      "torneo",
+      JSON.stringify({
+        nombreTorneo: `${data.nombreTorneo} En Espera`,
+        descripcion: data.descripcion,
+        fechaInicio: data.fechaInicio,
+        maxEquipos: data.maxEquipos,
+        minEquipos: data.minEquipos,
+        equiposLiguilla: data.equiposLiguilla,
+        premio: data.premio,
+        vueltas: data.vueltas,
+      }),
+      "torneo.json"
+    ); // <-- Añadir nombre del archivo ayuda a algunos servidores
+
+    //formData.append("torneo", new Blob([JSON.stringify(data)], { type: "application/json" }));
+
+    image
+      ? (console.log("📸 Imagen antes de enviar:", image),
+        formData.append("imagen", {
+          uri: image.startsWith("file://") ? image : `file://${image}`,
+          name: `${data.nombreTorneo}.png`,
+          type: "image/png",
+        }))
+      : (console.log("📸 Imagen antes de enviar:", data.logoTorneo),
+        formData.append("imagen", {
+          uri: data.logoTorne.startsWith("file://")
+            ? data.logoTorne
+            : `file://${data.logoTorne}`,
+          name: `${data.nombreTorneo}.png`,
+          type: "image/png",
+        }));
+
+    try {
+      const tokData = await getToken();
+      const response = await api.put(`/api/torneos/${data.id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${tokData}`,
+          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
+        },
+        transformRequest: (data) => data,
+      });
+      console.log(response.data);
+      Alert.alert("¡Exito!","Torneo actualizado");
+    } catch (error) {
+      console.log("?");
+      if (error.config)
+        console.log(
+          error.config,
+          "-----",
+          error.config.headers,
+          "-----",
+          error.config.data,
+          "-----",
+          //error.config.data?._parts
+        );
+      console.error("Error:", error.response?.data || error || error.response);
+      if (error.response?.message) Alert.alert("Error", error.response.message, error.response?.status);
       Alert.alert("Error", "Error al registrar el torneo");
       if (error.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
@@ -347,21 +467,25 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     await api
       .patch(
         `/api/torneos/${id}/cancelar`,
-        {},
+        {
+          motivoFinalizacion: motivo, // No envíes JSON.stringify aquí
+        },
         {
           headers: {
             Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json", // Agrega este encabezado
           },
         }
       )
       .then((res) => {
-        Alert.alert("Éxito", res.data || "Torneo cancelado correctamente");
+        console.log(res.data);
+        Alert.alert("Éxito", "Torneo cancelado correctamente");
         setReload(!reload);
       })
       .catch((error) => {
         console.error(error, error.response?.data?.message);
         console.log(error.toJSON());
-        if (error.response.status === 403) {
+        if (error.response?.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
             "Sesión expirada",
@@ -591,7 +715,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                           !tor.estatusTorneo || tor.motivoFinalizacion
                             ? showModal3(tor.nombreTorneo, tor)
                             : tor.iniciado
-                            ? alert("Editar")
+                            ? editarFunction(tor)
                             : showModal3(tor.nombreTorneo, tor)
                         }
                       >
@@ -678,16 +802,32 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         </ScrollView>
         {!formVis ? null : (
           <View ref={sectionOneRef}>
-            <Text
-              style={[
-                styles.TextField,
-                stylesAdmin3.title,
-                FONTS.nunitoNegrita,
-                { paddingVertical: 15, paddingHorizontal: 5 },
-              ]}
-            >
-              Nuevo torneo
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text
+                style={[
+                  styles.TextField,
+                  stylesAdmin3.title,
+                  FONTS.nunitoNegrita,
+                  { paddingVertical: 15, paddingHorizontal: 5 },
+                ]}
+              >
+                {editar ? "Editar torneo" : "Nuevo torneo"}
+              </Text>
+              {!editar ? null : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditar(false);
+                    removeEdicion();
+                  }}
+                >
+                  <Ionicons
+                    name="refresh-circle"
+                    size={30}
+                    color={colores.acento_2_2}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={stylesAdmin3.form}>
               <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
                 Logo del torneo
@@ -790,7 +930,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                     <TextInput
                       placeholder="Equipos en liguilla"
                       placeholderTextColor={colores.domin_2_2}
-                      value={value}
+                      value={editar ? value.toString() : value}
                       keyboardType="numeric"
                       onChangeText={(text) => onChange(text)}
                       style={stylesAdmin3.input}
@@ -865,7 +1005,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholder="Máximo de equipos"
                         placeholderTextColor={colores.domin_2_2}
                         keyboardType="numeric"
-                        value={value}
+                        value={editar ? value.toString() : value}
                         onChangeText={(text) => onChange(text)}
                         style={[stylesAdmin3.input, {}]}
                       />
@@ -887,7 +1027,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholder="Mínimo de equipos"
                         placeholderTextColor={colores.domin_2_2}
                         keyboardType="numeric"
-                        value={value}
+                        value={editar ? value.toString() : value}
                         onChangeText={(text) => onChange(text)}
                         style={[stylesAdmin3.input, {}]}
                       />
@@ -909,7 +1049,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholder="Vueltas"
                         placeholderTextColor={colores.domin_2_2}
                         keyboardType="numeric"
-                        value={value}
+                        value={editar ? value.toString() : value}
                         onChangeText={(text) => onChange(text)}
                         style={[stylesAdmin3.input, {}]}
                       />
@@ -923,12 +1063,6 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                 />
               </View>
             </View>
-            {/*<View style={stylesAdmin3.grid}>
-          <View style={stylesAdmin3.card}>Hola</View>
-          <View style={stylesAdmin3.card}>Hola</View>
-          <View style={stylesAdmin3.card}>Hola</View>
-          <View style={stylesAdmin3.card}>Hola</View>
-        </View>*/}
             <View
               style={{
                 gap: 5,
@@ -946,7 +1080,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                 disabled={!isValid}
               >
                 <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-                  Crear Torneo
+                  {!editar ? "Crear Torneo" : "Actualizar torneo"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -978,15 +1112,25 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
               ¿Cancelar torneo?
             </Text>
             <Text style={[FONTS.oswald, stylesModal.modalText]}>
-              Esta acción tendrá consecuencias, todos los partidos se
-              cancelarán, y no podras volver a anular esta acción
+              En caso de confirmar, escribe el motivo de su ancelación.
             </Text>
+            <TextInput
+              placeholder="Mótivo de cancelación"
+              placeholderTextColor={colores.domin_2_2}
+              style={stylesAdmin3.modalInput}
+              onChangeText={(text) => setMotivo(text)}
+            />
             <Text style={[FONTS.oswald, stylesModal.modalText]}>
               ¿Deseas cancelar el torneo?
             </Text>
             <View style={stylesModal.modalButRow}>
               <TouchableOpacity
-                style={[stylesModal.buttonBack, FONTS.oswald]}
+                disabled={motivo === "" ? true : false}
+                style={[
+                  stylesModal.buttonBack,
+                  FONTS.oswald,
+                  { opacity: motivo === "" ? 0.5 : 1 },
+                ]}
                 onPress={async () => cancelarTorneo(id)}
               >
                 <Text style={[stylesModal.buttonText, FONTS.oswald]}>Si</Text>
@@ -1387,8 +1531,11 @@ const stylesAdmin3 = StyleSheet.create({
     alignItems: "center",
   },
   successText: {
+    width: "100%",
+    backgroundColor: colores.acento_1_4,
     color: colores.acento_2_1,
     fontSize: 25,
+    textAlign: "center",
   },
   input: {
     borderColor: colores.domin_2_2,
@@ -1397,6 +1544,14 @@ const stylesAdmin3 = StyleSheet.create({
     fontFamily: "Oswald_400Regular",
     color: colores.negro,
     backgroundColor: colores.base_2_5,
+  },
+  modalInput: {
+    borderColor: colores.domin_2_2,
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: 5,
+    fontFamily: "Oswald_400Regular",
+    color: colores.negro,
   },
   form: {
     padding: 10,
