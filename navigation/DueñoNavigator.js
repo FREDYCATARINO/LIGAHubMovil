@@ -1,13 +1,12 @@
 // DueñoDrawerNavigator.js
 import React, { useState, useEffect, useRef } from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import DueñoDashboard from "../screens/dueño/DueñoDashboard";
+import DueñoDashboard from "../screens/dueno/DueñoDashboard";
 import CustomDrawerContent from "./CustomDrawerContent";
 import { Ionicons } from "@expo/vector-icons";
 import colores from "../style/colors";
 import { StyleSheet } from "react-native";
 import DuenoBar from "./DuenoAppbar";
-import PerfilScreen from "../screens/Perfil";
 import { useContext } from "react";
 import {
   Image,
@@ -20,11 +19,13 @@ import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ErrorComponent from "../components/ErrorComponent";
-import MisPagosScreen from '../screens/dueño/MisPagos'; // Pantalla de pagos
-import CredencialesScreen from '../screens/dueño/Credenciales'; // Pantalla de credenciales
-import MiEquipoScreen from '../screens/dueño/MiEquipo'; // Pantalla de equipo
-import HistorialPagos from "../screens/dueño/HistorialPagos";
-
+import MisPagosScreen from '../screens/dueno/MisPagos'; // Pantalla de pagos
+import CredencialesScreen from '../screens/dueno/Credenciales'; // Pantalla de credenciales
+import MiEquipoScreen from '../screens/dueno/MiEquipo'; // Pantalla de equipo
+import HistorialPagos from "../screens/dueno/HistorialPagos";
+import DetalleEquipo from "../screens/dueno/DetalleEquipo";
+import DetallePago from "../screens/dueno/DetallePago";
+import MisJugadores from "../screens/dueno/MisJugadores"
 const Drawer = createDrawerNavigator();
 
 const DueñoNavigator = () => {
@@ -184,6 +185,27 @@ const DueñoNavigator = () => {
           ),
         }}
       />
+      <Drawer.Screen
+        name="Detalle Pagos"
+        component={DetalleEquipo}
+        options={
+          {drawerItemStyle:{display:"none"}}
+        }
+      />
+        <Drawer.Screen
+        name="Historial de Pagos"
+        component={DetallePago}
+        options={
+          {drawerItemStyle:{display:"none"}}
+        }
+      /> 
+      <Drawer.Screen
+      name="Mis Jugadores"
+      component={MisJugadores}
+      options={
+        {drawerItemStyle:{display:"none"}}
+      }
+    />
   
     </Drawer.Navigator>
   );

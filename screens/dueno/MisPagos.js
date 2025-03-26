@@ -1,34 +1,27 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl, Alert,Image } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../config/api';
 
-const MisEquipos = () => {
+const MisEquipos = ({ navigation }) => {
   const [equipos, setEquipos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const { userToken, getUserId } = useContext(AuthContext);
+  const { getUserId, getToken, logout } = useContext(AuthContext);
 
   const fetchEquipos = async () => {
     try {
-      setError(null);
+      setError("");
       setRefreshing(true);
       
-      // Verificación mejorada del token
-      const token = userToken || await AsyncStorage.getItem('userToken');
-      console.log('Token usado:', token);
-      
-      if (!token) {
-        throw new Error('No autenticado. Por favor inicia sesión.');
+      const userId = await getUserId();
+      const token = await getToken();
+
+      if (!userId || !token) {
+        throw new Error('Faltan credenciales de usuario');
       }
 
-      const userId = await getUserId();
-      if (!userId) {
-        throw new Error('No se pudo obtener el ID de usuario');
-      }
-      
       const response = await api.get(`/api/equipos/porDueno/${userId}`, {
         headers: { 
           Authorization: `Bearer ${token}` 
@@ -37,18 +30,52 @@ const MisEquipos = () => {
 
       setEquipos(response.data || []);
     } catch (err) {
-      console.error('Error al cargar equipos:', err);
-      setError(err.message || 'Error al cargar los equipos');
-      setEquipos([]);
+      console.error('Error:', err);
+      
+      if (err.response?.status === 403) {
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+      
+      setError(err.response?.data?.message || err.message || 'Error al cargar equipos');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const handleEquipoPress = async (equipoId) => {
+    try {
+      const token = await getToken();
+      
+      if (!token) {
+        throw new Error('Faltan credenciales de usuario');
+      }
+
+
+      navigation.navigate('Detalle pagos', { 
+        equipo: equipos.find(e => e.id === equipoId),
+        pagos: response.data
+      });
+      
+    } catch (err) {
+      
+      if (err.response?.status === 403) {
+        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+      
+      navigation.navigate('Detalle Pagos', { 
+        equipo: equipos.find(e => e.id === equipoId) 
+      });
+    }
+  };
+
   useEffect(() => {
     fetchEquipos();
-  }, [userToken]);
+  }, []);
 
   const onRefresh = () => {
     fetchEquipos();
@@ -86,11 +113,18 @@ const MisEquipos = () => {
         <Text style={styles.noResults}>No tienes equipos registrados</Text>
       ) : (
         equipos.map((equipo) => (
-          <View key={equipo.id} style={styles.card}>
+          <TouchableOpacity 
+            key={equipo.id} 
+            style={styles.card}
+            onPress={() => handleEquipoPress(equipo.id)}
+          >
+             <Image 
+              source={{ uri: equipo.logoEquipo }} 
+              style={styles.logo} 
+            />
             <Text style={styles.equipoNombre}>{equipo.nombreEquipo}</Text>
             <Text style={styles.detalle}>Campo: {equipo.nombreCampo}</Text>
-            <Text style={styles.detalle}>Dirección: {equipo.direccionCampo}</Text>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -125,12 +159,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    justifyContent:"top"
   },
   equipoNombre: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 8,
+    
   },
   detalle: {
     fontSize: 14,
@@ -165,6 +201,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
   },
+  logo: {
+    height: 70,
+    width:70,
+    borderRadius: 25,
+    alignSelf:"flex-end"
+  },
+  
 });
 
 export default MisEquipos;
