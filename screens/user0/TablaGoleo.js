@@ -153,11 +153,12 @@ const TablaGoleo = () => {
                   <Text style={styles.headerText}>Jugador</Text>
                 </View>
                 <View style={[styles.headerCell, { width: cellWidth }]}>
-                  <Text style={styles.headerText}>Partidos</Text>
-                </View>
-                <View style={[styles.headerCell, { width: cellWidth }]}>
                   <Text style={styles.headerText}>Goles</Text>
                 </View>
+                <View style={[styles.headerCell, { width: cellWidth }]}>
+                  <Text style={styles.headerText}>Partidos</Text>
+                </View>
+               
               </View>
   
               {/* Filas de datos */}
@@ -172,13 +173,18 @@ const TablaGoleo = () => {
                     
                     <View style={[styles.cell, { width: cellWidth * 1.5 }]}>
                       <Text style={styles.cellText}>{jugador.nombreCompleto}</Text>
-                    </View>
-                    <View style={[styles.cell, { width: cellWidth }]}>
-                      <Text style={styles.cellText}>{jugador.partidosJugados || 0}</Text>
+                    <Image
+                               source={{ uri: jugador.logoEquipo || "https://via.placeholder.com/40"}}
+                               style={styles.teamLogo}
+                             />
                     </View>
                     <View style={[styles.cell, { width: cellWidth }]}>
                       <Text style={styles.cellText}>{jugador.goles || 0}</Text>
                     </View>
+                    <View style={[styles.cell, { width: cellWidth }]}>
+                      <Text style={styles.cellText}>{jugador.partidosJugados || 0}</Text>
+                    </View>
+                   
                   </View>
                 ))
               ) : (
@@ -293,6 +299,7 @@ const styles = StyleSheet.create({
   cell: {
     paddingHorizontal: 8,
     justifyContent: "center",
+    alignItems:"center"
   },
   cellText: {
     fontSize: 14,
@@ -345,6 +352,12 @@ const styles = StyleSheet.create({
   pageIndicator: {
     color: '#333',
     fontWeight: 'bold',
+  },
+  teamLogo: {
+    width: 50,
+    height: 60,
+    resizeMode: "contain",
+    marginBottom: 5,
   },
 });
 
