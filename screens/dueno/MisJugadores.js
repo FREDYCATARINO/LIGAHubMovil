@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext,useCallback} from 'react';
 import { 
   View, 
   Text, 
@@ -13,7 +13,9 @@ import {
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  RefreshControl
+
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../config/api';
@@ -36,6 +38,8 @@ const MisJugadores = ({ route }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
   
   const [formData, setFormData] = useState({
     nombreCompleto: '',
@@ -44,27 +48,32 @@ const MisJugadores = ({ route }) => {
   });
   const [fotoUri, setFotoUri] = useState(null);
 
-  useEffect(() => {
-    const fetchJugadores = async () => {
-      try {
-        const token = await getToken();
-        const response = await api.get(`/api/jugadores/porEquipo/${equipoId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setJugadores(response.data);
-      } catch (err) {
-        if (err.response?.status === 401) {
-          Alert.alert('Sesión expirada', 'Por favor inicia sesión nuevamente');
-          logout();
-          return;
-        }
-        setError(err.response?.data?.message || err.message || 'Error al cargar jugadores');
-      } finally {
-        setLoading(false);
+  const fetchJugadores = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const token = await getToken();
+      const response = await api.get(`/api/jugadores/porEquipo/${equipoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setJugadores(response.data);
+      setError(null);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        Alert.alert('Sesión expirada', 'Por favor inicia sesión nuevamente');
+        logout();
+        return;
       }
-    };
-    fetchJugadores();
+      setError(err.response?.data?.message || err.message || 'Error al cargar jugadores');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [equipoId, getToken, logout]);
+
+  useEffect(() => {
+    fetchJugadores();
+  }, [fetchJugadores]);
+
 
   const resetForm = () => {
     setFormData({
@@ -370,232 +379,242 @@ const MisJugadores = ({ route }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={showRegisterModal}
-        onRequestClose={() => {
-          setShowRegisterModal(false);
-          resetForm();
-        }}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalContainer}
-        >
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Registrar Nuevo Jugador</Text>
-              <TouchableOpacity onPress={() => {
-                setShowRegisterModal(false);
-                resetForm();
-              }}>
-                <Icon name="close" size={24} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.label}>Nombre Completo</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.nombreCompleto}
-              onChangeText={(text) => handleChange('nombreCompleto', text)}
-            />
-            
-            <Text style={styles.label}>Número de Camiseta</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.numeroCamiseta}
-              onChangeText={(text) => handleChange('numeroCamiseta', text)}
-              keyboardType="numeric"
-            />
-            
-            <Text style={styles.label}>Fecha de Nacimiento</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.fechaNacimiento}
-              onChangeText={(text) => handleChange('fechaNacimiento', text)}
-              placeholder="AAAA-MM-DD"
-            />
-            
-            <Text style={styles.label}>Foto del Jugador</Text>
-            <TouchableOpacity onPress={selectPhoto}>
-              {fotoUri ? (
-                <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <Icon name="add-a-photo" size={30} color="#888" />
-                  <Text>Seleccionar imagen</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            
-            <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  setShowRegisterModal(false);
-                  resetForm();
-                }}
-              >
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, styles.submitButton]}
-                onPress={handleRegister}
-              >
-                <Text style={styles.buttonText}>Registrar</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={showEditModal}
-        onRequestClose={() => {
-          setShowEditModal(false);
-          resetForm();
-        }}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalContainer}
-        >
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Editar Jugador</Text>
-              <TouchableOpacity onPress={() => {
-                setShowEditModal(false);
-                resetForm();
-              }}>
-                <Icon name="close" size={24} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.label}>Nombre Completo</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.nombreCompleto}
-              onChangeText={(text) => handleChange('nombreCompleto', text)}
-            />
-            
-            <Text style={styles.label}>Número de Camiseta</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.numeroCamiseta}
-              onChangeText={(text) => handleChange('numeroCamiseta', text)}
-              keyboardType="numeric"
-            />
-            
-            <Text style={styles.label}>Fecha de Nacimiento</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.fechaNacimiento}
-              onChangeText={(text) => handleChange('fechaNacimiento', text)}
-              placeholder="AAAA-MM-DD"
-            />
-            
-            <Text style={styles.label}>Foto del Jugador</Text>
-            <TouchableOpacity onPress={selectPhoto}>
-              {fotoUri ? (
-                <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
-              ) : (
-                <Image source={{ uri: selectedPlayer?.fotoJugador }} style={styles.imagePreview} />
-              )}
-            </TouchableOpacity>
-            
-            <View style={styles.photoOptions}>
-              <TouchableOpacity onPress={selectPhoto}>
-                <Text>Galería</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={takePhoto}>
-                <Text>Cámara</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  setShowEditModal(false);
-                  resetForm();
-                }}
-              >
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, styles.submitButton]}
-                onPress={handleUpdate}
-              >
-                <Text style={styles.buttonText}>Actualizar</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={showConfirmModal}
-        onRequestClose={() => setShowConfirmModal(false)}
-      >
-        <View style={styles.confirmModalContainer}>
-          <View style={styles.confirmModalContent}>
-            <Text style={styles.confirmModalTitle}>
-              {selectedPlayer?.habilitado ? 'Deshabilitar' : 'Habilitar'} Jugador
-            </Text>
-            <Text style={styles.confirmModalText}>
-              ¿Estás seguro de {selectedPlayer?.habilitado ? 'deshabilitar' : 'habilitar'} a {selectedPlayer?.nombreCompleto}?
-            </Text>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setShowConfirmModal(false)}
-              >
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, styles.confirmButton]}
-                onPress={handleChangeStatus}
-              >
-                <Text style={styles.buttonText}>Confirmar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <View style={styles.header}>
-        <Text style={styles.titulo}>Jugadores - {equipoNombre}</Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={fetchJugadores}
+          colors={['#2196F3']}
+        />
+      }
+    >
+      <View>
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={showRegisterModal}
+          onRequestClose={() => {
+            setShowRegisterModal(false);
             resetForm();
-            setShowRegisterModal(true);
           }}
         >
-          <Icon name="add" size={24} color="white" />
-        </TouchableOpacity>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContainer}
+          >
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Registrar Nuevo Jugador</Text>
+                <TouchableOpacity onPress={() => {
+                  setShowRegisterModal(false);
+                  resetForm();
+                }}>
+                  <Icon name="close" size={24} />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.label}>Nombre Completo</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.nombreCompleto}
+                onChangeText={(text) => handleChange('nombreCompleto', text)}
+              />
+              
+              <Text style={styles.label}>Número de Camiseta</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.numeroCamiseta}
+                onChangeText={(text) => handleChange('numeroCamiseta', text)}
+                keyboardType="numeric"
+              />
+              
+              <Text style={styles.label}>Fecha de Nacimiento</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.fechaNacimiento}
+                onChangeText={(text) => handleChange('fechaNacimiento', text)}
+                placeholder="AAAA-MM-DD"
+              />
+              
+              <Text style={styles.label}>Foto del Jugador</Text>
+              <TouchableOpacity onPress={selectPhoto}>
+                {fotoUri ? (
+                  <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Icon name="add-a-photo" size={30} color="#888" />
+                    <Text>Seleccionar imagen</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => {
+                    setShowRegisterModal(false);
+                    resetForm();
+                  }}
+                >
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.button, styles.submitButton]}
+                  onPress={handleRegister}
+                >
+                  <Text style={styles.buttonText}>Registrar</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+  
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={showEditModal}
+          onRequestClose={() => {
+            setShowEditModal(false);
+            resetForm();
+          }}
+        >
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContainer}
+          >
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Editar Jugador</Text>
+                <TouchableOpacity onPress={() => {
+                  setShowEditModal(false);
+                  resetForm();
+                }}>
+                  <Icon name="close" size={24} />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.label}>Nombre Completo</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.nombreCompleto}
+                onChangeText={(text) => handleChange('nombreCompleto', text)}
+              />
+              
+              <Text style={styles.label}>Número de Camiseta</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.numeroCamiseta}
+                onChangeText={(text) => handleChange('numeroCamiseta', text)}
+                keyboardType="numeric"
+              />
+              
+              <Text style={styles.label}>Fecha de Nacimiento</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.fechaNacimiento}
+                onChangeText={(text) => handleChange('fechaNacimiento', text)}
+                placeholder="AAAA-MM-DD"
+              />
+              
+              <Text style={styles.label}>Foto del Jugador</Text>
+              <TouchableOpacity onPress={selectPhoto}>
+                {fotoUri ? (
+                  <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
+                ) : (
+                  <Image source={{ uri: selectedPlayer?.fotoJugador }} style={styles.imagePreview} />
+                )}
+              </TouchableOpacity>
+              
+              <View style={styles.photoOptions}>
+                <TouchableOpacity onPress={selectPhoto}>
+                  <Text>Galería</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={takePhoto}>
+                  <Text>Cámara</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => {
+                    setShowEditModal(false);
+                    resetForm();
+                  }}
+                >
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.button, styles.submitButton]}
+                  onPress={handleUpdate}
+                >
+                  <Text style={styles.buttonText}>Actualizar</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+  
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showConfirmModal}
+          onRequestClose={() => setShowConfirmModal(false)}
+        >
+          <View style={styles.confirmModalContainer}>
+            <View style={styles.confirmModalContent}>
+              <Text style={styles.confirmModalTitle}>
+                {selectedPlayer?.habilitado ? 'Deshabilitar' : 'Habilitar'} Jugador
+              </Text>
+              <Text style={styles.confirmModalText}>
+                ¿Estás seguro de {selectedPlayer?.habilitado ? 'deshabilitar' : 'habilitar'} a {selectedPlayer?.nombreCompleto}?
+              </Text>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setShowConfirmModal(false)}
+                >
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.button, styles.confirmButton]}
+                  onPress={handleChangeStatus}
+                >
+                  <Text style={styles.buttonText}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+  
+        <View style={styles.header}>
+          <Text style={styles.titulo}>Jugadores - {equipoNombre}</Text>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => {
+              resetForm();
+              setShowRegisterModal(true);
+            }}
+          >
+            <Icon name="add" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+        
+        <FlatList
+          data={jugadores}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          numColumns={NUM_COLUMNS}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No hay jugadores registrados</Text>
+          }
+        />
       </View>
-      
-      <FlatList
-        data={jugadores}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        numColumns={NUM_COLUMNS}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay jugadores registrados</Text>
-        }
-      />
-    </View>
-  );
-};
+    </ScrollView>
+  );}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
