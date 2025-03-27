@@ -1,140 +1,254 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { 
+  View, 
+  Text, 
+  Image, 
+  StyleSheet, 
+  ScrollView, 
+  ActivityIndicator, 
+  Dimensions,
+  RefreshControl
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import api from "../../config/api";
 
-const ClassificationTable = () => {
-  const teams = [
-    { position: 1, name: "Chivas", logo: require("../../assets/chivas.png") },
-    { position: 3, name: "Pumas", logo: require("../../assets/pumas.png") },
-  ];
+const TablaGoleo = () => {
+  const [torneos, setTorneos] = useState([]);
+  const [selectedTorneo, setSelectedTorneo] = useState(null);
+  const [errorTorneos, setErrorTorneos] = useState(null);
+  const [goleadores, setGoleadores] = useState([]);
+  const [loadingGoleadores, setLoadingGoleadores] = useState(false);
+  const [errorGoleadores, setErrorGoleadores] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch torneos con useCallback
+  const fetchTorneos = useCallback(async () => {
+    try {
+      const response = await api.get("/api/torneos/iniciados");
+      console.log("Respuesta de API - Torneos:", response.data);
+      setTorneos(response.data);
+      setErrorTorneos(null);
+    } catch (error) {
+      console.error("Error fetching torneos:", error);
+      setErrorTorneos("Error al cargar los torneos. Intenta de nuevo.");
+    }
+  }, []);
+
+  // Fetch goleadores con useCallback
+  const fetchGoleadores = useCallback(async () => {
+    if (!selectedTorneo) return;
+    
+    setLoadingGoleadores(true);
+    setErrorGoleadores(null);
+    try {
+      const response = await api.get(`/api/jugadorestadisticas/torneo/${selectedTorneo}`);
+      console.log("Respuesta de API - Goleadores:", response.data);
+      setGoleadores(response.data);
+    } catch (error) {
+      console.error("Error fetching goleadores:", error);
+      setErrorGoleadores("Error al cargar los goleadores. Intenta de nuevo.");
+    } finally {
+      setLoadingGoleadores(false);
+      setRefreshing(false);
+    }
+  }, [selectedTorneo]);
+
+  // Función para manejar el refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    if (selectedTorneo) {
+      fetchGoleadores();
+    } else {
+      fetchTorneos();
+    }
+  }, [selectedTorneo, fetchGoleadores, fetchTorneos]);
+
+  useEffect(() => {
+    fetchTorneos();
+  }, [fetchTorneos]);
+
+  useEffect(() => {
+    fetchGoleadores();
+  }, [fetchGoleadores]);
+
+  // Ancho mínimo para las celdas
+  const cellWidth = Dimensions.get('window').width * 0.25;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Destacados de la liguilla</Text>
-      <View style={styles.highlightContainer}>
-        <View style={styles.highlightCard}>
-          <Text style={styles.highlightTitle}>Goleador</Text>
-          <Image source={require("../../assets/player.png")} style={styles.icon} />
-          <Text style={styles.highlightText}>Jugador #1</Text>
-          <Text style={styles.highlightStat}>Goles anotados: 78</Text>
-        </View>
-        <View style={styles.highlightCard}>
-          <Text style={styles.highlightTitle}>Mejor ofensiva</Text>
-          <Image source={require("../../assets/chivas.png")} style={styles.icon} />
-          <Text style={styles.highlightStat}>GF: 12</Text>
-        </View>
-        <View style={styles.highlightCard}>
-          <Text style={styles.highlightTitle}>Mejor defensiva</Text>
-          <Image source={require("../../assets/cruzAzul.png")} style={styles.icon} />
-          <Text style={styles.highlightStat}>GC: 2</Text>
-        </View>
-        <View style={styles.highlightCard}>
-          <Text style={styles.highlightTitle}>Juego limpio</Text>
-          <Image source={require("../../assets/pumas.png")} style={styles.icon} />
-          <Text style={styles.highlightStat}>Tarjetas rojas: 1</Text>
-          <Text style={styles.highlightStat}>Tarjetas amarillas: 1</Text>
-        </View>
+    <ScrollView 
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#c00"]}
+          tintColor="#c00"
+        />
+      }
+    >
+      {/* Selector de torneos */}
+      <View style={styles.pickerContainer}>
+        <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
+        {errorTorneos ? (
+          <Text style={styles.errorText}>{errorTorneos}</Text>
+        ) : (
+          <Picker
+            selectedValue={selectedTorneo}
+            onValueChange={(itemValue) => setSelectedTorneo(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Selecciona un torneo" value={null} />
+            {torneos.map((torneo) => (
+              <Picker.Item
+                key={torneo.id}
+                label={torneo.nombreTorneo}
+                value={torneo.id}
+              />
+            ))}
+          </Picker>
+        )}
       </View>
+
+      {/* Tabla de goleadores */}
       <Text style={styles.title}>Goleadores</Text>
-      <View style={styles.table}>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerCell}>Pos</Text>
-          <Text style={styles.headerCell}>Equipo</Text>
-          <Text style={styles.headerCell}>Jugador</Text>
-          <Text style={styles.headerCell}>Partidos</Text>
-          <Text style={styles.headerCell}>Goles</Text>
-        </View>
-        {teams.map((team, index) => (
-          <View key={index} style={styles.row}>
-            <Text style={styles.cell}>{index + 1}</Text>
-            <View style={styles.teamCell}>
-              <Image source={team.logo} style={styles.teamLogo} />
-              <Text style={styles.teamName}>{team.name}</Text>
+      
+      {loadingGoleadores ? (
+        <ActivityIndicator size="large" color="#c00" />
+      ) : errorGoleadores ? (
+        <Text style={styles.errorText}>{errorGoleadores}</Text>
+      ) : !selectedTorneo ? (
+        <Text>Por favor selecciona un torneo</Text>
+      ) : (
+        <View style={styles.tableContainer}>
+          {/* Scroll horizontal para la tabla */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <View>
+              {/* Encabezados */}
+              <View style={styles.headerRow}>
+                <View style={[styles.headerCell, { width: cellWidth }]}>
+                  <Text style={styles.headerText}>Pos</Text>
+                </View>
+                <View style={[styles.headerCell, { width: cellWidth * 1.5 }]}>
+                  <Text style={styles.headerText}>Jugador</Text>
+                </View>
+                <View style={[styles.headerCell, { width: cellWidth }]}>
+                  <Text style={styles.headerText}>Partidos</Text>
+                </View>
+                <View style={[styles.headerCell, { width: cellWidth }]}>
+                  <Text style={styles.headerText}>Goles</Text>
+                </View>
+              </View>
+
+              {/* Filas de datos */}
+              {goleadores.length > 0 ? (
+                goleadores.map((jugador, index) => (
+                  <View key={jugador.id || index} style={styles.row}>
+                    <View style={[styles.cell, { width: cellWidth }]}>
+                      <Text style={styles.cellText}>{index + 1}</Text>
+                    </View>
+                    
+                    <View style={[styles.cell, { width: cellWidth * 1.5 }]}>
+                      <Text style={styles.cellText}>{jugador.nombreCompleto}</Text>
+                    </View>
+                    <View style={[styles.cell, { width: cellWidth }]}>
+                      <Text style={styles.cellText}>{jugador.partidosJugados || 0}</Text>
+                    </View>
+                    <View style={[styles.cell, { width: cellWidth }]}>
+                      <Text style={styles.cellText}>{jugador.goles || 0}</Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.row}>
+                  <Text style={styles.noDataText}>No hay datos disponibles para este torneo</Text>
+                </View>
+              )}
             </View>
-            <Text style={styles.cell}>Jugador #{index + 1}</Text>
-            <Text style={styles.cell}>{Math.floor(Math.random() * 10)}</Text>
-            <Text style={styles.cell}>{Math.floor(Math.random() * 20)}</Text>
-          </View>
-        ))}
-      </View>
+          </ScrollView>
+        </View>
+      )}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
+    flexGrow: 1,
     backgroundColor: "#fff",
-    paddingBottom: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
   },
-  banner: {
+  pickerContainer: {
     width: "100%",
-    height: 100,
-    resizeMode: "cover",
+    marginBottom: 30,
+    paddingHorizontal: 1,
+  
+  },
+  pickerLabel: {
+    fontSize: 16,
+    marginBottom: 15,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  picker: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    borderWidth: 5,
+    borderColor: "#ddd",
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    marginTop: 10,
+    marginVertical: 15,
+    color: "#c00",
+    textAlign: "center",
   },
-  highlightContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginVertical: 10,
-  },
-  highlightCard: {
-    width: "45%",
-    backgroundColor: "#f5f5f5",
-    padding: 10,
-    margin: 5,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  highlightTitle: {
+  errorText: {
+    color: "red",
+    marginVertical: 15,
+    textAlign: "center",
     fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
   },
-  highlightStat: {
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  icon: {
-    width: 50,
-    height: 50,
-    resizeMode: "contain",
-    marginBottom: 5,
-  },
-  table: {
-    width: "90%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    marginTop: 10,
+  tableContainer: {
+    width: "100%",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 20,
   },
   headerRow: {
     flexDirection: "row",
     backgroundColor: "#c00",
-    padding: 10,
+    paddingVertical: 12,
   },
   headerCell: {
-    flex: 1,
+    paddingHorizontal: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerText: {
     fontWeight: "bold",
     color: "#fff",
-    textAlign: "center",
+    fontSize: 14,
   },
   row: {
     flexDirection: "row",
-    padding: 10,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
   },
   cell: {
-    flex: 1,
+    paddingHorizontal: 8,
+    justifyContent: "center",
+  },
+  cellText: {
+    fontSize: 14,
+    color: "#333",
     textAlign: "center",
   },
   teamCell: {
-    flex: 2,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -143,10 +257,20 @@ const styles = StyleSheet.create({
     height: 30,
     resizeMode: "contain",
     marginRight: 10,
+    borderRadius: 15,
   },
   teamName: {
     fontSize: 14,
+    color: "#333",
+    flexShrink: 1,
+  },
+  noDataText: {
+    textAlign: "center",
+    paddingVertical: 20,
+    color: "#666",
+    fontSize: 16,
+    width: Dimensions.get('window').width - 20,
   },
 });
 
-export default ClassificationTable;
+export default TablaGoleo;
