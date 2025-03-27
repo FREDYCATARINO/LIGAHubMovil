@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useCallback} from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,53 +9,101 @@ import {
   ScrollView,
   ImageBackground,
   RefreshControl
-
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
 
 const MatchCard = ({ match }) => {
+
+
+  const getScoreDisplay = () => {
+    if (!match.jugado) return { mainScore: "VS", showSecondary: false };
+    
+    const hasValidScores = typeof match.golesLocal === 'number' && 
+                          typeof match.golesVisitante === 'number';
+    
+    if (!hasValidScores) return { mainScore: "-", showSecondary: false };
+
+    const baseScore = {
+      mainScore: `${match.golesLocal}-${match.golesVisitante}`,
+      showSecondary: false
+    };
+
+    if (match.tipoDesempate === 'PENALES' && 
+        typeof match.golesLocalPenales === 'number' && 
+        typeof match.golesVisitantePenales === 'number') {
+      return {
+        ...baseScore,
+        secondaryScore: `(Penales ${match.golesLocalPenales}-${match.golesVisitantePenales})`,
+        showSecondary: true
+      };
+    }
+
+    if (match.tipoDesempate === 'TIEMPO_EXTRA') {
+      return { ...baseScore, secondaryScore: '(T.E.)', showSecondary: true };
+    }
+
+    return baseScore;
+  };
+  const scoreDisplay = getScoreDisplay();
+
   return (
     <View style={styles.card}>
-      <Text style={styles.date}>
-        {match.fechaPartido || "Fecha no disponible"} - {match.hora || "Hora no disponible"}
+      {/* Nombre del torneo */}
+      <Text style={styles.torneoText}>
+        {match.tipoPartido}
       </Text>
 
+      {/* Fecha y hora */}
+      <Text style={styles.date}>
+        {match.fechaPartido} - {match.hora}
+      </Text>
+
+      {/* Equipos y marcador */}
       <View style={styles.teamsContainer}>
         <View style={styles.teamContainer}>
           <Image
             source={{ uri: match.equipoLocal?.logo || "https://via.placeholder.com/40" }}
             style={styles.teamLogo}
           />
-          <Text style={styles.teamName}>{match.equipoLocal?.nombreEquipo || "Equipo Local"}</Text>
+          <Text style={styles.teamName}>{match.equipoLocal?.nombreEquipo}</Text>
         </View>
-        <Text style={styles.score}>
-          {match.golesLocal} - {match.golesVisitante}
-        </Text>
+        
+        <View style={styles.scoreContainer}>
+          <Text style={styles.score}>
+            {scoreDisplay.mainScore}
+          </Text>
+          {scoreDisplay.showSecondary && (
+            <Text style={styles.secondaryScore}>
+              {scoreDisplay.secondaryScore}
+            </Text>
+          )}
+        </View>
+        
         <View style={styles.teamContainer}>
           <Image
             source={{ uri: match.equipoVisitante?.logo || "https://via.placeholder.com/40" }}
             style={styles.teamLogo}
           />
-          <Text style={styles.teamName}>{match.equipoVisitante?.nombreEquipo || "Equipo Visitante"}</Text>
+          <Text style={styles.teamName}>{match.equipoVisitante?.nombreEquipo}</Text>
         </View>
       </View>
 
+      {/* Detalles adicionales */}
       <Text style={styles.field}>
-        Cancha: {match.cancha?.descripcion || "Cancha no disponible"}
+        Cancha: {match.cancha?.descripcion}
+      </Text>
+      <Text style={styles.field}>
+        Árbitro: {match.arbitro?.nombreCompleto}
       </Text>
 
-      <Text style={styles.field}>
-        Árbitro: {match.arbitro?.nombreCompleto || "Árbitro no disponible"}
-      </Text>
-
+      {/* Estado del partido */}
       <Text style={[styles.status, styles.finalizado]}>
-        ¡Finalizado!
+        Finalizado
       </Text>
     </View>
   );
 };
-
 
 const ResultadoDePartidos = () => {
   const [torneos, setTorneos] = useState([]);
@@ -64,22 +112,21 @@ const ResultadoDePartidos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [refreshing, setRefreshing] = useState(false); // Nuevo estado para refresh
+  const [refreshing, setRefreshing] = useState(false);
   const itemsPerPage = 10;
 
-  // Función para cargar torneos
   const fetchTorneos = useCallback(async () => {
     try {
       const response = await api.get("/api/torneos/iniciados");
       setTorneos(response.data);
       setError(null);
+      
     } catch (error) {
       console.error("Error fetching torneos:", error);
       setError("Error al cargar los torneos. Intenta de nuevo.");
     }
   }, []);
 
-  // Función para cargar partidos
   const fetchMatches = useCallback(async (torneoId) => {
     try {
       setLoading(true);
@@ -89,6 +136,7 @@ const ResultadoDePartidos = () => {
       const partidosJugados = response.data.filter((partido) => partido.jugado);
       setMatches(partidosJugados);
       setError(null);
+      console.log(response.data);
     } catch (error) {
       console.error("Error fetching matches:", error);
       setError("Error al cargar los partidos. Intenta de nuevo.");
@@ -98,12 +146,10 @@ const ResultadoDePartidos = () => {
     }
   }, []);
 
-  // Carga inicial
   useEffect(() => {
     fetchTorneos();
   }, [fetchTorneos]);
 
-  // Carga cuando cambia el torneo seleccionado
   useEffect(() => {
     if (selectedTorneo) {
       fetchMatches(selectedTorneo);
@@ -113,7 +159,6 @@ const ResultadoDePartidos = () => {
     }
   }, [selectedTorneo, fetchMatches]);
 
-  // Función para refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     if (selectedTorneo) {
@@ -124,7 +169,6 @@ const ResultadoDePartidos = () => {
     setCurrentPage(0);
   }, [selectedTorneo, fetchMatches, fetchTorneos]);
 
-  // Paginación
   const displayedMatches = matches.slice(
     currentPage * itemsPerPage,
     (currentPage + 1) * itemsPerPage
@@ -159,7 +203,6 @@ const ResultadoDePartidos = () => {
           />
         }
       >
-        {/* Todo el contenido existente permanece igual */}
         <View style={styles.pickerContainer}>
           <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
           <Picker
@@ -227,7 +270,6 @@ const ResultadoDePartidos = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
@@ -250,6 +292,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     alignItems: "center",
+  },
+  torneoText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+    textAlign: 'center',
   },
   date: {
     fontSize: 16,
@@ -280,10 +329,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#555",
   },
+  scoreContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+  },
   score: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#007BFF",
+  },
+  secondaryScore: {
+    fontSize: 12,
+    color: '#FF5958',
+    fontWeight: 'bold',
+    marginTop: 4,
+    textAlign: 'center',
   },
   field: {
     fontSize: 14,

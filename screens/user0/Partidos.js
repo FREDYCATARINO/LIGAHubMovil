@@ -17,6 +17,11 @@ import api from "../../config/api";
 const MatchCard = ({ match }) => {
   return (
     <View style={styles.card}>
+      {/* Nombre del torneo y liguilla */}
+      <Text style={styles.status}>
+        {match.tipoPartido}
+      </Text>
+      
       {/* Fecha y hora */}
       <Text style={styles.date}>
         {match.fechaPartido || "Fecha no disponible"} - {match.hora || "Hora no disponible"}
@@ -56,9 +61,7 @@ const MatchCard = ({ match }) => {
         {match.jugado ? "¡Finalizado!" : "¡Próximo!"}
       </Text>
     </View>
-  );
-};
-
+  );}
 const Partidos = () => {
   const [torneos, setTorneos] = useState([]);
   const [selectedTorneo, setSelectedTorneo] = useState(null);
