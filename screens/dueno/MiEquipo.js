@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl, Alert,Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl, Alert, Image, Modal, TextInput, Button } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../config/api';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const MiEquipo = ({ navigation }) => {
   const [equipos, setEquipos] = useState([]);
@@ -9,6 +10,12 @@ const MiEquipo = ({ navigation }) => {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const { getUserId, getToken, logout } = useContext(AuthContext);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [nuevoEquipo, setNuevoEquipo] = useState({
+    nombreEquipo: '',
+    nombreCampo: '',
+    logoEquipo: ''
+  });
 
   const fetchEquipos = async () => {
     try {
@@ -53,7 +60,6 @@ const MiEquipo = ({ navigation }) => {
         throw new Error('Faltan credenciales de usuario');
       }
 
-
       navigation.navigate('MisJugadores', { 
         equipo: equipos.find(e => e.id === equipoId),
         pagos: response.data
@@ -73,6 +79,38 @@ const MiEquipo = ({ navigation }) => {
     }
   };
 
+  const handleCrearEquipo = async () => {
+    try {
+      const userId = await getUserId();
+      const token = await getToken();
+
+      if (!userId || !token) {
+        throw new Error('Faltan credenciales de usuario');
+      }
+
+      const response = await api.post('/api/equipos', {
+        ...nuevoEquipo,
+        duenoId: userId
+      }, {
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      });
+
+      setEquipos([...equipos, response.data]);
+      setModalVisible(false);
+      setNuevoEquipo({
+        nombreEquipo: '',
+        nombreCampo: '',
+        logoEquipo: ''
+      });
+      Alert.alert("Éxito", "Equipo creado correctamente");
+    } catch (err) {
+      console.error('Error al crear equipo:', err);
+      Alert.alert("Error", err.response?.data?.message || err.message || 'Error al crear equipo');
+    }
+  };
+
   useEffect(() => {
     fetchEquipos();
   }, []);
@@ -89,7 +127,7 @@ const MiEquipo = ({ navigation }) => {
     );
   }
 
-  return ( // ✅ Asegúrate de incluir el return del JSX principal
+  return ( 
     <ScrollView
       style={styles.container}
       refreshControl={
@@ -100,7 +138,61 @@ const MiEquipo = ({ navigation }) => {
         />
       }
     >
-      <Text style={styles.title}>Mis Equipos</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>Mis Equipos</Text>
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Icon name="add-circle" size={30} color="#2196F3" />
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Nuevo Equipo</Text>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre del equipo"
+              value={nuevoEquipo.nombreEquipo}
+              onChangeText={(text) => setNuevoEquipo({...nuevoEquipo, nombreEquipo: text})}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre del campo"
+              value={nuevoEquipo.nombreCampo}
+              onChangeText={(text) => setNuevoEquipo({...nuevoEquipo, nombreCampo: text})}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="URL del logo (opcional)"
+              value={nuevoEquipo.logoEquipo}
+              onChangeText={(text) => setNuevoEquipo({...nuevoEquipo, logoEquipo: text})}
+            />
+            
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Cancelar"
+                color="#ff4444"
+                onPress={() => setModalVisible(false)}
+              />
+              <Button
+                title="Crear"
+                color="#2196F3"
+                onPress={handleCrearEquipo}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {error ? (
         <View style={styles.errorContainer}>
@@ -112,24 +204,24 @@ const MiEquipo = ({ navigation }) => {
       ) : equipos.length === 0 ? (
         <Text style={styles.noResults}>No tienes equipos registrados</Text>
       ) : (
-          equipos.map((equipo) => (
-               <TouchableOpacity 
-                 key={equipo.id} 
-                 style={styles.card}
-                 onPress={() => handleEquipoPress(equipo.id)}
-               >
-                  <Image 
-                   source={{ uri: equipo.logoEquipo }} 
-                   style={styles.logo} 
-                 />
-                 <Text style={styles.equipoNombre}>{equipo.nombreEquipo}</Text>
-                 <Text style={styles.detalle}>Campo: {equipo.nombreCampo}</Text>
-               </TouchableOpacity>
-             ))
-           )}
-         </ScrollView>
-       );
-     };
+        equipos.map((equipo) => (
+          <TouchableOpacity 
+            key={equipo.id} 
+            style={styles.card}
+            onPress={() => handleEquipoPress(equipo.id)}
+          >
+            <Image 
+              source={{ uri: equipo.logoEquipo }} 
+              style={styles.logo} 
+            />
+            <Text style={styles.equipoNombre}>{equipo.nombreEquipo}</Text>
+            <Text style={styles.detalle}>Campo: {equipo.nombreCampo}</Text>
+          </TouchableOpacity>
+        ))
+      )}
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -142,12 +234,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 20,
     color: '#333',
-    textAlign: 'center',
+    marginRight: 10,
   },
   card: {
     backgroundColor: '#fff',
@@ -201,11 +298,49 @@ const styles = StyleSheet.create({
   },
   logo: {
     height: 70,
-    width:70,
+    width: 70,
     borderRadius: 25,
-    alignSelf:"flex-end"
+    alignSelf: "flex-end"
   },
-  
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalView: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  input: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
 });
 
 export default MiEquipo;
