@@ -1,75 +1,88 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  ActivityIndicator, 
+  TouchableOpacity, 
+  Alert,
+  RefreshControl
+} from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../config/api';
-import { Ionicons } from '@expo/vector-icons'; // Asegúrate de tener esta importación
-
+import { Ionicons } from '@expo/vector-icons';
 
 const DetalleEquipo = ({ route, navigation }) => {
   const { equipo, pagos: pagosIniciales } = route.params;
-
-  // Estados mejorados
+  
   const [pagosData, setPagosData] = useState(pagosIniciales || null);
   const [loadingPagos, setLoadingPagos] = useState(!pagosIniciales);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const { getToken, logout } = useContext(AuthContext);
 
-  useEffect(() => {
-    const fetchPagos = async () => {
+  const fetchPagos = useCallback(async () => {
+    try {
+      setError('');
+      setRefreshing(true);
+      
       if (pagosIniciales) {
-        const pagosPagados = pagosIniciales.filter(pago => pago.estatusPago === true);
+        const pagosPagados = pagosIniciales.filter(pago => pago.estatusPago === false);
         setPagosData(pagosPagados);
         return;
       }
 
-      try {
-        setError('');
-        setLoadingPagos(true);
-        const token = await getToken();
-
-        if (!token) {
-          throw new Error('Token no disponible');
-        }
-
-        console.log(`Solicitando pagos para equipo ${equipo.id}`);
-        const response = await api.get(`/api/pagos/equipo/${equipo.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        // Filtrar SOLO los pagos con estatusPago: true
-        const pagosPagados = response.data.filter(pago => pago.estatusPago === false);
-        setPagosData(pagosPagados);
-
-        console.log('Pagos pagados recibidos:', pagosPagados);
-
-      } catch (err) {
-        console.error('Error al obtener pagos:', err);
-
-        if (err.response?.status === 403) {
-          Alert.alert("Sesión expirada", "Por favor inicia sesión nuevamente");
-          logout();
-        } else {
-          setError(err.response?.data?.message || err.message || 'Error al cargar pagos');
-        }
-      } finally {
-        setLoadingPagos(false);
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Token no disponible');
       }
-    };
 
+      const response = await api.get(`/api/pagos/equipo/${equipo.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const pagosPendientes = response.data.filter(pago => pago.estatusPago === false);
+      setPagosData(pagosPendientes);
+
+    } catch (err) {
+      console.error('Error al obtener pagos:', err);
+      
+      if (err.response?.status === 403) {
+        Alert.alert("Sesión expirada", "Por favor inicia sesión nuevamente");
+        logout();
+      } else {
+        setError(err.response?.data?.message || err.message || 'Error al cargar pagos');
+      }
+    } finally {
+      setLoadingPagos(false);
+      setRefreshing(false);
+    }
+  }, [equipo.id, pagosIniciales, getToken, logout]);
+
+  useEffect(() => {
     fetchPagos();
-  }, [equipo.id]);
+  }, [fetchPagos]);
 
   return (
-    <ScrollView style={styles.container}>
-
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={fetchPagos}
+          colors={["#FF5958"]}
+          tintColor="#FF5958"
+        />
+      }
+    >
+      {/* Todo el resto del JSX permanece exactamente igual */}
       <View style={styles.section}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.navigate('Mis Pagos')}
-          >
-          <Ionicons name="arrow-back" style={styles.iconBack} size={24} color="#2196F3"> 
-
-          </Ionicons>
+        >
+          <Ionicons name="arrow-back" style={styles.iconBack} size={24} color="#2196F3" />
         </TouchableOpacity>
         <Text style={styles.title}>{equipo.nombreEquipo}</Text>
 
@@ -86,29 +99,25 @@ const DetalleEquipo = ({ route, navigation }) => {
         )}
       </View>
 
-      {/* Sección de pagos */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Pagos Pendientes</Text>
 
-        {loadingPagos ? (
+        {loadingPagos && !refreshing ? (
           <ActivityIndicator size="small" color="#0000ff" />
         ) : error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity
               style={styles.retryButton}
-              onPress={() => {
-                setLoadingPagos(true);
-                setError('');
-              }}
+              onPress={fetchPagos}
             >
               <Text style={styles.retryText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
-        ) : pagosData.length === 0 ? (
-          <Text style={styles.noResults}>No hay registros de pagos</Text>
+        ) : pagosData?.length === 0 ? (
+          <Text style={styles.noResults}>No hay registros de pagos pendientes</Text>
         ) : (
-          pagosData.map((pago, index) => (
+          pagosData?.map((pago, index) => (
             <View key={index} style={styles.pagoCard}>
               <View style={styles.pagoRow}>
                 <Text style={styles.pagoLabel}>Descripción:</Text>
@@ -132,18 +141,13 @@ const DetalleEquipo = ({ route, navigation }) => {
               </View>
               <View style={styles.pagoRow}>
                 <Text style={styles.pagoLabel}>Estado:</Text>
-                <Text style={[
-                  styles.pagoValue,
-                  pago.estatusPago ? styles.approved : styles.pending
-                ]}>
+                <Text style={[styles.pagoValue, pago.estatusPago ? styles.approved : styles.pending]}>
                   {pago.estatusPago ? 'Pagado' : 'Pendiente'}
                 </Text>
               </View>
             </View>
           ))
         )}
-
-
 
         <TouchableOpacity
           style={styles.actionButton}
