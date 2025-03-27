@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useCallback} from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   ScrollView,
   ImageBackground,
+  RefreshControl
+
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
@@ -54,6 +56,7 @@ const MatchCard = ({ match }) => {
   );
 };
 
+
 const ResultadoDePartidos = () => {
   const [torneos, setTorneos] = useState([]);
   const [selectedTorneo, setSelectedTorneo] = useState(null);
@@ -61,55 +64,74 @@ const ResultadoDePartidos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [refreshing, setRefreshing] = useState(false); // Nuevo estado para refresh
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    const fetchTorneos = async () => {
-      try {
-        const response = await api.get("/api/torneos/iniciados");
-        setTorneos(response.data);
-        setError(null);
-      } catch (error) {
-        console.error("Error fetching torneos:", error);
-        setError("Error al cargar los torneos. Intenta de nuevo.");
-      }
-    };
-
-    fetchTorneos();
+  // Función para cargar torneos
+  const fetchTorneos = useCallback(async () => {
+    try {
+      const response = await api.get("/api/torneos/iniciados");
+      setTorneos(response.data);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching torneos:", error);
+      setError("Error al cargar los torneos. Intenta de nuevo.");
+    }
   }, []);
 
+  // Función para cargar partidos
+  const fetchMatches = useCallback(async (torneoId) => {
+    try {
+      setLoading(true);
+      const response = await api.get(
+        `/api/partidos/todos/portorneo/${torneoId}`
+      );
+      const partidosJugados = response.data.filter((partido) => partido.jugado);
+      setMatches(partidosJugados);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+      setError("Error al cargar los partidos. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Carga inicial
+  useEffect(() => {
+    fetchTorneos();
+  }, [fetchTorneos]);
+
+  // Carga cuando cambia el torneo seleccionado
   useEffect(() => {
     if (selectedTorneo) {
-      setLoading(true);
-      const fetchMatches = async () => {
-        try {
-          const response = await api.get(
-            `/api/partidos/todos/portorneo/${selectedTorneo}`
-          );
-          const partidosJugados = response.data.filter((partido) => partido.jugado);
-          setMatches(partidosJugados);
-          setError(null);
-        } catch (error) {
-          console.error("Error fetching matches:", error);
-          setError("Error al cargar los partidos. Intenta de nuevo.");
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchMatches();
+      fetchMatches(selectedTorneo);
     } else {
       setMatches([]);
       setLoading(false);
     }
-  }, [selectedTorneo]);
+  }, [selectedTorneo, fetchMatches]);
 
-  const startIndex = currentPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const displayedMatches = matches.slice(startIndex, endIndex);
+  // Función para refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    if (selectedTorneo) {
+      fetchMatches(selectedTorneo);
+    } else {
+      fetchTorneos();
+    }
+    setCurrentPage(0);
+  }, [selectedTorneo, fetchMatches, fetchTorneos]);
+
+  // Paginación
+  const displayedMatches = matches.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
 
   const handleNextPage = () => {
-    if (endIndex < matches.length) {
+    if ((currentPage + 1) * itemsPerPage < matches.length) {
       setCurrentPage(currentPage + 1);
     }
   };
@@ -126,7 +148,18 @@ const ResultadoDePartidos = () => {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#FF5958"]}
+            tintColor="#FF5958"
+          />
+        }
+      >
+        {/* Todo el contenido existente permanece igual */}
         <View style={styles.pickerContainer}>
           <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
           <Picker
@@ -150,7 +183,7 @@ const ResultadoDePartidos = () => {
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {loading && (
+        {loading && !refreshing && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007BFF" />
             <Text style={styles.loadingText}>Cargando partidos...</Text>
@@ -180,10 +213,10 @@ const ResultadoDePartidos = () => {
             <TouchableOpacity
               style={[
                 styles.paginationButton,
-                endIndex >= matches.length && styles.disabledButton,
+                (currentPage + 1) * itemsPerPage >= matches.length && styles.disabledButton,
               ]}
               onPress={handleNextPage}
-              disabled={endIndex >= matches.length}
+              disabled={(currentPage + 1) * itemsPerPage >= matches.length}
             >
               <Text style={styles.paginationButtonText}>Siguiente</Text>
             </TouchableOpacity>
@@ -193,6 +226,7 @@ const ResultadoDePartidos = () => {
     </ImageBackground>
   );
 };
+
 
 const styles = StyleSheet.create({
   backgroundImage: {
@@ -268,7 +302,6 @@ const styles = StyleSheet.create({
   pickerContainer: {
     width: "90%",
     marginBottom: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 5,
     padding: 10,
   },
@@ -276,7 +309,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#333",
+    color: "white",
   },
   picker: {
     width: "100%",
