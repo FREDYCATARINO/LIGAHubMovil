@@ -7,7 +7,8 @@ import {
   ScrollView, 
   ActivityIndicator, 
   Dimensions,
-  RefreshControl
+  RefreshControl,
+  TouchableOpacity
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
@@ -20,12 +21,13 @@ const TablaGoleo = () => {
   const [loadingGoleadores, setLoadingGoleadores] = useState(false);
   const [errorGoleadores, setErrorGoleadores] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   // Fetch torneos con useCallback
   const fetchTorneos = useCallback(async () => {
     try {
       const response = await api.get("/api/torneos/iniciados");
-      console.log("Respuesta de API - Torneos:", response.data);
       setTorneos(response.data);
       setErrorTorneos(null);
     } catch (error) {
@@ -42,8 +44,8 @@ const TablaGoleo = () => {
     setErrorGoleadores(null);
     try {
       const response = await api.get(`/api/jugadorestadisticas/torneo/${selectedTorneo}`);
-      console.log("Respuesta de API - Goleadores:", response.data);
       setGoleadores(response.data);
+      setCurrentPage(0); // Resetear a primera página al cambiar torneo
     } catch (error) {
       console.error("Error fetching goleadores:", error);
       setErrorGoleadores("Error al cargar los goleadores. Intenta de nuevo.");
@@ -63,6 +65,19 @@ const TablaGoleo = () => {
     }
   }, [selectedTorneo, fetchGoleadores, fetchTorneos]);
 
+  // Cambiar página
+  const goToNextPage = () => {
+    if ((currentPage + 1) * itemsPerPage < goleadores.length) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   useEffect(() => {
     fetchTorneos();
   }, [fetchTorneos]);
@@ -73,6 +88,12 @@ const TablaGoleo = () => {
 
   // Ancho mínimo para las celdas
   const cellWidth = Dimensions.get('window').width * 0.25;
+
+  // Obtener jugadores para la página actual
+  const paginatedGoleadores = goleadores.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
 
   return (
     <ScrollView 
@@ -108,7 +129,7 @@ const TablaGoleo = () => {
           </Picker>
         )}
       </View>
-
+  
       {/* Tabla de goleadores */}
       <Text style={styles.title}>Goleadores</Text>
       
@@ -138,13 +159,15 @@ const TablaGoleo = () => {
                   <Text style={styles.headerText}>Goles</Text>
                 </View>
               </View>
-
+  
               {/* Filas de datos */}
-              {goleadores.length > 0 ? (
-                goleadores.map((jugador, index) => (
+              {paginatedGoleadores.length > 0 ? (
+                paginatedGoleadores.map((jugador, index) => (
                   <View key={jugador.id || index} style={styles.row}>
                     <View style={[styles.cell, { width: cellWidth }]}>
-                      <Text style={styles.cellText}>{index + 1}</Text>
+                      <Text style={styles.cellText}>
+                        {(currentPage * itemsPerPage) + index + 1}
+                      </Text>
                     </View>
                     
                     <View style={[styles.cell, { width: cellWidth * 1.5 }]}>
@@ -165,11 +188,39 @@ const TablaGoleo = () => {
               )}
             </View>
           </ScrollView>
+  
+          {/* Controles de paginación*/}
+          <View style={styles.paginationContainer}>
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                currentPage === 0 && styles.disabledButton
+              ]}
+              onPress={goToPrevPage}
+              disabled={currentPage === 0}
+            >
+              <Text style={styles.paginationText}>Anterior</Text>
+            </TouchableOpacity>
+  
+            <Text style={styles.pageIndicator}>
+              Página {currentPage + 1} de {Math.max(1, Math.ceil(goleadores.length / itemsPerPage))}
+            </Text>
+  
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                (currentPage + 1) * itemsPerPage >= goleadores.length && styles.disabledButton
+              ]}
+              onPress={goToNextPage}
+              disabled={(currentPage + 1) * itemsPerPage >= goleadores.length}
+            >
+              <Text style={styles.paginationText}>Siguiente</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </ScrollView>
-  );
-};
+  );}
 
 const styles = StyleSheet.create({
   container: {
@@ -270,6 +321,30 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 16,
     width: Dimensions.get('window').width - 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 15,
+    paddingHorizontal: 10,
+  },
+  paginationButton: {
+    backgroundColor: '#c00',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  paginationText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  pageIndicator: {
+    color: '#333',
+    fontWeight: 'bold',
   },
 });
 
