@@ -39,6 +39,7 @@ const MisJugadores = ({ route }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  
 
   
   const [formData, setFormData] = useState({
@@ -390,85 +391,108 @@ const MisJugadores = ({ route }) => {
       }
     >
       <View>
-        <Modal
-          animationType="slide"
-          transparent={false}
-          visible={showRegisterModal}
-          onRequestClose={() => {
+      <Modal
+  animationType="slide"
+  transparent={false}
+  visible={showRegisterModal}
+  onRequestClose={() => {
+    setShowRegisterModal(false);
+    resetForm();
+  }}
+>
+  <KeyboardAvoidingView 
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    style={styles.modalContainer}
+  >
+    <ScrollView contentContainerStyle={styles.modalContent}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Registrar Nuevo Jugador</Text>
+        <TouchableOpacity onPress={() => {
+          setShowRegisterModal(false);
+          resetForm();
+        }}>
+          <Icon name="close" size={24} />
+        </TouchableOpacity>
+      </View>
+      
+      <Text style={styles.label}>Nombre Completo</Text>
+      <TextInput
+        style={styles.input}
+        value={formData.nombreCompleto}
+        onChangeText={(text) => handleChange('nombreCompleto', text)}
+      />
+      
+      <Text style={styles.label}>Número de Camiseta</Text>
+      <TextInput
+        style={styles.input}
+        value={formData.numeroCamiseta}
+        onChangeText={(text) => handleChange('numeroCamiseta', text)}
+        keyboardType="numeric"
+      />
+      
+      <Text style={styles.label}>Fecha de Nacimiento</Text>
+      <TextInput
+        style={styles.input}
+        value={formData.fechaNacimiento}
+        onChangeText={(text) => handleChange('fechaNacimiento', text)}
+        placeholder="AAAA-MM-DD"
+      />
+      
+      <Text style={styles.label}>Foto del Jugador</Text>
+      
+      {/* Mostrar la imagen seleccionada o tomada */}
+      {fotoUri ? (
+        <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
+      ) : (
+        <View style={styles.photoOptionsContainer}>
+          <TouchableOpacity 
+            style={styles.photoOptionButton} 
+            onPress={selectPhoto}
+          >
+            <Icon name="photo-library" size={24} />
+            <Text style={styles.photoOptionText}>Elegir de galería</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.photoOptionButton} 
+            onPress={takePhoto}
+          >
+            <Icon name="camera-alt" size={24} />
+            <Text style={styles.photoOptionText}>Tomar foto</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {/* Botón para eliminar foto si ya hay una seleccionada */}
+      {fotoUri && (
+        <TouchableOpacity 
+          style={styles.removePhotoButton}
+          onPress={() => setFotoUri(null)}
+        >
+          <Text style={styles.removePhotoText}>Eliminar foto</Text>
+        </TouchableOpacity>
+      )}
+      
+      <View style={styles.buttonRow}>
+        <TouchableOpacity 
+          style={[styles.button, styles.cancelButton]}
+          onPress={() => {
             setShowRegisterModal(false);
             resetForm();
           }}
         >
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalContainer}
-          >
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Registrar Nuevo Jugador</Text>
-                <TouchableOpacity onPress={() => {
-                  setShowRegisterModal(false);
-                  resetForm();
-                }}>
-                  <Icon name="close" size={24} />
-                </TouchableOpacity>
-              </View>
-              
-              <Text style={styles.label}>Nombre Completo</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.nombreCompleto}
-                onChangeText={(text) => handleChange('nombreCompleto', text)}
-              />
-              
-              <Text style={styles.label}>Número de Camiseta</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.numeroCamiseta}
-                onChangeText={(text) => handleChange('numeroCamiseta', text)}
-                keyboardType="numeric"
-              />
-              
-              <Text style={styles.label}>Fecha de Nacimiento</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.fechaNacimiento}
-                onChangeText={(text) => handleChange('fechaNacimiento', text)}
-                placeholder="AAAA-MM-DD"
-              />
-              
-              <Text style={styles.label}>Foto del Jugador</Text>
-              <TouchableOpacity onPress={selectPhoto}>
-                {fotoUri ? (
-                  <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <Icon name="add-a-photo" size={30} color="#888" />
-                    <Text>Seleccionar imagen</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              
-              <View style={styles.buttonRow}>
-                <TouchableOpacity 
-                  style={[styles.button, styles.cancelButton]}
-                  onPress={() => {
-                    setShowRegisterModal(false);
-                    resetForm();
-                  }}
-                >
-                  <Text style={styles.buttonText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.button, styles.submitButton]}
-                  onPress={handleRegister}
-                >
-                  <Text style={styles.buttonText}>Registrar</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </Modal>
+          <Text style={styles.buttonText}>Cancelar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.button, styles.submitButton]}
+          onPress={handleRegister}
+        >
+          <Text style={styles.buttonText}>Registrar</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  </KeyboardAvoidingView>
+</Modal>
   
         <Modal
           animationType="slide"
@@ -813,7 +837,13 @@ const styles = StyleSheet.create({
   photoOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20
+    marginBottom: 20,
+    marginTop:"20",
+    padding:20,
+    borderRadius: 2,
+    elevation: 1,
+    alignItems: "center"
+    
   },
   buttonRow: {
     flexDirection: 'row',
@@ -825,13 +855,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     flex: 1,
-    marginHorizontal: 5
+    marginHorizontal: 5,
+    backgroundColor:"#FF5958"
   },
   cancelButton: {
     backgroundColor: '#f1f1f1'
   },
   submitButton: {
-    backgroundColor: '#1E90FF'
+    backgroundColor: '#FF5958'
   },
   confirmButton: {
     backgroundColor: '#2ecc71'
@@ -884,8 +915,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333'
-  }
+  },
+  photoOptionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 15,
+  },
+  photoOptionButton: {
+    alignItems: 'center',
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    width: '45%',
+  },
+  photoOptionText: {
+    marginTop: 5,
+    fontSize: 14,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'contain',
+    marginVertical: 10,
+    borderRadius: 8,
+  },
+  removePhotoButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+    padding: 8,
+  },
+  removePhotoText: {
+    color: 'red',
+    textDecorationLine: 'underline',
+  },
 });
+
 
 
 export default MisJugadores;
