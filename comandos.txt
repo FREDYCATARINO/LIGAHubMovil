@@ -31,3 +31,4 @@ npx expo install expo-font
 npx expo install @expo-google-fonts/oswald
 npx expo install @expo-google-fonts/nunito
 npx expo install expo-image-picker
+npx expo install expo-file-system

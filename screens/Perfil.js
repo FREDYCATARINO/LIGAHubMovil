@@ -128,7 +128,7 @@ const PerfilScreen = ({ navigation, route }) => {
           <Text style={[FONTS.oswald, { alignSelf: "center", fontSize: 25 }]}>
             Rol: <Text style={{ color: color }}>{rol}</Text>
           </Text>
-          <View style={stylesPerfil.form}>
+          {/* <View style={stylesPerfil.form}>
             <Text style={[FONTS.oswald, { fontSize: 20 }]}>
               Datos personales
             </Text>
@@ -184,7 +184,7 @@ const PerfilScreen = ({ navigation, route }) => {
                 Guardar
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
           <TouchableOpacity
             style={{
               backgroundColor: colores.domin_1_1,

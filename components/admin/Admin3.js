@@ -46,6 +46,7 @@ import { useForm, Controller, set } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import axios from "axios";
 
 const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
@@ -68,6 +69,8 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const [formVis, setFormVis] = useState(false);
   const [image, setImage] = useState(null);
   const [motivo, setMotivo] = useState("");
+
+  const [loadBtn, setLoadBtn] = useState(false);
 
   const ordenEstados = ["En Juego", "En Espera", "Finalizado"];
 
@@ -137,7 +140,6 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   });
 
   const onSubmit = async (data) => {
-    console.log(data);
     if (!editar) {
       if (!image || typeof image !== "string" || !image.startsWith("file://")) {
         console.log("Error: No hay imagen seleccionada.");
@@ -220,70 +222,96 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   }
 
   const registrarTorneo = async (data, image) => {
-    const formData = new FormData();
-    console.log(errors);
-    console.log(image);
-
-    formData.append(
-      "torneo",
-      JSON.stringify({
-        nombreTorneo: `${data.nombreTorneo} En Espera`,
-        descripcion: data.descripcion,
-        fechaInicio: data.fechaInicio,
-        maxEquipos: data.maxEquipos,
-        minEquipos: data.minEquipos,
-        equiposLiguilla: data.equiposLiguilla,
-        premio: data.premio,
-        vueltas: data.vueltas,
-      }),
-      "torneo.json"
-    ); // <-- Añadir nombre del archivo ayuda a algunos servidores
-
-    //formData.append("torneo", new Blob([JSON.stringify(data)], { type: "application/json" }));
-
-    if (image) {
-      console.log("📸 Imagen antes de enviar:", image);
-
-      formData.append("imagen", {
-        uri: image.startsWith("file://") ? image : `file://${image}`,
-        name: `${data.nombreTorneo}.png`,
-        type: "image/png",
-      });
-    }
+    setLoadBtn(true);
 
     try {
-      const tokData = await getToken();
-      const response = await api.post("/api/torneos", formData, {
-        headers: {
-          Authorization: `Bearer ${tokData}`,
-          "Content-Type": "multipart/form-data",
-          Accept: "application/json",
-        },
-        transformRequest: (data) => data,
-      });
-      Alert.alert("¡Éxito!", "Torneo creado exitosamente")
-      console.log(response.data);
-    } catch (error) {
-      console.log("?");
-      if (error.config)
-        console.log(
-          error.config,
-          "-----",
-          error.config.headers,
-          "-----",
-          error.config.data,
-          "-----",
-          error.config.data._parts
-        );
-      console.error("Error:", error.response.data || error || error.response);
-      if (error.response.message) Alert.alert("Error", error.response.message);
-      Alert.alert("Error", "Error al registrar el torneo");
-      if (error.response.status === 403) {
-        console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
-        //logout();
+      // 1. Verificar que el archivo existe
+      const fileInfo = await FileSystem.getInfoAsync(image);
+      if (!fileInfo.exists) {
+        console.error("El archivo no existe en la ruta:", image);
+        Alert.alert("Error", "No se encontró la imagen");
         return;
       }
+
+      // 2. Leer la imagen como base64
+      const base64Image = await FileSystem.readAsStringAsync(image, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // 3. Determinar el tipo MIME (puedes ajustarlo según necesites)
+      const mimeType = "image/jpeg"; // o podrías detectarlo del nombre del archivo
+
+      // 4. Construir el objeto de datos como en tu ejemplo
+      const requestData = {
+        torneo: {
+          nombreTorneo: data.nombreTorneo,
+          descripcion: data.descripcion,
+          fechaInicio: data.fechaInicio,
+          maxEquipos: data.maxEquipos,
+          minEquipos: data.minEquipos,
+          equiposLiguilla: data.equiposLiguilla,
+          premio: data.premio,
+          vueltas: data.vueltas,
+        },
+        imagen: `data:${mimeType};base64,${base64Image}`,
+      };
+
+      console.log("Datos a enviar:", JSON.stringify(requestData, null, 2));
+
+      const tokData = await getToken();
+
+      // 5. Enviar la petición
+      const response = await Promise.race([
+        api.post("/api/torneos/movil", requestData, {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout después de 6s")), 6000)
+        ),
+      ]);
+
+      if (!response.data) {
+        throw new Error("La API no devolvió datos");
+      }
+
+      Alert.alert("¡Éxito!", "Torneo creado exitosamente");
+      setReload(!reload);
+    } catch (error) {
+      console.error("Error completo:", error);
+
+      if (error.response) {
+        console.error(
+          "Error del servidor:",
+          error.response.status,
+          error.response.data
+        );
+
+        if (error.response.status === 403) {
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+
+        Alert.alert(
+          "Error",
+          error.response.data.message || "Error al registrar el torneo"
+        );
+      } else if (error.message === "Network Error") {
+        Alert.alert(
+          "Advertencia",
+          "El torneo se creó, pero no pudimos confirmarlo. Verifica la lista."
+        );
+      } else {
+        Alert.alert("Error", error.message || "Error inesperado");
+      }
+    } finally {
+      setLoadBtn(false);
     }
   };
 
@@ -334,7 +362,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         transformRequest: (data) => data,
       });
       console.log(response.data);
-      Alert.alert("¡Exito!","Torneo actualizado");
+      Alert.alert("¡Exito!", "Torneo actualizado");
     } catch (error) {
       console.log("?");
       if (error.config)
@@ -344,16 +372,17 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
           error.config.headers,
           "-----",
           error.config.data,
-          "-----",
+          "-----"
           //error.config.data?._parts
         );
       console.error("Error:", error.response?.data || error || error.response);
-      if (error.response?.message) Alert.alert("Error", error.response.message, error.response?.status);
+      if (error.response?.message)
+        Alert.alert("Error", error.response.message, error.response?.status);
       Alert.alert("Error", "Error al registrar el torneo");
       if (error.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
         Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
-        //logout();
+        logout();
         return;
       }
     }
@@ -468,7 +497,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       .patch(
         `/api/torneos/${id}/cancelar`,
         {
-          motivoFinalizacion: motivo, // No envíes JSON.stringify aquí
+          motivoFinalizacion: motivo,
         },
         {
           headers: {
@@ -1071,18 +1100,22 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                 alignSelf: "center",
               }}
             >
-              <TouchableOpacity
-                style={[
-                  stylesAdmin3.botTorneo,
-                  { opacity: isValid ? 1 : 0.5, width: 150 },
-                ]}
-                onPress={handleSubmit(onSubmit)}
-                disabled={!isValid}
-              >
-                <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-                  {!editar ? "Crear Torneo" : "Actualizar torneo"}
-                </Text>
-              </TouchableOpacity>
+              {loadBtn ? (
+                <ActivityIndicator size="large" color={colores.domin_1_1} />
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    stylesAdmin3.botTorneo,
+                    { opacity: isValid ? 1 : 0.5, width: 150 },
+                  ]}
+                  onPress={handleSubmit(onSubmit)}
+                  disabled={!isValid}
+                >
+                  <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                    {!editar ? "Crear Torneo" : "Actualizar torneo"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}

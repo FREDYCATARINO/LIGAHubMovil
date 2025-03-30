@@ -340,7 +340,7 @@ const Admin4 = ({ navigation }) => {
       useNativeDriver: false, // Necesario para ScrollView
     }).start();
 
-    scrollViewRef.current?.scrollTo({ y: position, animated: true });
+    //scrollViewRef.current?.scrollTo({ y: position, animated: true });
   };
 
   // Escuchar cambios en la animación y actualizar el estado si es necesario
@@ -518,6 +518,7 @@ const Admin4 = ({ navigation }) => {
     setValue("latitud", "");
     setValue("longitud", "");
     setValue("cancha", "");
+    setCanchas([{ id: Date.now(), pos: 0, desc: "" }]);
     setDireccion([{ lat: 0, long: 0 }]);
     if (canchasEdit.length !== 0)
       setCanchasEdit([[{ id: Date.now(), pos: 0, desc: "" }]]);
@@ -688,7 +689,10 @@ const Admin4 = ({ navigation }) => {
 
   return (
     <GestureHandlerRootView>
-      <SafeAreaView style={stylesAdmin4.container} showsVerticalScrollIndicator={false}>
+      <SafeAreaView
+        style={stylesAdmin4.container}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.ScrollView
           style={{ gap: 5 }}
           ref={scrollViewRef}
@@ -849,13 +853,14 @@ const Admin4 = ({ navigation }) => {
                             stylesAdmin4.editButton,
                             stylesAdmin4.buttonCell,
                           ]}
-                          onPress={() =>
+                          onPress={() => {
                             setEdicion(
                               item,
                               item.canchas[0].descripcion,
                               item.canchas
-                            )
-                          }
+                            );
+                            setVis(true);
+                          }}
                         >
                           <Ionicons
                             name="pencil"
@@ -995,396 +1000,7 @@ const Admin4 = ({ navigation }) => {
               </View>
             </Animated.View>
           )}
-          {vis ? (
-            <View>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text
-                  style={[
-                    styles.TextField,
-                    stylesAdmin4.title,
-                    FONTS.nunitoNegrita,
-                    { paddingVertical: 15, paddingHorizontal: 5 },
-                  ]}
-                >
-                  {editando ? "Editar campo" : "Registrar campo"}
-                </Text>
-                {!editando ? null : (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setEditando(false);
-                      removeEdicion();
-                      if (canchasEdit.length !== 0)
-                        setCanchasEdit([
-                          [{ id: Date.now(), pos: 0, desc: "" }],
-                        ]);
-                    }}
-                  >
-                    <Ionicons
-                      name="refresh-circle"
-                      size={30}
-                      color={colores.acento_2_2}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-              <View style={stylesAdmin4.form}>
-                <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-                  Elege buscando el lugar en el mapa
-                </Text>
-                {Platform.OS !== "web" && (
-                  <View
-                    style={{
-                      width: "100%",
-                      height: 200,
-                      borderColor: colores.acento_3_1,
-                      borderRadius: 5,
-                      borderWidth: 2,
-                    }}
-                  >
-                    <MapView
-                      provider={MapView.PROVIDER_GOOGLE}
-                      style={{ flex: 1, width: "100%", height: "100%" }}
-                      onLongPress={handleLongPress2}
-                      region={region2}
-                      onRegionChangeComplete={setRegion2}
-                      mapType="hybrid"
-                      onPoiClick={async (event) => {
-                        const { placeId, coordinate, name } = event.nativeEvent;
-                        handleLongPress2(event);
-                        setLugar(name);
-                      }}
-                    >
-                      {markers2.map((marker) => (
-                        <Marker
-                          key={marker.id}
-                          coordinate={{
-                            latitude: marker.latitude,
-                            longitude: marker.longitude,
-                          }}
-                          title={marker.title}
-                        />
-                      ))}
-                    </MapView>
-                    <TouchableOpacity
-                      onPress={resetMarkers2}
-                      style={{
-                        width: "30%",
-                        backgroundColor: colores.domin_1_4,
-                        alignSelf: "flex-end",
-                        alignItems: "center",
-                        padding: 10,
-                        margin: 5,
-                        borderRadius: 10,
-                        marginTop: -50,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          FONTS.oswald,
-                          { fontSize: 15, color: colores.blanco },
-                        ]}
-                      >
-                        Reestablecer
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                <Controller
-                  control={control}
-                  name="nombre"
-                  render={({ field: { onChange, value } }) => (
-                    <>
-                      {value === "Nombre desconocido" ? (
-                        <TextInput
-                          style={[FONTS.oswald, stylesAdmin4.input]}
-                          placeholderTextColor={colores.domin_2_2}
-                          placeholder="Escribe el nombre"
-                          value={value}
-                          onChangeText={onChange}
-                        />
-                      ) : (
-                        <TextInput
-                          style={[FONTS.oswald, stylesAdmin4.input]}
-                          placeholderTextColor={colores.domin_2_2}
-                          value={value}
-                          placeholder="Busca un lugar"
-                          onChangeText={onChange}
-                          disabled={true}
-                        />
-                      )}
-                      {errors.nombre && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.nombre.message}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="direccion"
-                  render={({ field: { onChange, value } }) => (
-                    <>
-                      <TextInput
-                        style={[FONTS.oswald, stylesAdmin4.input]}
-                        placeholderTextColor={colores.domin_2_2}
-                        placeholder="Dirección"
-                        value={value}
-                      />
-                      {errors.direccion && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.direccion.message}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="latitud"
-                  render={({ field: { onChange, value } }) => (
-                    <>
-                      {errors.latitud && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.latitud.message}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="longitud"
-                  render={({ field: { onChange, value } }) => (
-                    <>
-                      {errors.longitud && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.longitud.message}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                />
-                <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-                  Asignación de canchas
-                </Text>
-                <View>
-                  {editando
-                    ? canchasEdit.map((cancha, index) => (
-                        <View
-                          key={cancha.id}
-                          style={{
-                            flexDirection: "row",
-                            height: 50,
-                            gap: 5,
-                            paddingVertical: 3,
-                          }}
-                        >
-                          <TextInput
-                            style={[FONTS.oswald, stylesAdmin4.input2]}
-                            placeholderTextColor={colores.domin_2_2}
-                            placeholder="#"
-                            keyboardType="numeric"
-                            value={(index + 1).toString()} // Muestra el número de la fila
-                            editable={false} // Solo visualización, no editable
-                          />
-                          {index === 0 ? (
-                            <Controller
-                              control={control}
-                              name="cancha"
-                              render={({ field: { onChange, value } }) => (
-                                <View
-                                  style={{
-                                    flexDirection: "column",
-                                    width: "75%",
-                                  }}
-                                >
-                                  <TextInput
-                                    style={[FONTS.oswald, stylesAdmin4.input]}
-                                    placeholderTextColor={colores.domin_2_2}
-                                    placeholder="Descripción"
-                                    onChangeText={(text) => {
-                                      onChange(text);
-                                      updateDescriptionWithCount(
-                                        cancha.id,
-                                        text
-                                      );
-                                    }}
-                                    value={value}
-                                  />
-                                  {errors.cancha && (
-                                    <Text style={[formStyle.errText]}>
-                                      {errors.cancha.message}
-                                    </Text>
-                                  )}
-                                </View>
-                              )}
-                            />
-                          ) : (
-                            <TextInput
-                              style={[
-                                FONTS.oswald,
-                                stylesAdmin4.input,
-                                { width: "75%" },
-                              ]}
-                              placeholderTextColor={colores.domin_2_2}
-                              placeholder="Descripción"
-                              onChangeText={(text) =>
-                                updateDescriptionWithCount(cancha.id, text)
-                              } // Actualiza la descripción
-                              value={cancha.descripcion} // Muestra el valor actual de la descripción
-                            />
-                          )}
-                          {/* <TouchableOpacity
-                            style={[
-                              stylesAdmin4.button2,
-                              stylesAdmin4.editButton,
-                            ]}
-                            onPress={addRowEdit} // Agrega una nueva fila
-                          >
-                            <Ionicons
-                              name="add"
-                              size={18}
-                              color={colores.blanco}
-                            />
-                          </TouchableOpacity> */}
-                          <TouchableOpacity
-                            style={[
-                              stylesAdmin4.button2,
-                              cancha.estatusCancha
-                                ? stylesAdmin4.deleteButton
-                                : stylesAdmin4.redoButton,
-                            ]}
-                            onPress={() => /*removeRowEdit(cancha.id)*/ {
-                              setModalCancha(true), setIdCancha(cancha);
-                            }}
-                          >
-                            <Ionicons
-                              name={cancha.estatusCancha ? "trash" : "reload"}
-                              size={18}
-                              color={colores.blanco}
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      ))
-                    : canchas.map((cancha, index) => (
-                        <View
-                          key={cancha.id}
-                          style={{
-                            flexDirection: "row",
-                            height: 50,
-                            gap: 5,
-                            paddingVertical: 3,
-                          }}
-                        >
-                          <TextInput
-                            style={[FONTS.oswald, stylesAdmin4.input2]}
-                            placeholderTextColor={colores.domin_2_2}
-                            placeholder="#"
-                            keyboardType="numeric"
-                            value={(index + 1).toString()} // Muestra el número de la fila
-                            editable={false} // Solo visualización, no editable
-                          />
-                          {index === 0 ? (
-                            <Controller
-                              control={control}
-                              name="cancha"
-                              render={({ field: { onChange, value } }) => (
-                                <View
-                                  style={{
-                                    flexDirection: "column",
-                                    width: "50%",
-                                  }}
-                                >
-                                  <TextInput
-                                    style={[FONTS.oswald, stylesAdmin4.input]}
-                                    placeholderTextColor={colores.domin_2_2}
-                                    placeholder="Descripción"
-                                    onChangeText={(text) => {
-                                      onChange(text);
-                                      updateDescription(cancha.id, text);
-                                    }}
-                                    value={value}
-                                  />
-                                  {errors.cancha && (
-                                    <Text style={[formStyle.errText]}>
-                                      {errors.cancha.message}
-                                    </Text>
-                                  )}
-                                </View>
-                              )}
-                            />
-                          ) : (
-                            <TextInput
-                              style={[
-                                FONTS.oswald,
-                                stylesAdmin4.input,
-                                { width: "50%" },
-                              ]}
-                              placeholderTextColor={colores.domin_2_2}
-                              placeholder="Descripción"
-                              onChangeText={(text) =>
-                                updateDescription(cancha.id, text)
-                              } // Actualiza la descripción
-                              value={cancha.desc} // Muestra el valor actual de la descripción
-                            />
-                          )}
-                          <TouchableOpacity
-                            style={[
-                              stylesAdmin4.button2,
-                              stylesAdmin4.editButton,
-                            ]}
-                            onPress={addRow} // Agrega una nueva fila
-                          >
-                            <Ionicons
-                              name="add"
-                              size={18}
-                              color={colores.blanco}
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[
-                              stylesAdmin4.button2,
-                              stylesAdmin4.deleteButton,
-                            ]}
-                            onPress={() => removeRow(cancha.id)} // Elimina la fila correspondiente
-                          >
-                            <Ionicons
-                              name="remove"
-                              size={18}
-                              color={colores.blanco}
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                </View>
-                <TouchableOpacity
-                  //onPress={handleSubmit(onSubmit)}
-                  disabled={!isValid}
-                  onPress={handleSubmit(onSubmit)}
-                  style={{
-                    width: "50%",
-                    backgroundColor: colores.domin_1_4,
-                    alignSelf: "center",
-                    alignItems: "center",
-                    padding: 10,
-                    margin: 5,
-                    borderRadius: 10,
-                    opacity: isValid ? 1 : 0.5,
-                  }}
-                >
-                  <Text
-                    style={[
-                      FONTS.oswald,
-                      { fontSize: 15, color: colores.blanco },
-                    ]}
-                  >
-                    {editando ? "Actualizar" : "Registrar"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
+
           <Modal
             animationType="fade"
             transparent={true}
@@ -1404,7 +1020,11 @@ const Admin4 = ({ navigation }) => {
                 >
                   <Ionicons name="close" size={24} color={colores.negro} />
                 </TouchableOpacity>
-                <Ionicons name="help-circle" size={48} color={colores.domin_2_1} />
+                <Ionicons
+                  name="help-circle"
+                  size={48}
+                  color={colores.domin_2_1}
+                />
                 <Text style={[stylesModal.modalTitle, FONTS.oswaldNegrita]}>
                   {idCancha.estatusCancha
                     ? "¿Deshabilitar cancha?"
@@ -1416,7 +1036,7 @@ const Admin4 = ({ navigation }) => {
                 <View style={stylesModal.modalButRow}>
                   <TouchableOpacity
                     style={[stylesModal.buttonBack, FONTS.oswald]}
-                    onPress={async () => quitarCancha(idCancha.id) }
+                    onPress={async () => quitarCancha(idCancha.id)}
                   >
                     <Text style={[stylesModal.buttonText, FONTS.oswald]}>
                       Si
@@ -1431,6 +1051,471 @@ const Admin4 = ({ navigation }) => {
                     </Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={vis}
+            onRequestClose={() => setVis(false)}
+          >
+            <View style={stylesModal.modalContainer}>
+              <View style={stylesModal.modalContent3}>
+                <TouchableOpacity
+                  style={{
+                    alignSelf: "flex-end",
+                    justifyContent: "flex-start",
+                    marginTop: 10,
+                    marginRight: 10,
+                    marginBottom: 2,
+                  }}
+                  onPress={() => setVis(false)}
+                >
+                  <Ionicons name="close" size={36} color={colores.negro} />
+                </TouchableOpacity>
+                <ScrollView
+                  style={{ maxHeight: 500 }}
+                  nestedScrollEnabled={true}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {vis ? (
+                    <View>
+                      <View
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                      >
+                        <Text
+                          style={[
+                            styles.TextField,
+                            stylesAdmin4.title,
+                            FONTS.nunitoNegrita,
+                            { paddingVertical: 2, paddingHorizontal: 5 },
+                          ]}
+                        >
+                          {editando ? "Editar campo" : "Registrar campo"}
+                        </Text>
+                        {!editando ? null : (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setEditando(false);
+                              removeEdicion();
+                              if (canchasEdit.length !== 0)
+                                setCanchasEdit([
+                                  [{ id: Date.now(), pos: 0, desc: "" }],
+                                ]);
+                            }}
+                          >
+                            <Ionicons
+                              name="refresh-circle"
+                              size={30}
+                              color={colores.acento_2_2}
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      <View style={stylesAdmin4.form}>
+                        <Text
+                          style={[FONTS.oswald, { alignSelf: "flex-start" }]}
+                        >
+                          Elege buscando el lugar en el mapa
+                        </Text>
+                        {Platform.OS !== "web" && (
+                          <View
+                            style={{
+                              width: "100%",
+                              height: 200,
+                              borderColor: colores.acento_3_1,
+                              borderRadius: 5,
+                              borderWidth: 2,
+                            }}
+                          >
+                            <MapView
+                              provider={MapView.PROVIDER_GOOGLE}
+                              style={{ flex: 1, width: "100%", height: "100%" }}
+                              onLongPress={handleLongPress2}
+                              region={region2}
+                              onRegionChangeComplete={setRegion2}
+                              mapType="hybrid"
+                              onPoiClick={async (event) => {
+                                const { placeId, coordinate, name } =
+                                  event.nativeEvent;
+                                handleLongPress2(event);
+                                setLugar(name);
+                              }}
+                            >
+                              {markers2.map((marker) => (
+                                <Marker
+                                  key={marker.id}
+                                  coordinate={{
+                                    latitude: marker.latitude,
+                                    longitude: marker.longitude,
+                                  }}
+                                  title={marker.title}
+                                />
+                              ))}
+                            </MapView>
+                            <TouchableOpacity
+                              onPress={resetMarkers2}
+                              style={{
+                                width: "50%",
+                                backgroundColor: colores.domin_1_4,
+                                alignSelf: "flex-end",
+                                alignItems: "center",
+                                padding: 10,
+                                margin: 5,
+                                borderRadius: 10,
+                                marginTop: -50,
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  FONTS.oswald,
+                                  { fontSize: 15, color: colores.blanco },
+                                ]}
+                              >
+                                Reestablecer
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        <Controller
+                          control={control}
+                          name="nombre"
+                          render={({ field: { onChange, value } }) => (
+                            <>
+                              {value === "Nombre desconocido" ? (
+                                <TextInput
+                                  style={[FONTS.oswald, stylesAdmin4.input]}
+                                  placeholderTextColor={colores.domin_2_2}
+                                  placeholder="Escribe el nombre"
+                                  value={value}
+                                  onChangeText={onChange}
+                                />
+                              ) : (
+                                <TextInput
+                                  style={[FONTS.oswald, stylesAdmin4.input]}
+                                  placeholderTextColor={colores.domin_2_2}
+                                  value={value}
+                                  placeholder="Busca un lugar"
+                                  onChangeText={onChange}
+                                  disabled={true}
+                                />
+                              )}
+                              {errors.nombre && (
+                                <Text style={[formStyle.errText]}>
+                                  {errors.nombre.message}
+                                </Text>
+                              )}
+                            </>
+                          )}
+                        />
+                        <Controller
+                          control={control}
+                          name="direccion"
+                          render={({ field: { onChange, value } }) => (
+                            <>
+                              <TextInput
+                                style={[FONTS.oswald, stylesAdmin4.input]}
+                                placeholderTextColor={colores.domin_2_2}
+                                placeholder="Dirección"
+                                value={value}
+                              />
+                              {errors.direccion && (
+                                <Text style={[formStyle.errText]}>
+                                  {errors.direccion.message}
+                                </Text>
+                              )}
+                            </>
+                          )}
+                        />
+                        <Controller
+                          control={control}
+                          name="latitud"
+                          render={({ field: { onChange, value } }) => (
+                            <>
+                              {errors.latitud && (
+                                <Text style={[formStyle.errText]}>
+                                  {errors.latitud.message}
+                                </Text>
+                              )}
+                            </>
+                          )}
+                        />
+                        <Controller
+                          control={control}
+                          name="longitud"
+                          render={({ field: { onChange, value } }) => (
+                            <>
+                              {errors.longitud && (
+                                <Text style={[formStyle.errText]}>
+                                  {errors.longitud.message}
+                                </Text>
+                              )}
+                            </>
+                          )}
+                        />
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 3,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              FONTS.oswald,
+                              { alignSelf: "flex-start", fontSize: 18 },
+                            ]}
+                          >
+                            Asignación de canchas
+                          </Text>
+                          {!editando && (
+                            <TouchableOpacity onPress={addRow}>
+                              <Ionicons
+                                name="add-circle-sharp"
+                                size={24}
+                                color={colores.acento_2_2}
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <View>
+                          {editando
+                            ? canchasEdit.map((cancha, index) => (
+                                <View
+                                  key={cancha.id}
+                                  style={{
+                                    flexDirection: "row",
+                                    height: 50,
+                                    gap: 5,
+                                    paddingVertical: 3,
+                                  }}
+                                >
+                                  <TextInput
+                                    style={[FONTS.oswald, stylesAdmin4.input2]}
+                                    placeholderTextColor={colores.domin_2_2}
+                                    placeholder="#"
+                                    keyboardType="numeric"
+                                    value={(index + 1).toString()} // Muestra el número de la fila
+                                    editable={false} // Solo visualización, no editable
+                                  />
+                                  {index === 0 ? (
+                                    <Controller
+                                      control={control}
+                                      name="cancha"
+                                      render={({
+                                        field: { onChange, value },
+                                      }) => (
+                                        <View
+                                          style={{
+                                            flexDirection: "column",
+                                            width: "75%",
+                                          }}
+                                        >
+                                          <TextInput
+                                            style={[
+                                              FONTS.oswald,
+                                              stylesAdmin4.input,
+                                            ]}
+                                            placeholderTextColor={
+                                              colores.domin_2_2
+                                            }
+                                            placeholder="Descripción"
+                                            onChangeText={(text) => {
+                                              onChange(text);
+                                              updateDescriptionWithCount(
+                                                cancha.id,
+                                                text
+                                              );
+                                            }}
+                                            value={value}
+                                          />
+                                          {errors.cancha && (
+                                            <Text style={[formStyle.errText]}>
+                                              {errors.cancha.message}
+                                            </Text>
+                                          )}
+                                        </View>
+                                      )}
+                                    />
+                                  ) : (
+                                    <TextInput
+                                      style={[
+                                        FONTS.oswald,
+                                        stylesAdmin4.input,
+                                        { width: "75%" },
+                                      ]}
+                                      placeholderTextColor={colores.domin_2_2}
+                                      placeholder="Descripción"
+                                      onChangeText={(text) =>
+                                        updateDescriptionWithCount(
+                                          cancha.id,
+                                          text
+                                        )
+                                      }
+                                      value={cancha.descripcion}
+                                    />
+                                  )}
+                                  <TouchableOpacity
+                                    style={[
+                                      stylesAdmin4.button2,
+                                      cancha.estatusCancha
+                                        ? stylesAdmin4.deleteButton
+                                        : stylesAdmin4.redoButton,
+                                    ]}
+                                    onPress={() => /*removeRowEdit(cancha.id)*/ {
+                                      setModalCancha(true), setIdCancha(cancha);
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name={
+                                        cancha.estatusCancha
+                                          ? "trash"
+                                          : "reload"
+                                      }
+                                      size={18}
+                                      color={colores.blanco}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              ))
+                            : canchas.map((cancha, index) => (
+                                <View
+                                  key={cancha.id}
+                                  style={{
+                                    flexDirection: "row",
+                                    height: 50,
+                                    gap: 5,
+                                    paddingVertical: 3,
+                                  }}
+                                >
+                                  <TextInput
+                                    style={[FONTS.oswald, stylesAdmin4.input2]}
+                                    placeholderTextColor={colores.domin_2_2}
+                                    placeholder="#"
+                                    keyboardType="numeric"
+                                    value={(index + 1).toString()}
+                                    editable={false}
+                                  />
+                                  {index === 0 ? (
+                                    <Controller
+                                      control={control}
+                                      name="cancha"
+                                      render={({
+                                        field: { onChange, value },
+                                      }) => (
+                                        <View
+                                          style={{
+                                            flexDirection: "column",
+                                            width: "75%",
+                                          }}
+                                        >
+                                          <TextInput
+                                            style={[
+                                              FONTS.oswald,
+                                              stylesAdmin4.input,
+                                            ]}
+                                            placeholderTextColor={
+                                              colores.domin_2_2
+                                            }
+                                            placeholder="Descripción"
+                                            onChangeText={(text) => {
+                                              onChange(text);
+                                              updateDescription(
+                                                cancha.id,
+                                                text
+                                              );
+                                            }}
+                                            value={value}
+                                          />
+                                          {errors.cancha && (
+                                            <Text style={[formStyle.errText]}>
+                                              {errors.cancha.message}
+                                            </Text>
+                                          )}
+                                        </View>
+                                      )}
+                                    />
+                                  ) : (
+                                    <TextInput
+                                      style={[
+                                        FONTS.oswald,
+                                        stylesAdmin4.input,
+                                        { width: "75%" },
+                                      ]}
+                                      placeholderTextColor={colores.domin_2_2}
+                                      placeholder="Descripción"
+                                      onChangeText={(text) =>
+                                        updateDescription(cancha.id, text)
+                                      }
+                                      value={cancha.desc}
+                                    />
+                                  )}
+                                  {index === 0 ? (
+                                    <TouchableOpacity
+                                      style={[
+                                        stylesAdmin4.button2,
+                                        stylesAdmin4.redoButton,
+                                      ]}
+                                      onPress={() =>
+                                        Alert.alert(
+                                          "Información",
+                                          "Para registrar un campo, debes registrar por lo menos 1 cancha"
+                                        )
+                                      } // Agrega una nueva fila
+                                    >
+                                      <Ionicons
+                                        name="help"
+                                        size={18}
+                                        color={colores.blanco}
+                                      />
+                                    </TouchableOpacity>
+                                  ) : (
+                                    <TouchableOpacity
+                                      style={[
+                                        stylesAdmin4.button2,
+                                        stylesAdmin4.deleteButton,
+                                      ]}
+                                      onPress={() => removeRow(cancha.id)}
+                                    >
+                                      <Ionicons
+                                        name="remove"
+                                        size={18}
+                                        color={colores.blanco}
+                                      />
+                                    </TouchableOpacity>
+                                  )}
+                                </View>
+                              ))}
+                        </View>
+                        <TouchableOpacity
+                          disabled={!isValid}
+                          onPress={handleSubmit(onSubmit)}
+                          style={{
+                            width: "50%",
+                            backgroundColor: colores.domin_1_4,
+                            alignSelf: "center",
+                            alignItems: "center",
+                            padding: 10,
+                            margin: 5,
+                            borderRadius: 10,
+                            opacity: isValid ? 1 : 0.5,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              FONTS.oswald,
+                              { fontSize: 15, color: colores.blanco },
+                            ]}
+                          >
+                            {editando ? "Actualizar" : "Registrar"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : null}
+                </ScrollView>
               </View>
             </View>
           </Modal>
@@ -1636,6 +1721,14 @@ const stylesModal = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     width: 300,
+    gap: 5,
+  },
+  modalContent3: {
+    backgroundColor: "white",
+    padding: 5,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "95%",
     gap: 5,
   },
   closeButton: {
