@@ -1220,7 +1220,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholderTextColor={colores.domin_2_2}
                         style={[stylesAdmin3.input, { width: "100%" }]}
                         value={value}
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(text) => {onChange(text); trigger('nombreTorneo')}}
                       />
                       {errors.nombreTorneo && (
                         <Text style={formStyle.errText}>
@@ -1241,7 +1241,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         multiline
                         numberOfLines={4}
                         value={value}
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(text) => {onChange(text); trigger('descripcion')}}
                         style={[
                           stylesAdmin3.input,
                           { height: 120, width: "100%" },
@@ -1264,7 +1264,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholder="Premio disputado"
                         placeholderTextColor={colores.domin_2_2}
                         value={value}
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(text) => {onChange(text); trigger('premio')}}
                         style={stylesAdmin3.input}
                       />
                       {errors.premio && (
@@ -1285,7 +1285,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholderTextColor={colores.domin_2_2}
                         value={editar ? value.toString() : value}
                         keyboardType="numeric"
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(text) => {onChange(text); trigger('equiposLiguilla')}}
                         style={[stylesAdmin3.input, { width: "100%" }]}
                       />
                       {errors.equiposLiguilla && (
@@ -1420,6 +1420,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                           value={editar ? value.toString() : value}
                           onChangeText={(text) => {
                             editar ? setValue("vueltas", text) : onChange(text);
+                            trigger('vueltas')
                           }}
                           style={[stylesAdmin3.input, {}]}
                         />
