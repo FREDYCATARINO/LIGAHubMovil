@@ -61,7 +61,7 @@ const Admin7 = ({ navigation }) => {
         .get(`/api/torneos/espera`)
         .then((res) => {
           if (res.data.length === 0)
-            setFallo("No hay torneos en espera, vuelve más tarde");
+            setFallo("No hay torneos en espera para crear convocatorias");
           else setListaTorneos(res.data);
         })
         .catch((e) => {
@@ -76,7 +76,7 @@ const Admin7 = ({ navigation }) => {
             return;
           }
           if (e.response.message) setFallo(e.response.message);
-          else setFallo("Error al obtener pagos");
+          else setFallo("Error al obtener los torneos en espera");
         })
         .finally(() => setLoadTorneos(false));
     };
@@ -128,7 +128,7 @@ const Admin7 = ({ navigation }) => {
         setReload(!reload);
         setImage(res.data);
         setImage2("url");
-        console.log(res.data)
+        console.log(res.data);
       })
       .catch((error) => {
         console.error(error, error.response?.data?.message);
@@ -232,6 +232,9 @@ const Admin7 = ({ navigation }) => {
                     </View>
                   )}
                   <View style={styles.row}>
+                    <Text style={[styles.texto, FONTS.nunitoNegrita]}>
+                      Nombre del torneo
+                    </Text>
                     <TextInput
                       style={[FONTS.oswald, styles.input, { width: "100%" }]}
                       placeholder="Nombre"
@@ -241,6 +244,9 @@ const Admin7 = ({ navigation }) => {
                     />
                   </View>
                   <View style={styles.row}>
+                    <Text style={[styles.texto, FONTS.nunitoNegrita]}>
+                      Premio
+                    </Text>
                     <TextInput
                       style={[
                         FONTS.oswald,
@@ -277,6 +283,9 @@ const Admin7 = ({ navigation }) => {
                 </TouchableOpacity> */}
 
                       <View style={{ flexDirection: "column", width: "100%" }}>
+                        <Text style={[styles.texto, FONTS.nunitoNegrita]}>
+                          Fecha de inicio
+                        </Text>
                         <TextInput
                           placeholder="Fecha de inicio"
                           placeholderTextColor={colores.domin_2_2}
@@ -304,30 +313,38 @@ const Admin7 = ({ navigation }) => {
                     </View>
                   </View>
                   <View style={[styles.row, { gap: 2 }]}>
-                    <TextInput
-                      style={[FONTS.oswald, styles.input, { width: "49%" }]}
-                      placeholder="Max. equipos"
-                      value={
-                        torneo.maxEquipos ? torneo.maxEquipos.toString() : ""
-                      }
-                      placeholderTextColor={colores.domin_2_2}
-                      readOnly={true}
-                    />
-                    <TextInput
-                      style={[FONTS.oswald, styles.input, { width: "49%" }]}
-                      placeholder="Min. equipos"
-                      value={
-                        torneo.minEquipos ? torneo.minEquipos.toString() : ""
-                      }
-                      placeholderTextColor={colores.domin_2_2}
-                      readOnly={true}
-                    />
-                    {/* <TouchableOpacity style={styles.imageUploadButton}>
-                <Text style={[FONTS.oswald, styles.imageUploadText]}>
-                  Elegir imagen
-                </Text>
-              </TouchableOpacity> */}
+                    <View style={{ width: "49%" }}>
+                      <Text style={[styles.texto, FONTS.nunitoNegrita]}>
+                        Máx equipos
+                      </Text>
+                      <TextInput
+                        style={[FONTS.oswald, styles.input, { width: "100%" }]}
+                        placeholder="Max. equipos"
+                        value={
+                          torneo.maxEquipos ? torneo.maxEquipos.toString() : ""
+                        }
+                        placeholderTextColor={colores.domin_2_2}
+                        readOnly={true}
+                      />
+                    </View>
+                    <View style={{ width: "49%" }}>
+                      <Text style={[styles.texto, FONTS.nunitoNegrita]}>
+                        Min equipos
+                      </Text>
+                      <TextInput
+                        style={[FONTS.oswald, styles.input, { width: "100%" }]}
+                        placeholder="Min. equipos"
+                        value={
+                          torneo.minEquipos ? torneo.minEquipos.toString() : ""
+                        }
+                        placeholderTextColor={colores.domin_2_2}
+                        readOnly={true}
+                      />
+                    </View>
                   </View>
+                  <Text style={[styles.texto, FONTS.nunitoNegrita]}>
+                    Descripción del torneo
+                  </Text>
                   <TextInput
                     style={[styles.input, { height: 100 }, FONTS.oswald]}
                     placeholder="Descripción"
@@ -342,6 +359,29 @@ const Admin7 = ({ navigation }) => {
             </View>
           ) : (
             <View>
+              <LottieView
+                source={require("../../assets/documento.json")}
+                autoPlay
+                loop
+                style={styles.icon}
+                speed={1}
+                color={colores.base_3_1}
+              />
+              <Text
+                style={[
+                  FONTS.nunitoNegrita,
+                  styles.errMessCenter,
+                  {
+                    marginTop: 10,
+                    fontSize: 30,
+                    alignContent: "center",
+                    width: "100%",
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                ¡Oh no!
+              </Text>
               <Text
                 style={[
                   FONTS.oswald,
@@ -612,6 +652,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   buttonText: { color: "#fff", textAlign: "center" },
+  texto: {
+    color: colores.domin_1_1,
+    fontSize: 18,
+  },
+  icon: {
+    width: 150,
+    height: 150,
+    alignSelf: "center",
+  },
 });
 
 export default Admin7;
