@@ -88,8 +88,12 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       .test("es-futura", "La fecha debe ser hoy o en el futuro", (value) => {
         const fechaIngresada = new Date(value);
         const fechaActual = new Date();
-        fechaActual.setHours(0, 0, 0, 0); // Elimina la hora para comparar solo la fecha
+        fechaActual.setHours(0, 0, 0, 0);
         return fechaIngresada >= fechaActual;
+      })
+      .test("es-domingo", "La fecha debe ser un domingo", (value) => {
+        const fechaIngresada = new Date(value);
+        return fechaIngresada.getDay() === 6; // 0 representa el domingo en JavaScript
       }),
     minEquipos: yup
       .number("No válido")
@@ -115,6 +119,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       .number()
       .typeError("Debe ser un número")
       .integer("Debe ser un número entero")
+      .min(4, "Debe ser al menos 4")
       .required("Debes especificar cuántos pasan a liguilla")
       .max(
         yup.ref("maxEquipos"),
@@ -124,6 +129,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       .number("No válido")
       .typeError("Debe ser un número")
       .integer("Debe ser un número entero")
+      .min(1, "Debe ser mayor a 0")
       .required("Se requieren las vueltas"),
     premio: yup.string().required("Se requiere especificar premio"),
   });
@@ -133,6 +139,9 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     handleSubmit,
     setValue,
     control,
+    reset,
+    trigger,
+    clearErrors, // ✅ Extraído correctamente desde useForm()
     formState: { errors, isValid },
   } = useForm({
     resolver: yupResolver(torneo),
@@ -143,7 +152,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     if (!editar) {
       if (!image || typeof image !== "string" || !image.startsWith("file://")) {
         console.log("Error: No hay imagen seleccionada.");
-        return Alert.alert("Error", "Debes seleccionar una imagen válida.");
+        return Alert.alert("Imagen no seleccionada", "Debes seleccionar una imagen válida.");
       }
     }
 
@@ -173,6 +182,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     console.log("Fecha seleccionada:", formattedDate); // Verificar qué valor se guarda
     onChange(formattedDate);
     setValue("fechaInicio", formattedDate, { shouldValidate: true });
+    trigger("fechaInicio");
     setShow(false);
     console.log(value);
   };
@@ -229,7 +239,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       const fileInfo = await FileSystem.getInfoAsync(image);
       if (!fileInfo.exists) {
         console.error("El archivo no existe en la ruta:", image);
-        Alert.alert("Error", "No se encontró la imagen");
+        Alert.alert("Imagen no seleccionada", "No se encontró la imagen");
         return;
       }
 
@@ -243,20 +253,21 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
       // 4. Construir el objeto de datos como en tu ejemplo
       const requestData = {
-        torneo: {
-          nombreTorneo: data.nombreTorneo,
-          descripcion: data.descripcion,
-          fechaInicio: data.fechaInicio,
-          maxEquipos: data.maxEquipos,
-          minEquipos: data.minEquipos,
-          equiposLiguilla: data.equiposLiguilla,
-          premio: data.premio,
-          vueltas: data.vueltas,
-        },
+        nombreTorneo: data.nombreTorneo,
+        descripcion: data.descripcion,
+        fechaInicio: data.fechaInicio,
+        maxEquipos: parseInt(data.maxEquipos),
+        minEquipos: parseInt(data.minEquipos),
+        equiposLiguilla: parseInt(data.equiposLiguilla),
+        premio: data.premio,
+        vueltas: parseInt(data.vueltas),
         imagen: `data:${mimeType};base64,${base64Image}`,
       };
 
-      console.log("Datos a enviar:", JSON.stringify(requestData, null, 2));
+      console.log("Datos a enviar:", {
+        ...requestData,
+        imagen: requestData.imagen.substring(0, 30) + "...",
+      });
 
       const tokData = await getToken();
 
@@ -279,6 +290,8 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
       Alert.alert("¡Éxito!", "Torneo creado exitosamente");
       setReload(!reload);
+      reset();
+      setImage("");
     } catch (error) {
       console.error("Error completo:", error);
 
@@ -313,68 +326,73 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     } finally {
       setLoadBtn(false);
     }
+    console.log(image);
   };
 
   const updateTorneo = async (data, image) => {
-    const formData = new FormData();
-
-    formData.append(
-      "torneo",
-      JSON.stringify({
-        nombreTorneo: `${data.nombreTorneo} En Espera`,
-        descripcion: data.descripcion,
-        fechaInicio: data.fechaInicio,
-        maxEquipos: data.maxEquipos,
-        minEquipos: data.minEquipos,
-        equiposLiguilla: data.equiposLiguilla,
-        premio: data.premio,
-        vueltas: data.vueltas,
-      }),
-      "torneo.json"
-    ); // <-- Añadir nombre del archivo ayuda a algunos servidores
-
-    //formData.append("torneo", new Blob([JSON.stringify(data)], { type: "application/json" }));
-
-    image
-      ? (console.log("📸 Imagen antes de enviar:", image),
-        formData.append("imagen", {
-          uri: image.startsWith("file://") ? image : `file://${image}`,
-          name: `${data.nombreTorneo}.png`,
-          type: "image/png",
-        }))
-      : (console.log("📸 Imagen antes de enviar:", data.logoTorneo),
-        formData.append("imagen", {
-          uri: data.logoTorne.startsWith("file://")
-            ? data.logoTorne
-            : `file://${data.logoTorne}`,
-          name: `${data.nombreTorneo}.png`,
-          type: "image/png",
-        }));
+    setLoadBtn(true);
 
     try {
-      const tokData = await getToken();
-      const response = await api.put(`/api/torneos/${data.id}`, formData, {
-        headers: {
-          Authorization: `Bearer ${tokData}`,
-          "Content-Type": "multipart/form-data",
-          Accept: "application/json",
-        },
-        transformRequest: (data) => data,
+      // 1. Verificar que el archivo existe
+      const fileInfo = await FileSystem.getInfoAsync(image);
+      if (!fileInfo.exists) {
+        console.error("El archivo no existe en la ruta:", image);
+        Alert.alert("Imagen no seleccionada", "No se encontró la imagen");
+        return;
+      }
+
+      // 2. Leer la imagen como base64
+      const base64Image = await FileSystem.readAsStringAsync(image, {
+        encoding: FileSystem.EncodingType.Base64,
       });
-      console.log(response.data);
-      Alert.alert("¡Exito!", "Torneo actualizado");
+
+      // 3. Determinar el tipo MIME (puedes ajustarlo según necesites)
+      const mimeType = "image/jpeg"; // o podrías detectarlo del nombre del archivo
+
+      // 4. Construir el objeto de datos como en tu ejemplo
+      const requestData = {
+        nombreTorneo: data.nombreTorneo,
+        descripcion: data.descripcion,
+        fechaInicio: data.fechaInicio,
+        maxEquipos: parseInt(data.maxEquipos),
+        minEquipos: parseInt(data.minEquipos),
+        equiposLiguilla: parseInt(data.equiposLiguilla),
+        premio: data.premio,
+        vueltas: parseInt(data.vueltas),
+        imagen: `data:${mimeType};base64,${base64Image}`,
+      };
+
+      console.log("Datos a enviar:", {
+        ...requestData,
+        imagen: requestData.imagen.substring(0, 30) + "...",
+      });
+
+      const tokData = await getToken();
+
+      // 5. Enviar la petición
+      const response = await Promise.race([
+        api.put(`/api/torneos/movil/${data.id}`, requestData, {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout después de 6s")), 6000)
+        ),
+      ]);
+
+      if (!response.data) {
+        throw new Error("La API no devolvió datos");
+      }
+
+      Alert.alert("¡Éxito!", "Torneo actualizado exitosamente");
+      setReload(!reload);
+      reset();
+      setImage("");
     } catch (error) {
       console.log("?");
-      if (error.config)
-        console.log(
-          error.config,
-          "-----",
-          error.config.headers,
-          "-----",
-          error.config.data,
-          "-----"
-          //error.config.data?._parts
-        );
+      if (error.config) console.log(error.config);
       console.error("Error:", error.response?.data || error || error.response);
       if (error.response?.message)
         Alert.alert("Error", error.response.message, error.response?.status);
@@ -1035,7 +1053,11 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholderTextColor={colores.domin_2_2}
                         keyboardType="numeric"
                         value={editar ? value.toString() : value}
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          trigger("equiposLiguilla");
+                          trigger("minEquipos");
+                        }}
                         style={[stylesAdmin3.input, {}]}
                       />
                       {errors.maxEquipos && (
@@ -1057,7 +1079,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholderTextColor={colores.domin_2_2}
                         keyboardType="numeric"
                         value={editar ? value.toString() : value}
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          trigger("maxEquipos");
+                        }}
                         style={[stylesAdmin3.input, {}]}
                       />
                       {errors.minEquipos && (
@@ -1357,6 +1382,14 @@ const stylesModal = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     width: 300,
+    gap: 5,
+  },
+  modalContent3: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "95%",
     gap: 5,
   },
   closeButton: {
