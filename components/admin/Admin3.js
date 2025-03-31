@@ -481,15 +481,6 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     }
   };
 
-  const getEstadoType = (name) => {
-    for (let i = 0; i < ordenEstados.length; i++) {
-      if (name.includes(ordenEstados[i])) {
-        return ordenEstados[i];
-      }
-    }
-    return "";
-  };
-
   const getEstado = (tor) => {
     if (tor.motivoFinalizacion) return 4; // Cancelado
     if (!tor.estatusTorneo) return 3; // Finalizado con ganador
@@ -667,6 +658,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
   const handleScroll = () => {
     setFormVis(!formVis);
+    clearErrors();
     // if (scrollViewRef.current) {
     //   scrollViewRef.current.scrollTo({ y: 450, animated: true }); // Ajusta 'y' a la posición deseada
     // }
