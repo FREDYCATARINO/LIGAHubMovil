@@ -70,7 +70,7 @@ const Admin2 = ({ navigation }) => {
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout()

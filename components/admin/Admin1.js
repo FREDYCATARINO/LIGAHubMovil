@@ -135,7 +135,7 @@ const Admin1 = ({ navigation, route }) => {
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
@@ -167,7 +167,7 @@ const Admin1 = ({ navigation, route }) => {
           console.error(err);
           if (err.response?.status === 403) {
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
@@ -187,7 +187,7 @@ const Admin1 = ({ navigation, route }) => {
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
@@ -214,7 +214,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -236,7 +236,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -263,7 +263,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -287,7 +287,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -322,7 +322,7 @@ const Admin1 = ({ navigation, route }) => {
         if (error.response?.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();

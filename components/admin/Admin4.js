@@ -152,7 +152,7 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.res.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         logout();
         return;
       }
@@ -181,7 +181,7 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         logout();
         return;
       }
@@ -208,7 +208,7 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         logout();
         return;
       }
@@ -252,7 +252,7 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message, err.toJSON());
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         logout();
         return;
       }
@@ -282,7 +282,7 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         logout();
         return;
       }
@@ -312,7 +312,7 @@ const Admin4 = ({ navigation }) => {
           if (e.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();

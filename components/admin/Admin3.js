@@ -152,7 +152,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     if (!editar) {
       if (!image || typeof image !== "string" || !image.startsWith("file://")) {
         console.log("Error: No hay imagen seleccionada.");
-        return Alert.alert("Imagen no seleccionada", "Debes seleccionar una imagen válida.");
+        return Alert.alert(
+          "Imagen no seleccionada",
+          "Debes seleccionar una imagen válida."
+        );
       }
     }
 
@@ -303,8 +306,9 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         );
 
         if (error.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -326,7 +330,6 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     } finally {
       setLoadBtn(false);
     }
-    console.log(image);
   };
 
   const updateTorneo = async (data, image) => {
@@ -391,18 +394,39 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       reset();
       setImage("");
     } catch (error) {
-      console.log("?");
-      if (error.config) console.log(error.config);
-      console.error("Error:", error.response?.data || error || error.response);
-      if (error.response?.message)
-        Alert.alert("Error", error.response.message, error.response?.status);
-      Alert.alert("Error", "Error al registrar el torneo");
-      if (error.response.status === 403) {
-        console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
-        logout();
-        return;
+      console.error("Error completo:", error);
+
+      if (error.response) {
+        console.error(
+          "Error del servidor:",
+          error.response.status,
+          error.response.data
+        );
+
+        if (error.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada ⚠️",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+
+        Alert.alert(
+          "Error",
+          error.response.data.message || "Error al actualizar el torneo"
+        );
+      } else if (error.message === "Network Error") {
+        Alert.alert(
+          "Advertencia",
+          "El torneo se actualizó, pero no pudimos confirmarlo. Verifica la lista."
+        );
+      } else {
+        Alert.alert("Error", error.message || "Error inesperado");
       }
+    } finally {
+      setLoadBtn(false);
     }
   };
 
@@ -461,7 +485,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -494,7 +518,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         if (error.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -535,7 +559,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         if (error.response?.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();

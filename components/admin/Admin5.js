@@ -114,7 +114,7 @@ const Admin5 = ({ navigation }) => {
       if (err.response.status === 403) {
         console.log("⚠ Token expirado, redirigiendo a login...");
         logout();
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         return;
       }
       Alert.alert("¡Error!", `No se pudo deshabilitar a ${name}`);
@@ -206,7 +206,7 @@ const Admin5 = ({ navigation }) => {
       console.error(e, e.res.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
         logout();
         return;
       }
@@ -264,7 +264,7 @@ const Admin5 = ({ navigation }) => {
           if (e.response.status === 403) {
             console.log("⚠ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
