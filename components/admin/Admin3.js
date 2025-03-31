@@ -77,6 +77,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const torneo = yup.object().shape({
     id: yup.number(),
     foto: yup.string(),
+    iniciado: yup.boolean(),
     nombreTorneo: yup.string("No válido").required("El nombre es requerido"),
     descripcion: yup
       .string("No válido")
@@ -138,6 +139,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     register,
     handleSubmit,
     setValue,
+    getValues,
     control,
     reset,
     trigger,
@@ -209,7 +211,17 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     setValue("equiposLiguilla", torneo.equiposLiguilla);
     setValue("premio", torneo.premio);
     setValue("vueltas", torneo.vueltas);
+    setValue("iniciado", torneo.iniciado);
     setImage(torneo.logoTorneo);
+
+    trigger("nombreTorneo");
+    trigger("descripcion");
+    trigger("premio");
+    trigger("fechaInicio");
+    trigger("equiposLiguilla");
+    trigger("maxEquipos");
+    trigger("minEquipos");
+    trigger("vueltas");
   }
 
   function removeEdicion() {
@@ -222,6 +234,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     setValue("equiposLiguilla", "");
     setValue("premio", "");
     setValue("vueltas", "");
+    setValue("iniciado", "");
     setImage("");
     setFormVis(false);
   }
@@ -335,33 +348,66 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const updateTorneo = async (data, image) => {
     setLoadBtn(true);
 
+    let localUri = ""; // Ruta del archivo local para eliminar luego
+
     try {
-      // 1. Verificar que el archivo existe
-      const fileInfo = await FileSystem.getInfoAsync(image);
-      if (!fileInfo.exists) {
-        console.error("El archivo no existe en la ruta:", image);
-        Alert.alert("Imagen no seleccionada", "No se encontró la imagen");
-        return;
+      let base64Image;
+
+      // 1. Verificar si la imagen es una URL (empieza con 'https://')
+      if (image.startsWith("https://")) {
+        // 2. Descargar la imagen desde la URL
+        const response = await fetch(image);
+        const blob = await response.blob();
+
+        if (!blob) {
+          console.error("No se pudo descargar la imagen desde la URL:", image);
+          Alert.alert("Error", "No se pudo obtener la imagen");
+          return;
+        }
+
+        // 3. Convertir el Blob a Base64 usando FileReader
+        base64Image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result.split(",")[1]); // Elimina la parte 'data:image/jpeg;base64,'
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob); // Lee el blob como una URL de datos (base64)
+        });
+
+        // 4. Guardar el Blob como archivo local (opcional)
+        localUri = FileSystem.documentDirectory + "image.jpg"; // Define una ruta local para la imagen
+        await FileSystem.writeAsStringAsync(localUri, base64Image, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } else {
+        // 5. Procesar la imagen local (de la galería)
+        const fileInfo = await FileSystem.getInfoAsync(image);
+        if (!fileInfo.exists) {
+          console.error("El archivo no existe en la ruta:", image);
+          Alert.alert("Imagen no seleccionada", "No se encontró la imagen");
+          return;
+        }
+
+        // 6. Leer la imagen local como base64
+        base64Image = await FileSystem.readAsStringAsync(image, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
       }
 
-      // 2. Leer la imagen como base64
-      const base64Image = await FileSystem.readAsStringAsync(image, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // 7. Determinar el tipo MIME
+      const mimeType = "image/jpeg"; // o puedes ajustarlo según el tipo de archivo
 
-      // 3. Determinar el tipo MIME (puedes ajustarlo según necesites)
-      const mimeType = "image/jpeg"; // o podrías detectarlo del nombre del archivo
-
-      // 4. Construir el objeto de datos como en tu ejemplo
+      // 8. Construir el objeto de datos como antes
       const requestData = {
         nombreTorneo: data.nombreTorneo,
         descripcion: data.descripcion,
         fechaInicio: data.fechaInicio,
-        maxEquipos: parseInt(data.maxEquipos),
-        minEquipos: parseInt(data.minEquipos),
-        equiposLiguilla: parseInt(data.equiposLiguilla),
+        maxEquipos: data.maxEquipos,
+        minEquipos: data.minEquipos,
+        equiposLiguilla: data.equiposLiguilla,
         premio: data.premio,
-        vueltas: parseInt(data.vueltas),
+        vueltas: data.vueltas,
         imagen: `data:${mimeType};base64,${base64Image}`,
       };
 
@@ -389,10 +435,15 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         throw new Error("La API no devolvió datos");
       }
 
+      console.log(response.data);
+
       Alert.alert("¡Éxito!", "Torneo actualizado exitosamente");
       setReload(!reload);
       reset();
+      clearErrors();
       setImage("");
+      setEditar(false);
+      removeEdicion();
     } catch (error) {
       console.error("Error completo:", error);
 
@@ -616,9 +667,9 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
 
   const handleScroll = () => {
     setFormVis(!formVis);
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 450, animated: true }); // Ajusta 'y' a la posición deseada
-    }
+    // if (scrollViewRef.current) {
+    //   scrollViewRef.current.scrollTo({ y: 450, animated: true }); // Ajusta 'y' a la posición deseada
+    // }
   };
 
   // Función para abrir la galería
@@ -711,7 +762,9 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                 <TouchableOpacity
                   style={[stylesAdmin3.box, getEstilo(tor)]}
                   onPress={() =>
-                    tor.esliguilla ? showModal3(tor.nombreTorneo, tor) : null
+                    tor.esliguilla || tor.iniciado || !tor.iniciado
+                      ? showModal3(tor.nombreTorneo, tor)
+                      : null
                   }
                   key={tor.id}
                 >
@@ -787,7 +840,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                             ? showModal3(tor.nombreTorneo, tor)
                             : tor.iniciado
                             ? editarFunction(tor)
-                            : showModal3(tor.nombreTorneo, tor)
+                            : editarFunction(tor)
                         }
                       >
                         <Text
@@ -796,7 +849,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                           {tor.estatusTorneo
                             ? tor.iniciado
                               ? "Editar"
-                              : "Detalles"
+                              : "Editar"
                             : "Detalles"}
                         </Text>
                       </TouchableOpacity>
@@ -871,303 +924,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             <Text style={stylesAdmin3.text}>5</Text>
           </TouchableOpacity> */}
         </ScrollView>
-        {!formVis ? null : (
-          <View ref={sectionOneRef}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text
-                style={[
-                  styles.TextField,
-                  stylesAdmin3.title,
-                  FONTS.nunitoNegrita,
-                  { paddingVertical: 15, paddingHorizontal: 5 },
-                ]}
-              >
-                {editar ? "Editar torneo" : "Nuevo torneo"}
-              </Text>
-              {!editar ? null : (
-                <TouchableOpacity
-                  onPress={() => {
-                    setEditar(false);
-                    removeEdicion();
-                  }}
-                >
-                  <Ionicons
-                    name="refresh-circle"
-                    size={30}
-                    color={colores.acento_2_2}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={stylesAdmin3.form}>
-              <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-                Logo del torneo
-              </Text>
-              <View
-                style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}
-              >
-                <Image
-                  source={
-                    image
-                      ? { uri: image }
-                      : require("../../assets/EquiposLogos/LogoDefault.png")
-                  }
-                  style={{
-                    width: 175,
-                    height: 175,
-                    resizeMode: "stretch",
-                    borderRadius: 15,
-                  }}
-                />
-                <TouchableOpacity
-                  style={stylesAdmin3.botTorneo}
-                  onPress={openGallery}
-                >
-                  <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-                    Elegir una imagen
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-                Datos del torneo
-              </Text>
-              <Controller
-                control={control}
-                name="nombreTorneo"
-                render={({ field: { onChange, value } }) => (
-                  <>
-                    <TextInput
-                      placeholder="Nombre del torneo"
-                      placeholderTextColor={colores.domin_2_2}
-                      style={stylesAdmin3.input}
-                      value={value}
-                      onChangeText={(text) => onChange(text)}
-                    />
-                    {errors.nombreTorneo && (
-                      <Text style={formStyle.errText}>
-                        {errors.nombreTorneo.message}
-                      </Text>
-                    )}
-                  </>
-                )}
-              />
-              <Controller
-                control={control}
-                name="descripcion"
-                render={({ field: { onChange, value } }) => (
-                  <>
-                    <TextInput
-                      placeholder="Descripción del torneo"
-                      placeholderTextColor={colores.domin_2_2}
-                      multiline
-                      numberOfLines={4}
-                      value={value}
-                      onChangeText={(text) => onChange(text)}
-                      style={[stylesAdmin3.input, { height: 120 }]}
-                    />
-                    {errors.descripcion && (
-                      <Text style={[formStyle.errText]}>
-                        {errors.descripcion.message}
-                      </Text>
-                    )}
-                  </>
-                )}
-              />
-              <Controller
-                control={control}
-                name="premio"
-                render={({ field: { onChange, value } }) => (
-                  <>
-                    <TextInput
-                      placeholder="Premio disputado"
-                      placeholderTextColor={colores.domin_2_2}
-                      value={value}
-                      onChangeText={(text) => onChange(text)}
-                      style={stylesAdmin3.input}
-                    />
-                    {errors.premio && (
-                      <Text style={[formStyle.errText]}>
-                        {errors.premio.message}
-                      </Text>
-                    )}
-                  </>
-                )}
-              />
-              <Controller
-                control={control}
-                name="equiposLiguilla"
-                render={({ field: { onChange, value } }) => (
-                  <>
-                    <TextInput
-                      placeholder="Equipos en liguilla"
-                      placeholderTextColor={colores.domin_2_2}
-                      value={editar ? value.toString() : value}
-                      keyboardType="numeric"
-                      onChangeText={(text) => onChange(text)}
-                      style={stylesAdmin3.input}
-                    />
-                    {errors.equiposLiguilla && (
-                      <Text style={[formStyle.errText]}>
-                        {errors.equiposLiguilla.message}
-                      </Text>
-                    )}
-                  </>
-                )}
-              />
-              <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
-                <Controller
-                  control={control}
-                  name="fechaInicio"
-                  render={({ field: { onChange, value } }) => (
-                    <>
-                      <TouchableOpacity
-                        style={[
-                          {
-                            backgroundColor: colores.domin_2_2,
-                            borderRadius: 5,
-                            width: "19%",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          },
-                        ]}
-                        onPress={() => setShow(true)}
-                      >
-                        <Ionicons name="calendar" size={24} color={"white"} />
-                      </TouchableOpacity>
-
-                      <View style={{ flexDirection: "column", width: "79%" }}>
-                        <TextInput
-                          placeholder="Seleccionar fecha"
-                          placeholderTextColor={colores.domin_2_2}
-                          value={value}
-                          style={[stylesAdmin3.input]}
-                          readOnly={true}
-                        />
-
-                        {errors.fechaInicio && (
-                          <Text style={[formStyle.errText]}>
-                            {errors.fechaInicio.message}
-                          </Text>
-                        )}
-                      </View>
-
-                      <DateTimePickerModal
-                        isVisible={show}
-                        mode="date"
-                        themeVariant="dark" // Usa el tema oscuro en iOS
-                        accentColor={colores.domin_1_1}
-                        textColor={colores.domin_1_1}
-                        onConfirm={(date) =>
-                          handleConfirm(date, onChange, value)
-                        }
-                        onCancel={() => setShow(false)}
-                      />
-                    </>
-                  )}
-                />
-              </View>
-              <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
-                <Controller
-                  control={control}
-                  name="maxEquipos"
-                  render={({ field: { onChange, value } }) => (
-                    <View style={{ flexDirection: "column", width: "33%" }}>
-                      <TextInput
-                        placeholder="Máximo de equipos"
-                        placeholderTextColor={colores.domin_2_2}
-                        keyboardType="numeric"
-                        value={editar ? value.toString() : value}
-                        onChangeText={(text) => {
-                          onChange(text);
-                          trigger("equiposLiguilla");
-                          trigger("minEquipos");
-                        }}
-                        style={[stylesAdmin3.input, {}]}
-                      />
-                      {errors.maxEquipos && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.maxEquipos.message}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="minEquipos"
-                  style={{ flexDirection: "column" }}
-                  render={({ field: { onChange, value } }) => (
-                    <View style={{ flexDirection: "column", width: "33%" }}>
-                      <TextInput
-                        placeholder="Mínimo de equipos"
-                        placeholderTextColor={colores.domin_2_2}
-                        keyboardType="numeric"
-                        value={editar ? value.toString() : value}
-                        onChangeText={(text) => {
-                          onChange(text);
-                          trigger("maxEquipos");
-                        }}
-                        style={[stylesAdmin3.input, {}]}
-                      />
-                      {errors.minEquipos && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.minEquipos.message}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="vueltas"
-                  style={{ flexDirection: "column" }}
-                  render={({ field: { onChange, value } }) => (
-                    <View style={{ flexDirection: "column", width: "31%" }}>
-                      <TextInput
-                        placeholder="Vueltas"
-                        placeholderTextColor={colores.domin_2_2}
-                        keyboardType="numeric"
-                        value={editar ? value.toString() : value}
-                        onChangeText={(text) => onChange(text)}
-                        style={[stylesAdmin3.input, {}]}
-                      />
-                      {errors.vueltas && (
-                        <Text style={[formStyle.errText]}>
-                          {errors.vueltas.message}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                />
-              </View>
-            </View>
-            <View
-              style={{
-                gap: 5,
-                paddingVertical: 5,
-                width: "100%",
-                alignSelf: "center",
-              }}
-            >
-              {loadBtn ? (
-                <ActivityIndicator size="large" color={colores.domin_1_1} />
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    stylesAdmin3.botTorneo,
-                    { opacity: isValid ? 1 : 0.5, width: 150 },
-                  ]}
-                  onPress={handleSubmit(onSubmit)}
-                  disabled={!isValid}
-                >
-                  <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-                    {!editar ? "Crear Torneo" : "Actualizar torneo"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
+        {!formVis ? null : <View></View>}
       </ScrollView>
 
       <Modal
@@ -1343,6 +1100,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
               Min: <Text style={FONTS.oswald}>{tournamentData.minEquipos}</Text>
             </Text>
             <Text style={[FONTS.oswaldNegrita, stylesModal.modalDato]}>
+              Equipos en liguilla:{" "}
+              <Text style={FONTS.oswald}>{tournamentData.equiposLiguilla}</Text>
+            </Text>
+            <Text style={[FONTS.oswaldNegrita, stylesModal.modalDato]}>
               Premio: <Text style={FONTS.oswald}>{tournamentData.premio}</Text>
             </Text>
             {tournamentData.ganador !== null && (
@@ -1361,6 +1122,357 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
             >
               <Text style={[stylesModal.buttonText, FONTS.oswald]}>Volver</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={formVis}
+        onRequestClose={() => setFormVis(false)}
+      >
+        <View style={stylesModal.modalContainer}>
+          <View style={stylesModal.modalContent3}>
+            <TouchableOpacity
+              style={{
+                alignSelf: "flex-end",
+                justifyContent: "flex-start",
+                marginTop: 10,
+                marginRight: 10,
+              }}
+              onPress={() => {
+                setFormVis(false);
+                setEditar(false);
+                removeEdicion();
+              }}
+            >
+              <Ionicons name="close" size={36} color={colores.negro} />
+            </TouchableOpacity>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={[
+                  styles.TextField,
+                  stylesAdmin3.title,
+                  FONTS.nunitoNegrita,
+                  { paddingVertical: 5, paddingHorizontal: 5 },
+                ]}
+              >
+                {editar ? "Editar torneo" : "Nuevo torneo"}
+              </Text>
+              {!editar ? null : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditar(false);
+                    removeEdicion();
+                  }}
+                >
+                  <Ionicons
+                    name="refresh-circle"
+                    size={30}
+                    color={colores.acento_2_2}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+            <ScrollView
+              ref={sectionOneRef}
+              style={{ maxHeight: 500 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={stylesAdmin3.form}>
+                <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                  Logo del torneo
+                </Text>
+                <View
+                  style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}
+                >
+                  <Image
+                    source={
+                      image
+                        ? { uri: image }
+                        : require("../../assets/EquiposLogos/LogoDefault.png")
+                    }
+                    style={{
+                      width: 175,
+                      height: 175,
+                      resizeMode: "stretch",
+                      borderRadius: 15,
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={stylesAdmin3.botTorneo}
+                    onPress={openGallery}
+                  >
+                    <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                      Elegir una imagen
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                  Datos del torneo
+                </Text>
+                <Controller
+                  control={control}
+                  name="nombreTorneo"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TextInput
+                        placeholder="Nombre del torneo"
+                        placeholderTextColor={colores.domin_2_2}
+                        style={[stylesAdmin3.input, { width: "100%" }]}
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                      />
+                      {errors.nombreTorneo && (
+                        <Text style={formStyle.errText}>
+                          {errors.nombreTorneo.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="descripcion"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TextInput
+                        placeholder="Descripción del torneo"
+                        placeholderTextColor={colores.domin_2_2}
+                        multiline
+                        numberOfLines={4}
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[
+                          stylesAdmin3.input,
+                          { height: 120, width: "100%" },
+                        ]}
+                      />
+                      {errors.descripcion && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.descripcion.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="premio"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TextInput
+                        placeholder="Premio disputado"
+                        placeholderTextColor={colores.domin_2_2}
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={stylesAdmin3.input}
+                      />
+                      {errors.premio && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.premio.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="equiposLiguilla"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TextInput
+                        placeholder="Equipos en liguilla"
+                        placeholderTextColor={colores.domin_2_2}
+                        value={editar ? value.toString() : value}
+                        keyboardType="numeric"
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, { width: "100%" }]}
+                      />
+                      {errors.equiposLiguilla && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.equiposLiguilla.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
+                <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
+                  <Controller
+                    control={control}
+                    name="fechaInicio"
+                    render={({ field: { onChange, value } }) => (
+                      <>
+                        <TouchableOpacity
+                          style={[
+                            {
+                              backgroundColor: colores.domin_2_2,
+                              borderRadius: 5,
+                              width: "19%",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
+                          ]}
+                          onPress={() => setShow(true)}
+                        >
+                          <Ionicons name="calendar" size={24} color={"white"} />
+                        </TouchableOpacity>
+
+                        <View style={{ flexDirection: "column", width: "79%" }}>
+                          <TextInput
+                            placeholder="Seleccionar fecha"
+                            placeholderTextColor={colores.domin_2_2}
+                            value={value}
+                            style={[stylesAdmin3.input]}
+                            readOnly={true}
+                          />
+
+                          {errors.fechaInicio && (
+                            <Text style={[formStyle.errText]}>
+                              {errors.fechaInicio.message}
+                            </Text>
+                          )}
+                        </View>
+
+                        <DateTimePickerModal
+                          isVisible={show}
+                          mode="date"
+                          themeVariant="dark" // Usa el tema oscuro en iOS
+                          accentColor={colores.domin_1_1}
+                          textColor={colores.domin_1_1}
+                          onConfirm={(date) =>
+                            handleConfirm(date, onChange, value)
+                          }
+                          onCancel={() => setShow(false)}
+                        />
+                      </>
+                    )}
+                  />
+                </View>
+                <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
+                  <Controller
+                    control={control}
+                    name="maxEquipos"
+                    render={({ field: { onChange, value } }) => (
+                      <View style={{ flexDirection: "column", width: "33%" }}>
+                        <TextInput
+                          placeholder="Máx equipos"
+                          placeholderTextColor={colores.domin_2_2}
+                          keyboardType="numeric"
+                          value={editar ? value.toString() : value}
+                          onChangeText={(text) => {
+                            {
+                              editar
+                                ? setValue("maxEquipos", text)
+                                : onChange(text);
+                            }
+                            trigger("equiposLiguilla");
+                            trigger("minEquipos");
+                          }}
+                          style={[stylesAdmin3.input, {}]}
+                        />
+                        {errors.maxEquipos && (
+                          <Text style={[formStyle.errText]}>
+                            {errors.maxEquipos.message}
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  />
+                  <Controller
+                    control={control}
+                    name="minEquipos"
+                    style={{ flexDirection: "column" }}
+                    render={({ field: { onChange, value } }) => (
+                      <View style={{ flexDirection: "column", width: "33%" }}>
+                        <TextInput
+                          placeholder="Mín equipos"
+                          placeholderTextColor={colores.domin_2_2}
+                          keyboardType="numeric"
+                          value={editar ? value.toString() : value}
+                          onChangeText={(text) => {
+                            {
+                              editar
+                                ? setValue("minEquipos", text)
+                                : onChange(text);
+                            }
+                            trigger("maxEquipos");
+                          }}
+                          style={[stylesAdmin3.input, {}]}
+                        />
+                        {errors.minEquipos && (
+                          <Text style={[formStyle.errText]}>
+                            {errors.minEquipos.message}
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  />
+                  <Controller
+                    control={control}
+                    name="vueltas"
+                    style={{ flexDirection: "column" }}
+                    render={({ field: { onChange, value } }) => (
+                      <View style={{ flexDirection: "column", width: "31%" }}>
+                        <TextInput
+                          placeholder="Vueltas"
+                          placeholderTextColor={colores.domin_2_2}
+                          keyboardType="numeric"
+                          value={editar ? value.toString() : value}
+                          onChangeText={(text) => {
+                            editar ? setValue("vueltas", text) : onChange(text);
+                          }}
+                          style={[stylesAdmin3.input, {}]}
+                        />
+                        {errors.vueltas && (
+                          <Text style={[formStyle.errText]}>
+                            {errors.vueltas.message}
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  />
+                </View>
+              </View>
+              <View
+                style={{
+                  gap: 5,
+                  paddingVertical: 5,
+                  width: "100%",
+                  alignSelf: "center",
+                  flexDirection: "column",
+                }}
+              >
+                {loadBtn ? (
+                  <ActivityIndicator size="large" color={colores.domin_1_1} />
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      stylesAdmin3.botTorneo,
+                      {
+                        opacity: isValid ? 1 : 0.5,
+                        width: "50%",
+                        alignSelf: "center",
+                        justifyContent: "center",
+                      },
+                    ]}
+                    onPress={handleSubmit(onSubmit)}
+                    disabled={!isValid}
+                  >
+                    <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                      {!editar ? "Crear Torneo" : "Actualizar torneo"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1410,10 +1522,11 @@ const stylesModal = StyleSheet.create({
   },
   modalContent3: {
     backgroundColor: "white",
-    padding: 20,
+    paddingHorizontal: 0,
+    paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
-    width: "95%",
+    width: "98%",
     gap: 5,
   },
   closeButton: {
@@ -1580,6 +1693,7 @@ const stylesAdmin3 = StyleSheet.create({
   botonTorneoText: {
     fontSize: 18,
     color: colores.blanco,
+    marginTop: 0,
   },
   torneoDet: {
     fontSize: 20,
