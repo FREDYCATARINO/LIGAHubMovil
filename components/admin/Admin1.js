@@ -19,6 +19,7 @@ import styles from "../../style/style";
 import { Ionicons } from "@expo/vector-icons";
 import colores from "../../style/colors";
 import * as Progress from "react-native-progress";
+import * as Localization from "expo-localization";
 import { Card, Avatar } from "react-native-paper";
 import FONTS from "../../style/fonts";
 import { useFonts } from "expo-font";
@@ -254,7 +255,7 @@ const Admin1 = ({ navigation, route }) => {
         },
       })
       .then((res) => {
-        if (res.data.length === '') setTotPagos(0);
+        if (res.data.length === "") setTotPagos(0);
         else setTotPagos(res.data);
       })
       .catch((e) => {
@@ -377,7 +378,10 @@ const Admin1 = ({ navigation, route }) => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={[styless.scrollContent]}>
-        <ScrollView contentContainerStyle={styless.myScrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styless.myScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Text
             style={[
               styles.TextField,
@@ -705,6 +709,7 @@ const Admin1 = ({ navigation, route }) => {
                     textAlign: "center",
                   },
                 }}
+                locale="es-MX"
               />
             )}
           </View>

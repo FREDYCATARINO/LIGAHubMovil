@@ -15,6 +15,7 @@ import FONTS from "../../style/fonts";
 import colores from "../../style/colors";
 import api from "../../config/api";
 import LottieView from "lottie-react-native";
+import { ToggleButton } from "react-native-paper";
 
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
@@ -47,7 +48,7 @@ const Admin6 = ({ navigation }) => {
         }
       )
       .then((res) => {
-        console.log(res.data)
+        console.log(res.data);
         Alert.alert("¡OK!", res.data || "Pago confirmado");
         setReload(!reload);
       })
@@ -135,6 +136,32 @@ const Admin6 = ({ navigation }) => {
     );
   });
 
+  const [selectedValue, setSelectedValue] = useState("todos");
+
+  // Estado para la página actual
+  const [paginaActual, setPaginaActual] = useState(1);
+  const resultadosPorPagina = 3;
+
+  // Calcular el índice de inicio y fin de los resultados
+  const indiceInicio = (paginaActual - 1) * resultadosPorPagina;
+  const indiceFin = indiceInicio + resultadosPorPagina;
+
+  // Pagos que se mostrarán en la página actual
+  const pagosPagina = pagosFiltrados.slice(indiceInicio, indiceFin);
+
+  // Función para cambiar de página
+  const siguientePagina = () => {
+    if (paginaActual * resultadosPorPagina < pagosFiltrados.length) {
+      setPaginaActual(paginaActual + 1);
+    }
+  };
+
+  const paginaAnterior = () => {
+    if (paginaActual > 1) {
+      setPaginaActual(paginaActual - 1);
+    }
+  };
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -167,63 +194,93 @@ const Admin6 = ({ navigation }) => {
               Filtrar Pagos
             </Text>
 
-            {/* Picker Tipo de Pago */}
-            <Text style={[FONTS.oswald, styles.label]}>Tipo de Pago:</Text>
-            <Picker
-              selectedValue={tipoPago}
-              onValueChange={setTipoPago}
-              style={styles.picker}
-              itemStyle={FONTS.nunitoNegrita}
+            <Text style={[{ fontSize: 18 }, FONTS.nunito]}>
+              Filtrar por: {selectedValue}
+            </Text>
+            <ToggleButton.Row
+              onValueChange={(value) => setSelectedValue(value)}
+              value={selectedValue}
             >
-              <Picker.Item label="Todos" value="" />
-              <Picker.Item label="Inscripción" value="Inscripción" />
-              <Picker.Item label="Arbitraje" value="Arbitraje" />
-              <Picker.Item label="Cancha" value="Cancha" />
-            </Picker>
+              <ToggleButton icon="view-grid" value="todos" />
+              <ToggleButton icon="credit-card" value="tipo de pago" />
+              <ToggleButton icon="check-circle" value="estado" />
+              <ToggleButton icon="trophy" value="torneo" />
+              <ToggleButton icon="soccer" value="equipos" />
+            </ToggleButton.Row>
 
-            {/* Picker Estado */}
-            <Text style={[FONTS.oswald, styles.label]}>Estado:</Text>
-            <Picker
-              selectedValue={estadoFiltro}
-              onValueChange={setEstadoFiltro}
-              style={styles.picker}
-              itemStyle={FONTS.nunito}
-            >
-              <Picker.Item label="Todos" value="" />
-              <Picker.Item label="Pagado" value="Pagado" />
-              <Picker.Item label="Pendiente" value="Pendiente" />
-            </Picker>
+            {(selectedValue === "todos" ||
+              selectedValue === "tipo de pago") && (
+              <View>
+                {/* Picker Tipo de Pago */}
+                <Text style={[FONTS.oswald, styles.label]}>Tipo de Pago:</Text>
+                <Picker
+                  selectedValue={tipoPago}
+                  onValueChange={setTipoPago}
+                  style={styles.picker}
+                  itemStyle={FONTS.nunitoNegrita}
+                >
+                  <Picker.Item label="Todos" value="" />
+                  <Picker.Item label="Inscripción" value="Inscripción" />
+                  <Picker.Item label="Arbitraje" value="Arbitraje" />
+                  <Picker.Item label="Cancha" value="Cancha" />
+                </Picker>
+              </View>
+            )}
 
-            {/* Picker Torneo */}
-            <Text style={[FONTS.oswald, styles.label]}>Torneo:</Text>
-            <Picker
-              selectedValue={torneoFiltro}
-              onValueChange={setTorneoFiltro}
-              style={styles.picker}
-              itemStyle={FONTS.nunito}
-            >
-              <Picker.Item label="Todos" value="" />
-              {torneosUnicos.map((torneo, index) => (
-                <Picker.Item key={index} label={torneo} value={torneo} />
-              ))}
-            </Picker>
+            {(selectedValue === "todos" || selectedValue === "estado") && (
+              <View>
+                {/* Picker Estado */}
+                <Text style={[FONTS.oswald, styles.label]}>Estado:</Text>
+                <Picker
+                  selectedValue={estadoFiltro}
+                  onValueChange={setEstadoFiltro}
+                  style={styles.picker}
+                  itemStyle={FONTS.nunito}
+                >
+                  <Picker.Item label="Todos" value="" />
+                  <Picker.Item label="Pagado" value="Pagado" />
+                  <Picker.Item label="Pendiente" value="Pendiente" />
+                </Picker>
+              </View>
+            )}
 
-            {/* Picker Equipo */}
-            <Text style={[FONTS.oswald, styles.label]}>Equipo:</Text>
-            <Picker
-              selectedValue={equipoFiltro}
-              onValueChange={setEquipoFiltro}
-              style={styles.picker}
-              itemStyle={FONTS.nunito}
-            >
-              <Picker.Item label="Todos" value="" />
-              {equiposUnicos.map((equipo, index) => (
-                <Picker.Item key={index} label={equipo} value={equipo} />
-              ))}
-            </Picker>
+            {(selectedValue === "todos" || selectedValue === "torneo") && (
+              <View>
+                {/* Picker Torneo */}
+                <Text style={[FONTS.oswald, styles.label]}>Torneo:</Text>
+                <Picker
+                  selectedValue={torneoFiltro}
+                  onValueChange={setTorneoFiltro}
+                  style={styles.picker}
+                  itemStyle={FONTS.nunito}
+                >
+                  <Picker.Item label="Todos" value="" />
+                  {torneosUnicos.map((torneo, index) => (
+                    <Picker.Item key={index} label={torneo} value={torneo} />
+                  ))}
+                </Picker>
+              </View>
+            )}
+
+            {(selectedValue === "todos" || selectedValue === "equipos") && (
+              <View>
+                {/* Picker Equipo */}
+                <Text style={[FONTS.oswald, styles.label]}>Equipo:</Text>
+                <Picker
+                  selectedValue={equipoFiltro}
+                  onValueChange={setEquipoFiltro}
+                  style={styles.picker}
+                  itemStyle={FONTS.nunito}
+                >
+                  <Picker.Item label="Todos" value="" />
+                  {equiposUnicos.map((equipo, index) => (
+                    <Picker.Item key={index} label={equipo} value={equipo} />
+                  ))}
+                </Picker>
+              </View>
+            )}
           </View>
 
-          {/* Tabla de resultados */}
           <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
             <View style={styles.card}>
               <View style={styles.tabla}>
@@ -257,7 +314,7 @@ const Admin6 = ({ navigation }) => {
                     Opciones
                   </Text>
                 </View>
-                {pagosFiltrados.map((pago) => (
+                {pagosPagina.map((pago) => (
                   <View key={pago.id} style={styles.fila}>
                     <Text
                       style={[FONTS.oswald, styles.celda]}
@@ -313,6 +370,53 @@ const Admin6 = ({ navigation }) => {
               </View>
             </View>
           </ScrollView>
+
+          {/* Controles de Paginación */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              padding: 10,
+            }}
+          >
+            <TouchableOpacity
+              onPress={paginaAnterior}
+              style={{
+                backgroundColor: colores.domin_1_2,
+                padding: 10,
+                borderRadius: 5,
+                opacity: paginaActual === 1 ? 0.5 : 1,
+              }}
+              disabled={paginaActual === 1}
+            >
+              <Text style={[FONTS.oswaldNegrita, { color: colores.blanco }]}>
+                Anterior
+              </Text>
+            </TouchableOpacity>
+            <Text style={[FONTS.oswald, { alignSelf: "center" }]}>
+              Página {paginaActual} de{" "}
+              {Math.ceil(pagosFiltrados.length / resultadosPorPagina)}
+            </Text>
+            <TouchableOpacity
+              onPress={siguientePagina}
+              style={{
+                backgroundColor: colores.domin_1_2,
+                padding: 10,
+                borderRadius: 5,
+                opacity:
+                  paginaActual * resultadosPorPagina >= pagosFiltrados.length
+                    ? 0.5
+                    : 1,
+              }}
+              disabled={
+                paginaActual * resultadosPorPagina >= pagosFiltrados.length
+              }
+            >
+              <Text style={[FONTS.oswaldNegrita, { color: colores.blanco }]}>
+                Siguiente
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <View>
