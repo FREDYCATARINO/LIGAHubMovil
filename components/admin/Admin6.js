@@ -421,11 +421,15 @@ const Admin6 = ({ navigation }) => {
       ) : (
         <View>
           <LottieView
-            source={require("../../assets/confetti.json")}
+            source={
+              fallo === "Error al obtener pagos"
+                ? require("../../assets/puerco.json")
+                : require("../../assets/confetti.json")
+            }
             autoPlay
             loop
             style={styles.icon}
-            speed={1}
+            speed={fallo === "Error al obtener pagos" ? .5 : 1}
             color={colores.base_3_1}
           />
           <Text
@@ -441,7 +445,9 @@ const Admin6 = ({ navigation }) => {
               },
             ]}
           >
-            ¡Yuju!
+            {fallo === "Error al obtener pagos"
+              ? "¡Oh oh!"
+              : "¡Yuju!"}
           </Text>
           <Text
             style={[
