@@ -1,386 +1,447 @@
-import * as React from "react";
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Text,
-  Button,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
   View,
   ActivityIndicator,
   TouchableOpacity,
   Image,
-  FlatList
+  FlatList,
+  RefreshControl
 } from "react-native";
-import styles from "../../style/style";
-import { Ionicons } from "@expo/vector-icons";
+import { AuthContext } from '../../context/AuthContext';
+import api from '../../config/api';
 import colores from "../../style/colors";
-import * as Progress from "react-native-progress";
 import FONTS from "../../style/fonts";
-import { useFonts } from "expo-font";
-import {
-  Oswald_400Regular,
-  Oswald_700Bold,
-  Oswald_400Italic,
-  Oswald_700BoldItalic,
-} from "@expo-google-fonts/oswald"; // Cargar Oswald
-import {
-  Nunito_400Regular,
-  Nunito_700Bold,
-  Nunito_400Italic,
-  Nunito_700BoldItalic,
-} from "@expo-google-fonts/nunito"; // Cargar Nunito
+import { Oswald_700Bold } from "@expo-google-fonts/oswald";
+import { Nunito_700Bold } from "@expo-google-fonts/nunito";
 
-const partidosPrueba = [
-  {
-    id: 1,
-    lugar: "Mario Kart",
-    fecha: "02/02/2025",
-    estado: "Nuevo",
-    equipo1: {
-      nombre: "Pumas",
-      img: "https://drive.google.com/uc?export=view&id=1IdFsp723ipbBX95PWsXwpURsO5L4jGei",
-    },
-    equipo2: {
-      nombre: "Chivas",
-      img: "https://drive.google.com/uc?export=view&id=1-FOLUn9u4T-D5ggneCO0nZm4jOOVXItI",
-    },
-  },
-  {
-    id: 2,
-    lugar: "El chavo",
-    fecha: "17/02/2025",
-    estado: "Nuevo",
-    equipo1: {
-      nombre: "Pumas",
-      img: "https://drive.google.com/uc?export=view&id=1IdFsp723ipbBX95PWsXwpURsO5L4jGei",
-    },
-    equipo2: {
-      nombre: "America",
-      img: "https://drive.google.com/uc?export=view&id=1hLeMo386b05HrRd2mruNXZZqlWJ_EbSC",
-    },
-  },
-  {
-    id: 3,
-    lugar: "UTEZ",
-    fecha: "28/02/2025",
-    estado: "Finalizado",
-    equipo1: {
-      nombre: "Monterrey",
-      img: "https://drive.google.com/uc?export=view&id=1L_u5cuRI6pI78YOb-0PIt_vovmV8SLLX",
-    },
-    equipo2: {
-      nombre: "Tigres",
-      img: "https://drive.google.com/uc?export=view&id=1HMF63odQw9WzQdVmfFbSP1H3_F8qY-uV",
-    },
-  },
-  {
-    id: 4,
-    lugar: "CECyTE",
-    fecha: "12/03/2025",
-    estado: "Finalizado",
-    equipo1: {
-      nombre: "Chivas",
-      img: "https://drive.google.com/uc?export=view&id=1-FOLUn9u4T-D5ggneCO0nZm4jOOVXItI",
-    },
-    equipo2: {
-      nombre: "Monterrey",
-      img: "https://drive.google.com/uc?export=view&id=1L_u5cuRI6pI78YOb-0PIt_vovmV8SLLX",
-    },
-  },
-  {
-    id: 5,
-    lugar: "2022",
-    fecha: "24/03/2025",
-    estado: "Finalizado",
-    equipo1: {
-      nombre: "Necaxa",
-      img: "https://drive.google.com/uc?export=view&id=1_bDUfg2szuTCPy6onk37wSbzOoZGyhWW",
-    },
-    equipo2: {
-      nombre: "Atlas",
-      img: "https://drive.google.com/uc?export=view&id=1yeIzWN8Wl6TvIrEtqci874SU7MT6E8cg",
-    },
-  },
-  {
-    id: 6,
-    lugar: "Liuguilla",
-    fecha: "02/04/2025",
-    estado: "Nuevo",
-    equipo1: {
-      nombre: "Chivas",
-      img: "https://drive.google.com/uc?export=view&id=1-FOLUn9u4T-D5ggneCO0nZm4jOOVXItI",
-    },
-    equipo2: {
-      nombre: "America",
-      img: "https://drive.google.com/uc?export=view&id=1hLeMo386b05HrRd2mruNXZZqlWJ_EbSC",
-    },
-  },
-  {
-    id: 7,
-    lugar: "Chiapas",
-    fecha: "02/04/2025",
-    estado: "Nuevo",
-    equipo1: {
-      nombre: "Monterrey",
-      img: "https://drive.google.com/uc?export=view&id=1L_u5cuRI6pI78YOb-0PIt_vovmV8SLLX",
-    },
-    equipo2: {
-      nombre: "America",
-      img: "https://drive.google.com/uc?export=view&id=1hLeMo386b05HrRd2mruNXZZqlWJ_EbSC",
-    },
-  },
-  {
-    id: 8,
-    lugar: "Morelos",
-    fecha: "02/04/2025",
-    estado: "Nuevo",
-    equipo1: {
-      nombre: "Necaxa",
-      img: "https://drive.google.com/uc?export=view&id=1_bDUfg2szuTCPy6onk37wSbzOoZGyhWW",
-    },
-    equipo2: {
-      nombre: "Pumas",
-      img: "https://drive.google.com/uc?export=view&id=1IdFsp723ipbBX95PWsXwpURsO5L4jGei",
-    },
-  },
-];
+const PartidosArbitro = ({ navigation }) => {
+  const { getUserId, getToken } = useContext(AuthContext);
+  const [partidos, setPartidos] = useState([]);
+  const [filtro, setFiltro] = useState(1); // 1: Todos, 2: Nuevos, 3: Terminados
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-const partidosNuevos = partidosPrueba.filter(
-  (partido) => partido.estado === "Nuevo"
-);
+  // Función para obtener los partidos del árbitro
+  const obtenerPartidos = async (isRefresh = false) => {
+    try {
+      isRefresh ? setRefreshing(true) : setLoading(true);
+      setError(null);
 
-const partidosFinalizados = partidosPrueba.filter(
-  (partido) => partido.estado === "Finalizado"
-);
+      const userId = await getUserId();
+      const token = await getToken();
 
-const partidosOrdenados = [...partidosPrueba].sort((a, b) => {
-  return a.estado === "Nuevo" && b.estado !== "Nuevo" ? -1 : b.estado === "Nuevo" && a.estado !== "Nuevo" ? 1 : 0;
-});
+      if (!userId || !token) {
+        throw new Error('Faltan credenciales de usuario');
+      }
 
-const Arbitro1 = ({ navigation }) => {
-  const [filtro, setFiltro] = React.useState(1);
-  const [lista, setLista] = React.useState(partidosOrdenados);
+      const response = await api.get(`/api/partidos/arbitro/asignados/${userId}`, {
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      });
+
+      // Mapeamos la respuesta al formato esperado por el diseño
+      const partidosFormateados = response.data.map(partido => ({
+        id: partido.id,
+        equipo1: {
+          nombre: partido.equipoLocal.nombreEquipo,
+          img: partido.equipoLocal.logo
+        },
+        equipo2: {
+          nombre: partido.equipoVisitante.nombreEquipo,
+          img: partido.equipoVisitante.logo
+        },
+        fecha: new Date(partido.fechaPartido).toLocaleDateString(),
+        hora: partido.hora.substring(0, 5),
+        lugar: partido.cancha.campo.nombre,
+        estado: partido.jugado ? "Finalizado" : "Nuevo",
+        golesLocal: partido.golesLocal,
+        golesVisitante: partido.golesVisitante,
+        partidoOriginal: partido // Guardamos el objeto original para detalles
+      }));
+
+      setPartidos(partidosFormateados);
+
+    } catch (err) {
+      console.error('Error al obtener partidos:', err);
+      setError(err.message || 'Error al obtener los partidos');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Función para manejar el refresh
+  const handleRefresh = () => {
+    obtenerPartidos(true);
+  };
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    obtenerPartidos();
+  }, []);
+
+  // Filtrar partidos según selección
+  const partidosFiltrados = () => {
+    switch(filtro) {
+      case 2: // Nuevos
+        return partidos.filter(p => p.estado === "Nuevo");
+      case 3: // Terminados
+        return partidos.filter(p => p.estado === "Finalizado");
+      default: // Todos
+        return [...partidos].sort((a, b) => {
+          return a.estado === "Nuevo" && b.estado !== "Nuevo" ? -1 : 
+                 b.estado === "Nuevo" && a.estado !== "Nuevo" ? 1 : 0;
+        });
+    }
+  };
+
+  // Mostrar loading inicial
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colores.domin_2_2} />
+      </View>
+    );
+  }
+
+  // Mostrar errores
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.reintentarButton}
+          onPress={obtenerPartidos}
+        >
+          <Text style={styles.reintentarText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={stylesArbitro1.container}>
-      <Text
-        style={[
-          styles.TextField,
-          stylesArbitro1.title,
-          FONTS.nunitoNegrita,
-          { paddingVertical: 15, paddingHorizontal: 5, fontSize: 25 },
-        ]}
-      >
+    <SafeAreaView style={styles.container}>
+      <Text style={[styles.title, FONTS.nunitoNegrita]}>
         Lista de partidos
       </Text>
-      <View style={stylesArbitro1.divider}></View>
-      <View style={stylesArbitro1.headerRow}>
-        <Text style={[FONTS.oswald, stylesArbitro1.texto18]}>Filtrar:</Text>
-        <View style={{ flexDirection: "row", gap: 2 }}>
+      <View style={styles.divider}></View>
+      
+      {/* Filtros */}
+      <View style={styles.headerRow}>
+        <Text style={[FONTS.oswald, styles.filterText]}>Filtrar:</Text>
+        <View style={styles.filterButtonsContainer}>
           <TouchableOpacity
             style={[
-              stylesArbitro1.botFiltro,
-              filtro === 1
-                ? stylesArbitro1.botFiltroElecto
-                : stylesArbitro1.botFiltroNoElecto,
+              styles.filterButton,
+              filtro === 1 ? styles.filterButtonActive : styles.filterButtonInactive
             ]}
-            onPress={() => {
-              setFiltro(1);
-              setLista(partidosOrdenados);
-            }}
+            onPress={() => setFiltro(1)}
           >
-            <Text
-              style={[
-                FONTS.oswald,
-                stylesArbitro1.texto18,
-                filtro === 1
-                  ? stylesArbitro1.textoBlanco
-                  : stylesArbitro1.textoNegro,
-              ]}
-            >
-              Todos
+            <Text style={[
+              FONTS.oswald,
+              filtro === 1 ? styles.filterTextActive : styles.filterTextInactive
+            ]}>
+              Todos ({partidos.length})
             </Text>
           </TouchableOpacity>
+          
           <TouchableOpacity
             style={[
-              stylesArbitro1.botFiltro,
-              filtro === 2
-                ? stylesArbitro1.botFiltroElecto
-                : stylesArbitro1.botFiltroNoElecto,
+              styles.filterButton,
+              filtro === 2 ? styles.filterButtonActive : styles.filterButtonInactive
             ]}
-            onPress={() => {
-              setFiltro(2);
-              setLista(partidosNuevos);
-            }}
+            onPress={() => setFiltro(2)}
           >
-            <Text
-              style={[
-                FONTS.oswald,
-                stylesArbitro1.texto18,
-                filtro === 2
-                  ? stylesArbitro1.textoBlanco
-                  : stylesArbitro1.textoNegro,
-              ]}
-            >
-              Nuevos
+            <Text style={[
+              FONTS.oswald,
+              filtro === 2 ? styles.filterTextActive : styles.filterTextInactive
+            ]}>
+              Nuevos ({partidos.filter(p => p.estado === "Nuevo").length})
             </Text>
           </TouchableOpacity>
+          
           <TouchableOpacity
             style={[
-              stylesArbitro1.botFiltro,
-              filtro === 3
-                ? stylesArbitro1.botFiltroElecto
-                : stylesArbitro1.botFiltroNoElecto,
+              styles.filterButton,
+              filtro === 3 ? styles.filterButtonActive : styles.filterButtonInactive
             ]}
-            onPress={() => {
-              setFiltro(3);
-              setLista(partidosFinalizados);
-            }}
+            onPress={() => setFiltro(3)}
           >
-            <Text
-              style={[
-                FONTS.oswald,
-                stylesArbitro1.texto18,
-                filtro === 3
-                  ? stylesArbitro1.textoBlanco
-                  : stylesArbitro1.textoNegro,
-              ]}
-            >
-              Terminados
+            <Text style={[
+              FONTS.oswald,
+              filtro === 3 ? styles.filterTextActive : styles.filterTextInactive
+            ]}>
+              Terminados ({partidos.filter(p => p.estado === "Finalizado").length})
             </Text>
           </TouchableOpacity>
         </View>
       </View>
-        <FlatList
-          data={lista}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          columnWrapperStyle={{ justifyContent: 'space-between', gap: 1 }}
-          style={{ gap: 10, width: '100%' }}
-          renderItem={({ item: par }) => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Detalles de partido",{partido: par})}
-              style={[
-                stylesArbitro1.card,
-                par.estado === "Nuevo"
-                  ? stylesArbitro1.cardActive
-                  : stylesArbitro1.cardInactive,
-              ]}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  width: "100%",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                }}
-              >
-                <View>
-                  <Image
-                    source={{ uri: par.equipo1.img }}
-                    style={{
-                      resizeMode: "contain",
-                      width: 50,
-                      height: 50,
-                      alignSelf: "center",
-                    }}
-                  />
-                  <Text style={[FONTS.oswaldNegrita, { fontSize: 15 }]}>
-                    {par.equipo1.nombre}
+
+      {/* Lista de partidos */}
+      <FlatList
+        data={partidosFiltrados()}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colores.domin_2_2]}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[FONTS.oswald, styles.emptyText]}>
+              No hay partidos {filtro === 1 ? '' : filtro === 2 ? 'nuevos' : 'terminados'}
+            </Text>
+          </View>
+        }
+        renderItem={({ item: partido }) => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Detalles de partido", { partido: partido.partidoOriginal })}
+            style={[
+              styles.card,
+              partido.estado === "Nuevo" ? styles.cardActive : styles.cardInactive
+            ]}
+          >
+            <View style={styles.teamsContainer}>
+              <View style={styles.teamContainer}>
+                <Image
+                  source={{ uri: partido.equipo1.img }}
+                  style={styles.teamImage}
+                />
+                <Text style={[FONTS.oswaldNegrita, styles.teamName]}>
+                  {partido.equipo1.nombre}
+                </Text>
+                {partido.estado === "Finalizado" && (
+                  <Text style={[FONTS.oswaldNegrita, styles.scoreText]}>
+                    {partido.golesLocal}
                   </Text>
-                </View>
-                <Text style={[FONTS.oswaldNegrita, { fontSize: 28 }]}>-</Text>
-                <View>
-                  <Image
-                    source={{ uri: par.equipo2.img }}
-                    style={{
-                      resizeMode: "contain",
-                      width: 50,
-                      height: 50,
-                      alignSelf: "center",
-                    }}
-                  />
-                  <Text style={[FONTS.oswaldNegrita, { fontSize: 15 }]}>
-                    {par.equipo2.nombre}
-                  </Text>
-                </View>
+                )}
               </View>
-              <Text style={[FONTS.oswald, { fontSize: 18 }]}>{par.fecha}</Text>
-              <Text style={[FONTS.oswald, { textAlign: "center" }]}>
-                {par.lugar}
+              
+              <Text style={[FONTS.oswaldNegrita, styles.vsText]}>-</Text>
+              
+              <View style={styles.teamContainer}>
+                <Image
+                  source={{ uri: partido.equipo2.img }}
+                  style={styles.teamImage}
+                />
+                <Text style={[FONTS.oswaldNegrita, styles.teamName]}>
+                  {partido.equipo2.nombre}
+                </Text>
+                {partido.estado === "Finalizado" && (
+                  <Text style={[FONTS.oswaldNegrita, styles.scoreText]}>
+                    {partido.golesVisitante}
+                  </Text>
+                )}
+              </View>
+            </View>
+            
+            <Text style={[FONTS.oswald, styles.matchDate]}>
+              {partido.fecha} - {partido.hora}
+            </Text>
+            <Text style={[FONTS.oswald, styles.matchLocation]}>
+              {partido.lugar}
+            </Text>
+            <View style={[
+              styles.statusBadge,
+              partido.estado === "Nuevo" ? styles.statusNew : styles.statusFinished
+            ]}>
+              <Text style={[FONTS.oswald, styles.statusText]}>
+                {partido.estado}
               </Text>
-            </TouchableOpacity>
-          )}
-        />
+            </View>
+          </TouchableOpacity>
+        )}
+      />
     </SafeAreaView>
   );
 };
 
-const stylesArbitro1 = StyleSheet.create({
-  container: { flex: 1, gap: 5, padding: 5 },
-  grid: {
-    flex: 2,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    width: "100%",
-    height: 200,
-    padding: 1,
-  },
-  card: {
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
     backgroundColor: colores.blanco,
-    marginVertical: 5,
-    marginHorizontal: 1,
-    width: "49%",
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 5,
-    gap: 5,
+    padding: 10
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colores.blanco
+  },
+  title: {
+    fontSize: 25,
+    paddingVertical: 15,
+    paddingHorizontal: 5,
+    color: colores.negro,
+    textAlign: 'center'
   },
   divider: {
-    width: "90%",
+    width: '90%',
     height: 1,
     backgroundColor: colores.base_1_3,
     marginHorizontal: 20,
     marginVertical: 10,
-    alignItems: "center",
+    alignSelf: 'center'
   },
   headerRow: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    flexWrap: 'wrap'
   },
-  texto18: {
+  filterText: {
     fontSize: 18,
-    paddingVertical: 4,
-  },
-  botFiltro: {
-    paddingHorizontal: 5,
-    paddingVertical: 3,
-  },
-  botFiltroElecto: {
-    backgroundColor: colores.domin_2_2,
-  },
-  botFiltroNoElecto: {
-    backgroundColor: colores.blanco,
-  },
-  textoBlanco: {
-    color: colores.blanco,
-  },
-  textoNegro: {
     color: colores.negro,
+    marginRight: 10
+  },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 5
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colores.domin_2_2
+  },
+  filterButtonActive: {
+    backgroundColor: colores.domin_2_2
+  },
+  filterButtonInactive: {
+    backgroundColor: colores.blanco
+  },
+  filterTextActive: {
+    color: colores.blanco,
+    fontSize: 16
+  },
+  filterTextInactive: {
+    color: colores.negro,
+    fontSize: 16
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 10
+  },
+  listContent: {
+    paddingBottom: 20
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  emptyText: {
+    fontSize: 18,
+    color: colores.base_1_3
+  },
+  card: {
+    width: '48%',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colores.negro,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   cardActive: {
     backgroundColor: colores.blanco,
+    borderWidth: 1,
+    borderColor: colores.domin_2_2
   },
   cardInactive: {
-    backgroundColor: colores.base_2_5,
+    backgroundColor: colores.base_2_5
   },
+  teamsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 10
+  },
+  teamContainer: {
+    alignItems: 'center',
+    flex: 1
+  },
+  teamImage: {
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
+    marginBottom: 5
+  },
+  teamName: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 5
+  },
+  scoreText: {
+    fontSize: 18,
+    color: colores.domin_2_2
+  },
+  vsText: {
+    fontSize: 24,
+    marginHorizontal: 5
+  },
+  matchDate: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: colores.negro
+  },
+  matchLocation: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: colores.base_1_3
+  },
+  statusBadge: {
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10
+  },
+  statusNew: {
+    backgroundColor: colores.domin_2_2
+  },
+  statusFinished: {
+    backgroundColor: colores.base_1_3
+  },
+  statusText: {
+    color: colores.blanco,
+    fontSize: 14
+  },
+  errorText: {
+    color: colores.rojo,
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center'
+  },
+  reintentarButton: {
+    backgroundColor: colores.domin_2_2,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5
+  },
+  reintentarText: {
+    color: colores.blanco,
+    fontFamily: 'Oswald_700Bold'
+  }
 });
 
-export default Arbitro1;
+export default PartidosArbitro;
