@@ -108,11 +108,7 @@ const ClassificationTable = () => {
   };
 
   return (
-    <ImageBackground
-      source={require("../../assets/fondo.jpg")}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
+    
       <ScrollView 
         contentContainerStyle={styles.container}
         refreshControl={
@@ -226,7 +222,7 @@ const ClassificationTable = () => {
           • JJ: Juegos Jugados • JG: Juegos Ganados • JE: Juegos Empatados • JP: Juegos Perdidos • GF: Goles a Favor • GC: Goles en Contra • DIF: Diferencia de Goles • PTS: Puntos
         </Text>
       </ScrollView>
-    </ImageBackground>
+ 
   );
 };
 
@@ -246,7 +242,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 10,
     marginBottom: 10,
-    color: "white",
+    color: "black",
     padding: 10,
     borderRadius: 5,
   },
@@ -260,7 +256,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "white",
+    color: "black",
   },
   picker: {
     width: "100%",

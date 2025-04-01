@@ -187,11 +187,7 @@ const ResultadoDePartidos = () => {
   };
 
   return (
-    <ImageBackground
-      source={require("../../assets/fondo.jpg")}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
+   
       <ScrollView 
         contentContainerStyle={styles.container}
         refreshControl={
@@ -266,32 +262,26 @@ const ResultadoDePartidos = () => {
           </View>
         )}
       </ScrollView>
-    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
+
   container: {
     padding: 10,
     alignItems: "center",
+    backgroundColor:"dcdcdc"
   },
   card: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
     padding: 20,
     marginVertical: 10,
-    borderRadius: 10,
+    borderRadius: 8,
     width: "90%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 10,
     elevation: 3,
     alignItems: "center",
+    backgroundColor:"white",
+
   },
   torneoText: {
     fontSize: 16,
@@ -370,7 +360,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "white",
+    color: "black",
   },
   picker: {
     width: "100%",
