@@ -152,7 +152,10 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.res.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        Alert.alert(
+          "Sesión expirada ⚠️",
+          "Por favor, inicia sesión nuevamente."
+        );
         logout();
         return;
       }
@@ -181,7 +184,10 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        Alert.alert(
+          "Sesión expirada ⚠️",
+          "Por favor, inicia sesión nuevamente."
+        );
         logout();
         return;
       }
@@ -208,7 +214,10 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        Alert.alert(
+          "Sesión expirada ⚠️",
+          "Por favor, inicia sesión nuevamente."
+        );
         logout();
         return;
       }
@@ -252,7 +261,10 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message, err.toJSON());
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        Alert.alert(
+          "Sesión expirada ⚠️",
+          "Por favor, inicia sesión nuevamente."
+        );
         logout();
         return;
       }
@@ -282,7 +294,10 @@ const Admin4 = ({ navigation }) => {
       console.error(err, err.response.message);
       if (err.response.status === 403) {
         console.log("⚠️ Token expirado, redirigiendo a login...");
-        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        Alert.alert(
+          "Sesión expirada ⚠️",
+          "Por favor, inicia sesión nuevamente."
+        );
         logout();
         return;
       }
@@ -375,19 +390,38 @@ const Admin4 = ({ navigation }) => {
   };
 
   // Estado para la región del mapa (Zoom y posición inicial)
-  const [region, setRegion] = useState({
-    latitude: 18.849136305780387,
-    longitude: -99.20017382614945,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
+  const [region, setRegion] = useState(null);
+  const [region2, setRegion2] = useState(null);
 
-  const [region2, setRegion2] = useState({
-    latitude: 18.849136305780387,
-    longitude: -99.20017382614945,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      console.log("Permiso de ubicación:", status);
+
+      if (status !== "granted") {
+        Alert.alert("Error", "Permiso de ubicación denegado");
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      }).catch((error) => {
+        console.error("Error obteniendo ubicación:", error);
+        Alert.alert("Error", "No se encontraron datos de ubicación");
+      });
+      console.log(location)
+
+      if (location) {
+        console.log(location)
+        setRegion({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      }
+    })();
+  }, []);
 
   // Estado para los marcadores
   const [markers, setMarkers] = useState([
