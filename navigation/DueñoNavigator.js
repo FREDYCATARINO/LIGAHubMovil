@@ -20,7 +20,7 @@ import { TokenContext, TokenProvider } from "../context/TokenContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ErrorComponent from "../components/ErrorComponent";
 import MisPagosScreen from '../screens/dueno/MisPagos'; // Pantalla de pagos
-import CredencialesScreen from '../screens/dueno/Credenciales'; // Pantalla de credenciales
+import Credenciales from '../screens/dueno/Credenciales'; // Pantalla de credenciales
 import MiEquipoScreen from '../screens/dueno/MiEquipo'; // Pantalla de equipo
 import HistorialPagos from "../screens/dueno/HistorialPagos";
 import DetalleEquipo from "../screens/dueno/DetalleEquipo";
@@ -159,8 +159,8 @@ const DueñoNavigator = () => {
         }}
       />
       <Drawer.Screen
-        name="Credenciales"
-        component={CredencialesScreen}
+        name="Solicitudes"
+        component={Credenciales}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="id-card" size={size} color={color} />

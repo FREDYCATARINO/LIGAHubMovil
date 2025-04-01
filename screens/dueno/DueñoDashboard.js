@@ -156,10 +156,10 @@ const TorneoScreen = () => {
 
           <TouchableOpacity 
             style={styles.button}
-            onPress={() => navigation.navigate('Credenciales')}
+            onPress={() => navigation.navigate('Solicitudes')}
           >
             <Image source={credencialesIcon} style={styles.buttonIcon} />
-            <Text>Descargar credenciales</Text>
+            <Text>Mis Solicitudes</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -207,10 +207,10 @@ const TorneoScreen = () => {
 
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => navigation.navigate('Credenciales')}
+          onPress={() => navigation.navigate('Solicitudes')}
         >
           <Image source={credencialesIcon} style={styles.buttonIcon} />
-          <Text>Descargar credenciales</Text>
+          <Text>Mis Solicitudes</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
