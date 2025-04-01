@@ -201,6 +201,17 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
     return ordenEstados.length;
   };
 
+  function triggerAll() {
+    trigger("nombreTorneo");
+    trigger("descripcion");
+    trigger("premio");
+    trigger("fechaInicio");
+    trigger("equiposLiguilla");
+    trigger("maxEquipos");
+    trigger("minEquipos");
+    trigger("vueltas");
+  }
+
   function setEdicion(torneo) {
     setValue("id", torneo.id);
     setValue("nombreTorneo", torneo.nombreTorneo);
@@ -267,10 +278,13 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       // 3. Determinar el tipo MIME (puedes ajustarlo según necesites)
       const mimeType = "image/jpeg"; // o podrías detectarlo del nombre del archivo
 
+      const nombre = data.nombreTorneo.trim();
+      const desc = data.descripcion.trim();
+
       // 4. Construir el objeto de datos como en tu ejemplo
       const requestData = {
-        nombreTorneo: data.nombreTorneo,
-        descripcion: data.descripcion,
+        nombreTorneo: nombre,
+        descripcion: desc,
         fechaInicio: data.fechaInicio,
         maxEquipos: parseInt(data.maxEquipos),
         minEquipos: parseInt(data.minEquipos),
@@ -693,6 +707,8 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       // setForm({ ...form, imagen: imageUri });
       // setValue("imagen", imageUri); // Actualiza react-hook-form
       // trigger("imagen"); // Valida la imagen
+      triggerAll();
+      console.log(errors)
     }
   };
 
@@ -1220,7 +1236,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholderTextColor={colores.domin_2_2}
                         style={[stylesAdmin3.input, { width: "100%" }]}
                         value={value}
-                        onChangeText={(text) => {onChange(text); trigger('nombreTorneo')}}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          trigger("nombreTorneo");
+                        }}
                       />
                       {errors.nombreTorneo && (
                         <Text style={formStyle.errText}>
@@ -1241,7 +1260,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         multiline
                         numberOfLines={4}
                         value={value}
-                        onChangeText={(text) => {onChange(text); trigger('descripcion')}}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          trigger("descripcion");
+                        }}
                         style={[
                           stylesAdmin3.input,
                           { height: 120, width: "100%" },
@@ -1264,7 +1286,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholder="Premio disputado"
                         placeholderTextColor={colores.domin_2_2}
                         value={value}
-                        onChangeText={(text) => {onChange(text); trigger('premio')}}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          trigger("premio");
+                        }}
                         style={stylesAdmin3.input}
                       />
                       {errors.premio && (
@@ -1285,7 +1310,10 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                         placeholderTextColor={colores.domin_2_2}
                         value={editar ? value.toString() : value}
                         keyboardType="numeric"
-                        onChangeText={(text) => {onChange(text); trigger('equiposLiguilla')}}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          trigger("equiposLiguilla");
+                        }}
                         style={[stylesAdmin3.input, { width: "100%" }]}
                       />
                       {errors.equiposLiguilla && (
@@ -1420,7 +1448,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
                           value={editar ? value.toString() : value}
                           onChangeText={(text) => {
                             editar ? setValue("vueltas", text) : onChange(text);
-                            trigger('vueltas')
+                            trigger("vueltas");
                           }}
                           style={[stylesAdmin3.input, {}]}
                         />
