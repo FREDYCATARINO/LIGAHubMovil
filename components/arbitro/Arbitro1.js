@@ -27,53 +27,62 @@ const PartidosArbitro = ({ navigation }) => {
 
   // Función para obtener los partidos del árbitro
   const obtenerPartidos = async (isRefresh = false) => {
-    try {
-      isRefresh ? setRefreshing(true) : setLoading(true);
-      setError(null);
+  try {
+    isRefresh ? setRefreshing(true) : setLoading(true);
+    setError(null);
 
-      const userId = await getUserId();
-      const token = await getToken();
+    const userId = await getUserId();
+    const token = await getToken();
 
-      if (!userId || !token) {
-        throw new Error('Faltan credenciales de usuario');
-      }
-
-      const response = await api.get(`/api/partidos/arbitro/asignados/${userId}`, {
-        headers: { 
-          Authorization: `Bearer ${token}` 
-        }
-      });
-
-      // Mapeamos la respuesta al formato esperado por el diseño
-      const partidosFormateados = response.data.map(partido => ({
-        id: partido.id,
-        equipo1: {
-          nombre: partido.equipoLocal.nombreEquipo,
-          img: partido.equipoLocal.logo
-        },
-        equipo2: {
-          nombre: partido.equipoVisitante.nombreEquipo,
-          img: partido.equipoVisitante.logo
-        },
-        fecha: new Date(partido.fechaPartido).toLocaleDateString(),
-        hora: partido.hora.substring(0, 5),
-        lugar: partido.cancha.campo.nombre,
-        estado: partido.jugado ? "Finalizado" : "Nuevo",
-        golesLocal: partido.golesLocal,
-        golesVisitante: partido.golesVisitante,
-        partidoOriginal: partido // Guardamos el objeto original para detalles
-      }));
-
-      setPartidos(partidosFormateados);
-
-    } catch (err) {
-      console.error('Error al obtener partidos:', err);
-      setError(err.message || 'Error al obtener los partidos');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (!userId || !token) {
+      throw new Error('Faltan credenciales de usuario');
     }
-  };
+
+    const response = await api.get(`/api/partidos/arbitro/asignados/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    console.log("Datos recibidos de la API:", response.data); // Depuración
+
+    // Mapeamos la respuesta al formato esperado, asegurando que los valores existan
+    const partidosFormateados = response.data.map(partido => ({
+      id: partido.id,
+      equipo1: {
+        nombre: partido.equipoLocal?.nombreEquipo || "Equipo Desconocido",
+        img: partido.equipoLocal?.logo?.startsWith("http") 
+             ? partido.equipoLocal.logo 
+             : "https://via.placeholder.com/50" // Imagen por defecto si falta o está mal
+      },
+      equipo2: {
+        nombre: partido.equipoVisitante?.nombreEquipo || "Equipo Desconocido",
+        img: partido.equipoVisitante?.logo?.startsWith("http") 
+             ? partido.equipoVisitante.logo 
+             : "https://via.placeholder.com/50"
+      },
+      fecha: partido.fechaPartido 
+             ? new Date(partido.fechaPartido).toLocaleDateString() 
+             : "Fecha no disponible",
+      hora: partido.hora 
+            ? partido.hora.substring(0, 5) 
+            : "Hora no disponible",
+      lugar: partido.cancha?.campo?.nombre || "Lugar desconocido",
+      estado: partido.jugado ? "Finalizado" : "Nuevo",
+      golesLocal: partido.golesLocal ?? "-",
+      golesVisitante: partido.golesVisitante ?? "-",
+      partidoOriginal: partido // Guardamos el objeto original para detalles
+    }));
+
+    setPartidos(partidosFormateados);
+
+  } catch (err) {
+    console.error('Error al obtener partidos:', err);
+    setError(err.message || 'Error al obtener los partidos');
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
 
   // Función para manejar el refresh
   const handleRefresh = () => {

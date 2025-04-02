@@ -248,8 +248,8 @@ const MisJugadores = ({ route }) => {
         ...(base64Image && { imagen: `data:image/jpeg;base64,${base64Image}` })
       };
 
-      const response = await fetch(`${api.defaults.baseURL}/api/jugadores/movil/${selectedPlayer.id}`, {
-        method: 'PUT',
+      const response = await api.put(`/api/jugadores/movil/${selectedPlayer.id}`, {
+      
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
