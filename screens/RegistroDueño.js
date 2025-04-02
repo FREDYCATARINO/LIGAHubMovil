@@ -351,9 +351,112 @@ const RegisterScreen = () => {
           </View>
         </View>
       </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={stylesSignup.modalContainer}>
+          <View style={stylesSignup.modalContent}>
+            <TouchableOpacity
+              style={{
+                alignSelf: "flex-end",
+                justifyContent: "flex-start",
+                marginTop: -10,
+                marginRight: -10,
+              }}
+              onPress={() => setModalVisible(false)}
+            >
+              <Ionicons name="close" size={24} color={colores.negro} />
+            </TouchableOpacity>
+            <Ionicons name="person-add" size={36} color={colores.acento_2_3} />
+            <Text style={[stylesSignup.modalTitle, FONTS.oswaldNegrita]}>
+              Nueva foto de perfil
+            </Text>
+            <TouchableOpacity
+              style={[
+                stylesSignup.modalItem,
+                FONTS.oswald,
+                //isPressed1 && stylesSignup.modalItemActive,
+              ]}
+              onPress={async () => openGallery()}
+            >
+              <Text
+                style={[
+                  FONTS.oswald,
+                  //isPressed1 && { opacity: 1, color: colores.acento_2_4 },
+                ]}
+              >
+                Desde la galería
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                stylesSignup.modalItem,
+                FONTS.oswald,
+                //isPressed2 && stylesSignup.modalItemActive,
+              ]}
+              onPress={async () => openCamera()}
+            >
+              <Text
+                style={[
+                  FONTS.oswald,
+                  //isPressed2 && { opacity: 1, color: colores.acento_2_4 },
+                ]}
+              >
+                Desde la camara
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const stylesSignup = StyleSheet.create({
+  modalTitle: {
+    width: "100%",
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  modalItem: {
+    borderRadius: 5,
+    width: "100%",
+    padding: 5,
+    marginVertical: 3,
+    paddingRight: 8,
+  },
+  modalItemActive: {
+    backgroundColor: colores.domin_2_5,
+    opacity: 0.5,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: 250,
+  },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: "#FF3B30",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: "white",
+    fontSize: 16,
+  },
+});
 
 const stylesSignup = StyleSheet.create({
   modalTitle: {

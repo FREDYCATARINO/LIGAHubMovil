@@ -14,6 +14,7 @@ import Admin6 from "../components/admin/Admin6";
 import Admin7 from "../components/admin/Admin7";
 import PerfilScreen from "../screens/Perfil";
 import EquiposScreen from "../components/admin/DetallesEquipo";
+import EquipoScreen from "../components/admin/DetallesEquipos";
 import { useNavigation } from "@react-navigation/native";
 import NoTokenComponent from "../components/NoTokenComponent";
 import {
@@ -72,7 +73,7 @@ function EquiposStack() {
       <Stack.Screen
         name="Ver equipo"
         options={{ title: "Detalles de equipo" }}
-        component={EquiposScreen}
+        component={EquipoScreen}
       />
     </Stack.Navigator>
   );
@@ -130,13 +131,15 @@ const CustomDrawerContent = (props) => {
 
 function AdminDrawerNavigator({ navigation }) {
   const { setToken } = useContext(TokenContext);
-  const { getToken, decodeToken } = useContext(AuthContext);
+  const { getToken, decodeToken, getUserEmail, getUserRole } = useContext(AuthContext);
   const { logout, removeToken, removeUser } = useContext(AuthContext);
 
   const [tokenData, setTokenData] = useState("");
   const [expire, setExpire] = useState(false);
   const [switcht, setSwitcht] = useState(false);
   const [loadData, setLoadData] = useState(true);
+  const [correo, setCorreo] = useState('');
+  const [rol,setRol] = useState('');
   const [noData, setNoData] = useState(false);
   const tokenCheckInterval = 5 * 60 * 1000; // 5 minutos
 
@@ -150,12 +153,16 @@ function AdminDrawerNavigator({ navigation }) {
       try {
         setLoadData(true);
         const fetchedToken = await getToken();
+        const rol = await getUserRole();
+        const correo = await getUserEmail();
         if (fetchedToken) {
           setTokenData(fetchedToken);
           setToken(fetchedToken);
           tokenRef.current = fetchedToken; // Actualizar el token más reciente
           console.log(fetchedToken, "obtenido");
           validateToken(fetchedToken);
+          setRol(rol);
+          setCorreo(correo);
           setNoData(false);
         } else {
           console.log("Token no encontrado o está vacío.");
@@ -252,6 +259,10 @@ function AdminDrawerNavigator({ navigation }) {
             navigation={navigation}
             title={route.name}
             isRoot={route.name !== "Equipos" && route.name !== "Perfil"}
+            correo={correo}
+            rol={rol}
+            name={''}
+            img={''}
           />
         ),
       }}

@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const TOKEN_KEY = "bearerToken";
   const TOKEN_ROLE = "userRole";
   const TOKEN_ID = "userId";
+  const TOKEN_MAIL = "userEmail";
 
   const saveToken = async (token) => {
     try {
@@ -45,8 +46,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   
-  const saveUser = async (role,id) => {
+  const saveUser = async (role,id,mail) => {
     try {
+      await AsyncStorage.setItem(TOKEN_MAIL, mail);
       await AsyncStorage.setItem(TOKEN_ROLE, role);
       await AsyncStorage.setItem(TOKEN_ID, id.toString());
     } catch (error) {
@@ -73,10 +75,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const getUserEmail = async () => {
+    try {
+      return await AsyncStorage.getItem(TOKEN_MAIL);
+    } catch (error) {
+      console.error("Error obteniendo el correo de usuario:", error);
+      return "";
+    }
+  };
+
   const removeUser = async () => {
     try {
       await AsyncStorage.removeItem(TOKEN_ROLE);
       await AsyncStorage.removeItem(TOKEN_ID);
+      await AsyncStorage.removeItem(TOKEN_MAIL);
       console.log("Removiendo datos del usuario");
     } catch (error) {
       console.error("Error eliminando datos del usuario:", error);
@@ -92,9 +104,9 @@ export const AuthProvider = ({ children }) => {
         password: pass,
       
       });
-      console.log(res.data.token);
+      
       await saveToken(res.data.token);
-      await saveUser(res.data.roles, res.data.id)
+      await saveUser(res.data.roles, res.data.id, res.data.correo)
 
       if (res.data.roles === "ROLE_DUENO") {
         setUser({ role: "dueno" });
@@ -173,6 +185,7 @@ export const AuthProvider = ({ children }) => {
         saveUser,
         getUserRole,
         getUserId,
+        getUserEmail,
         removeUser,
         mensaje
       }}

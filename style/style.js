@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import RecuperarContra from '../screens/RecuperarContra';
+import colores from './colors';
 <style>@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');
 @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200..700;700&display=swap");</style>
 const styles = StyleSheet.create({
@@ -159,7 +160,24 @@ const styles = StyleSheet.create({
   },
   Titles: {
     fontFamily: 'Nunito',
-  }
+  },
+  modalTitle: {
+    width: "100%",
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  modalItem: {
+    borderRadius: 5,
+    width: "100%",
+    padding: 5,
+    marginVertical: 3,
+    paddingRight: 8,
+  },
+  modalItemActive: {
+    backgroundColor: colores.domin_2_5,
+    opacity: 0.5,
+  },
 });
 
 

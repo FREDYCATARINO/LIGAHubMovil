@@ -11,6 +11,7 @@ import {
   Image,
   FlatList,
   Modal,
+  Alert,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Calendar } from "react-native-calendars";
@@ -40,10 +41,12 @@ import { TokenContext } from "../../context/TokenContext";
 
 const Admin1 = ({ navigation, route }) => {
   const [progress, setProgress] = useState(0.25);
-  const { getUserId, getUserRole, getToken } = useContext(AuthContext);
+  const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
   const { token } = useContext(TokenContext);
   const [modalSolid, setModalSolid] = useState(false);
   const [torName, setTorName] = useState("");
+  const [partidos, setPartidos] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
 
   const [load1, setLoad1] = useState(false);
   const [load2, setLoad2] = useState(false);
@@ -82,6 +85,9 @@ const Admin1 = ({ navigation, route }) => {
     }
   }, 1000);
 
+  const [respuesta, setRespuesta] = useState("");
+  const [respuestas, setRespuestas] = useState({});
+
   const [solicitudes, setSolicitudes] = useState([]);
   const [loadSolids, setLoadSolids] = useState(false);
   const [fallo, setFallo] = useState("");
@@ -93,10 +99,16 @@ const Admin1 = ({ navigation, route }) => {
 
   const [torEspera, setTorEspera] = useState(0);
   const [totPagos, setTotPagos] = useState(0);
+  const [fechaReciente, setFechaReciente] = useState(
+    "No hay partidos cercanos"
+  );
 
   const [torneos, setTorneos] = useState([]);
+  const [loadPartidos, setLoadPartidos] = useState(false);
+  const [falloPart, setFalloPart] = useState(false);
 
   useEffect(() => {
+    setRespuesta("");
     const getUserAll = async () => {
       const id = await getUserRole();
       const rolo = await getUserId();
@@ -104,7 +116,7 @@ const Admin1 = ({ navigation, route }) => {
       setTokData(tok);
       setLoadSolids(true);
       api
-        .get(`/api/solicitudes/admin/pendientes`, {
+        .get(`/api/solicitudes/admin`, {
           headers: {
             Authorization: `Bearer ${tok}`,
           },
@@ -115,10 +127,50 @@ const Admin1 = ({ navigation, route }) => {
         })
         .catch((e) => {
           console.error(e, e.res.message);
+          if (err.response.status === 403) {
+            console.log("⚠️ Token expirado, redirigiendo a login...");
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout();
+            return;
+          }
           if (e.res.message) setFallo(e.res.message);
           else setFallo("Error al obtener solicitudes");
         })
         .finally(() => setLoadSolids(false));
+
+      setLoadPartidos(true);
+      api
+        .get(`/api/partidos/todos`)
+        .then((res) => {
+          setPartidos(res.data);
+
+          // Convertimos el array de partidos en el objeto marcado
+          const newMarkedDates = res.data.reduce((acc, partido) => {
+            acc[partido.fechaPartido] = {
+              selected: true,
+              selectedColor: colores.acento_3_1, // Puedes personalizar el color
+            };
+            return acc;
+          }, {});
+
+          setMarkedDates(newMarkedDates);
+        })
+        .catch((err) => {
+          console.error(err);
+          if (err.response?.status === 403) {
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout();
+            return;
+          }
+          alert("Hubo un error al cargar los partidos, inténtalo nuevamente");
+        })
+        .finally(() => setLoadPartidos(false));
 
       api
         .get(`/api/torneos`)
@@ -127,6 +179,15 @@ const Admin1 = ({ navigation, route }) => {
         })
         .catch((e) => {
           console.error(e, e.res.message);
+          if (err.response.status === 403) {
+            console.log("⚠️ Token expirado, redirigiendo a login...");
+            Alert.alert(
+              "Sesión expirada",
+              "Por favor, inicia sesión nuevamente."
+            );
+            logout();
+            return;
+          }
         });
     };
     getUserAll();
@@ -145,6 +206,15 @@ const Admin1 = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
         if (e.res.message) setFallo2(e.res.message);
         else setFallo2("Error al obtener equipos");
       })
@@ -158,15 +228,23 @@ const Admin1 = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
         setTorEspera(0);
       })
       .finally(() => {
-        setLoad1(false);
         setLoad4(false);
       });
 
     api
-      .get(`/api/pagos/equipo/torneo/pendientes/3/15a`, {
+      .get(`/api/pagos/admin/todos`, {
         headers: {
           Authorization: `Bearer ${tokData}`,
         },
@@ -177,39 +255,120 @@ const Admin1 = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
         setTotPagos(0);
       })
       .finally(() => {
         setLoad2(false);
         setLoad3(false);
       });
+
+    api
+      .get(`/api/partidos/todos/masproximo`)
+      .then((res) => {
+        if (res.data === "") setFechaReciente("No hay partidos próximos");
+        else setFechaReciente(res.data);
+      })
+      .catch((e) => {
+        console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+        setFechaReciente("No disponible");
+      })
+      .finally(() => {
+        setLoad1(false);
+      });
   }, []);
+
+  const rechazarSolid = async (id) => {
+    await api
+      .put(
+        `/api/solicitudes/${id}/rechazar`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+          },
+        }
+      )
+      .then((res) => {
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Solicitud rechazada",
+        }));
+      })
+      .catch((error) => {
+        console.error(error, error.response);
+        if (error.response?.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Error al rechazar la solicitud",
+        }));
+      });
+  };
+
+  const aceptarSolid = async (id) => {
+    await api
+      .put(
+        `/api/solicitudes/${id}/aceptar`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+          },
+        }
+      )
+      .then((res) => {
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Solicitud aceptada",
+        }));
+        Alert.alert("Éxito", res.data);
+      })
+      .catch((error) => {
+        console.error(error, error.response?.data?.message);
+        Alert.alert(
+          "Denegado",
+          error.response?.data?.message || "Error desconocido"
+        );
+        setRespuestas((prev) => ({
+          ...prev,
+          [id]: "Error al aceptar la solicitud",
+        }));
+      });
+  };
 
   function getTorneoLogo(id) {
     const torneo = torneos.find((tor) => tor.id === id);
     if (torneo) {
-      console.log("Encontrado");
       return torneo.logoTorneo;
     } else {
-      console.log("No encontrado");
       return "https://th.bing.com/th/id/OIP.vxFF12mSgYf6Cs5z9O2i7QAAAA?rs=1&pid=ImgDetMain"; // Imagen de respaldo
     }
-  }  
-
-  const markedDates = {
-    "2025-02-19": {
-      selected: true,
-      selectedColor: colores.acento_3_1,
-    },
-    "2025-02-25": {
-      selected: true,
-      selectedColor: colores.acento_3_1,
-    },
-    "2025-03-02": {
-      selected: true,
-      selectedColor: colores.acento_3_1,
-    },
-  };
+  }
 
   return (
     <GestureHandlerRootView>
@@ -244,7 +403,7 @@ const Admin1 = ({ navigation, route }) => {
                 {load1 ? (
                   <ActivityIndicator size="small" color="#3CB371" />
                 ) : (
-                  <Text style={FONTS.oswald}>Domingo, 23 de febrero</Text>
+                  <Text style={FONTS.oswald}>{fechaReciente}</Text>
                 )}
               </View>
             </View>
@@ -357,59 +516,54 @@ const Admin1 = ({ navigation, route }) => {
                             }}
                           />
                         </View>
-                        <View style={{ width: '72%', marginLeft: 5 }}>
+                        <View style={{ width: "72%", marginLeft: 5 }}>
                           <View style={styless.row1}>
-                            {/* <Image
-                          source={{
-                            uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-                          }}
-                          style={{
-                            width: 40, 
-                            height: 40,
-                            backgroundColor: colores.base_1_1,
-                            borderRadius: 100,
-                            resizeMode: "stretch",
-                            alignSelf: "center",
-                          }}
-                        /> */}
                             <Text style={[styless.nombre]}>
                               {s.nombreEquipo}
                             </Text>
                           </View>
-                          <View style={styless.row2}>
-                            <TouchableOpacity
-                              style={[
-                                styles.button,
-                                { backgroundColor: colores.acento_3_1 },
-                                styless.boton,
-                              ]}
-                            >
-                              <Text
+                          {!respuestas[s.id] ? (
+                            <View style={styless.row2}>
+                              <TouchableOpacity
                                 style={[
-                                  FONTS.oswald,
-                                  { color: "white", fontSize: 18 },
+                                  styles.button,
+                                  { backgroundColor: colores.acento_3_1 },
+                                  styless.boton,
                                 ]}
+                                onPress={async () => aceptarSolid(s.id)}
                               >
-                                Aceptar
-                              </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[
-                                styles.button,
-                                { backgroundColor: colores.domin_1_1 },
-                                styless.boton,
-                              ]}
-                            >
-                              <Text
+                                <Text
+                                  style={[
+                                    FONTS.oswald,
+                                    { color: "white", fontSize: 18 },
+                                  ]}
+                                >
+                                  Aceptar
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
                                 style={[
-                                  FONTS.oswald,
-                                  { color: "white", fontSize: 18 },
+                                  styles.button,
+                                  { backgroundColor: colores.domin_1_1 },
+                                  styless.boton,
                                 ]}
+                                onPress={async () => rechazarSolid(s.id)}
                               >
-                                Rechazar
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
+                                <Text
+                                  style={[
+                                    FONTS.oswald,
+                                    { color: "white", fontSize: 18 },
+                                  ]}
+                                >
+                                  Rechazar
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <Text style={[styless.nombre]}>
+                              {respuestas[s.id]}
+                            </Text>
+                          )}
                         </View>
                       </TouchableOpacity>
                       <View style={styless.myBorder}></View>
@@ -444,7 +598,7 @@ const Admin1 = ({ navigation, route }) => {
                 <FlatList
                   data={equipos}
                   keyExtractor={(item) => item.id.toString()} // Usar equipoId en lugar de id
-                  numColumns={2}
+                  numColumns={3}
                   nestedScrollEnabled={true}
                   renderItem={({ item }) => {
                     return (
@@ -453,21 +607,16 @@ const Admin1 = ({ navigation, route }) => {
                         onPress={() =>
                           navigation.navigate("Jugadores", { team: item })
                         }
-                        // onPress={() =>
-                        //   sendData(
-                        //     item.equipoId,
-                        //     item.nombre,
-                        //     item.dt,
-                        //     item.jugadores,
-                        //     item.img
-                        //   )
-                        // }
                       >
                         <Image
                           source={{ uri: item.logoEquipo }}
                           style={styless.image}
                         />
-                        <Text style={[styless.aligned1, FONTS.oswaldNegrita]}>
+                        <Text
+                          style={[styless.aligned1, FONTS.oswaldNegrita]}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
                           {item.nombreEquipo}
                         </Text>
                         <Text style={[styless.aligned2, FONTS.oswaldNegrita]}>
@@ -490,36 +639,113 @@ const Admin1 = ({ navigation, route }) => {
             <Text style={[FONTS.oswaldNegrita, styless.title3]}>
               Calendario de partidos
             </Text>
-            <Calendar
-              style={[FONTS.nunito, styless.calendar]}
-              onDayPress={(day) => {
-                if (markedDates.hasOwnProperty(day.dateString)) {
-                  alert("Hola " + day.day);
-                }
-              }}
-              monthFormat={"MMM yyyy"}
-              markedDates={markedDates} // Usamos la variable aquí
-              theme={{
-                todayTextColor: colores.domin_2_1,
-                todayBackgroundColor: colores.acento_1_3,
-                selectedDayBackgroundColor: colores.acento_2_5,
-                selectedDayTextColor: colores.blanco,
-                textSectionTitleColor: colores.acento_1_3,
-                monthTextColor: colores.domin_2_1,
-                arrowColor: colores.domin_2_1,
-                textDayFontSize: 16,
-                textDayFontFamily: "Nunito_400Regular",
-                textMonthFontFamily: "Nunito_400Regular",
-                textDayHeaderFontFamily: "Nunito_400Regular",
-                textDayStyle: {
-                  minWidth: 30,
-                  textAlign: "center",
-                },
-              }}
-            />
-            ;
+            {loadPartidos ? (
+              <View style={styless.row3}>
+                <Text style={[{ color: "#3CB371" }, FONTS.oswald]}>
+                  Proximo partido
+                </Text>
+                <Ionicons name="calendar" size={24} color={colores.base_1_3} />
+              </View>
+            ) : (
+              <Calendar
+                style={[FONTS.nunito, styless.calendar]}
+                onDayPress={(day) => {
+                  const fechaHoy = new Date().toISOString().split("T")[0]; // Obtiene la fecha actual en formato YYYY-MM-DD
+
+                  if (day.dateString === fechaHoy) {
+                    Alert.alert(
+                      "📅 Hoy",
+                      "Hoy es el día actual. ¡Revisa los partidos!"
+                    );
+                    return;
+                  }
+                  if (markedDates.hasOwnProperty(day.dateString)) {
+                    const partidosEnFecha = partidos.filter(
+                      (p) => p.fechaPartido === day.dateString
+                    );
+                    Alert.alert(
+                      `Partidos el ${day.dateString}:\n`,
+                      partidosEnFecha
+                        .map(
+                          (p) =>
+                            `${p.equipoLocal.nombreEquipo} vs ${p.equipoVisitante.nombreEquipo} a las ${p.hora}`
+                        )
+                        .join("\n")
+                    );
+                  }
+                }}
+                monthFormat={"MMM yyyy"}
+                markedDates={markedDates}
+                theme={{
+                  todayTextColor: colores.domin_2_1,
+                  todayBackgroundColor: colores.acento_1_3,
+                  selectedDayBackgroundColor: colores.acento_2_5,
+                  selectedDayTextColor: colores.blanco,
+                  textSectionTitleColor: colores.acento_1_3,
+                  monthTextColor: colores.domin_2_1,
+                  arrowColor: colores.domin_2_1,
+                  textDayFontSize: 16,
+                  textDayFontFamily: "Nunito_400Regular",
+                  textMonthFontFamily: "Nunito_400Regular",
+                  textDayHeaderFontFamily: "Nunito_400Regular",
+                  textDayStyle: {
+                    minWidth: 30,
+                    textAlign: "center",
+                  },
+                }}
+              />
+            )}
           </View>
         </ScrollView>
+        <Modal
+          animationType="fade" // Animación del modal (puede ser 'fade', 'slide', o 'none')
+          transparent={true} // Hace que el fondo sea transparente
+          visible={modalSolid} // El Modal solo se muestra si modalVisible es true
+          onRequestClose={() => {
+            setModalSolid(false);
+          }} // Cierra el modal al presionar el botón de retroceso en Android
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            <View
+              style={{
+                width: 300,
+                padding: 20,
+                backgroundColor: "white",
+                borderRadius: 10,
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <Text style={[{ fontSize: 25 }, FONTS.oswaldNegrita]}>
+                Detalles de la solicitud
+              </Text>
+              <Text
+                style={[{ fontSize: 20, textAlign: "center" }, FONTS.oswald]}
+              >
+                Toneo solicitado: {torName}
+              </Text>
+              <TouchableOpacity
+                title="Cerrar Modal"
+                style={[styles.loginButton, { width: "50%" }]}
+                onPress={() => {
+                  setModalSolid(false);
+                }}
+              >
+                <Text style={[styles.loginText, FONTS.oswaldNegrita]}>
+                  Aceptar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
         <Modal
           animationType="fade" // Animación del modal (puede ser 'fade', 'slide', o 'none')
           transparent={true} // Hace que el fondo sea transparente
@@ -598,12 +824,11 @@ const styless = StyleSheet.create({
     alignItems: "center",
     width: "95%",
     marginBlock: 5,
-    backgroundColor: colores.domin_2_5,
-    opacity: 0.75,
+    backgroundColor: colores.light,
     borderRadius: 5,
     paddingHorizontal: 10,
     paddingVertical: 3,
-    color: "white",
+    color: colores.domin_3_1,
   },
   title3: {
     fontSize: 25,
@@ -611,8 +836,7 @@ const styless = StyleSheet.create({
     alignItems: "center",
     alignSelf: "center",
     width: "96%",
-    backgroundColor: colores.domin_2_5,
-    opacity: 0.75,
+    backgroundColor: colores.light,
     borderRadius: 5,
     marginRight: 5,
     marginLeft: 5,
@@ -620,7 +844,7 @@ const styless = StyleSheet.create({
     marginBottom: 0,
     paddingHorizontal: 10,
     paddingVertical: 3,
-    color: "white",
+    color: colores.domin_3_1,
   },
   grid: {
     flex: 2,
@@ -685,7 +909,7 @@ const styless = StyleSheet.create({
     borderTopColor: colores.base_3_1,
     borderBottomColor: colores.base_3_1,
     borderRadius: 10,
-    width: '100%',
+    width: "100%",
   },
   myBorder: {
     width: "100%",
@@ -737,19 +961,19 @@ const styless = StyleSheet.create({
     paddingHorizontal: 8,
     justifyContent: "center",
     alignItems: "center",
-    textAlign: 'center',
+    textAlign: "center",
     paddingBottom: 3,
   },
   image: {
-    width: 125,
-    height: 125,
+    width: "100%",
+    height: 80,
     resizeMode: "stretch",
     borderRadius: 15,
   },
   prod: {
-    backgroundColor: colores.base_1_1,
+    backgroundColor: colores.light,
     flexGrow: 1,
-    flexBasis: "45%",
+    flexBasis: "30%",
     margin: 5,
     gap: 5,
     // iOS
@@ -762,11 +986,12 @@ const styless = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
+    padding: 5,
   },
   aligned1: {
     textAlign: "center",
-    fontSize: 18,
+    fontSize: 16,
+    width: "100%",
   },
   aligned2: {
     textAlign: "center",

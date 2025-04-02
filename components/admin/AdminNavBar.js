@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Image,
 } from "react-native";
+import { Card, Avatar } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions } from "@react-navigation/native";
 import LoginScreen from "../../screens/Login";
@@ -15,7 +16,15 @@ import FONTS from "../../style/fonts";
 import { createStackNavigator } from "@react-navigation/stack";
 const Stack = createStackNavigator();
 
-const AdminAppBar = ({ navigation, title, isRoot }) => {
+const AdminAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
+  function getRole(rol){
+    switch (rol){
+      case "ROLE_ADMIN": return 'Administrador';
+      case "ROLE_ARBITRO": return 'Árbitro';
+      case "ROLE_DUENO": return 'Dueño';
+      default: return '';
+    }
+  }
   return (
     <SafeAreaView style={styles.safeArea}>
       {title === "Dueños" ? null : (
@@ -41,23 +50,35 @@ const AdminAppBar = ({ navigation, title, isRoot }) => {
           <TouchableOpacity
             onPress={() =>
               navigation.navigate(title == "Perfil" ? "Home" : "Perfil", {
-                usuario: "José José",
-                rol: "Admin",
+                usuario: name !== '' ? name : "Usuario Administrador",
+                rol: getRole(rol),
+                correo: correo
               })
             }
           >
-            <Image
-              source={{
-                uri: "https://th.bing.com/th/id/OIP.SVo8-p3WhGOnngP6K6tBsAHaKc?w=115&h=180&c=7&r=0&o=5&dpr=1.5&pid=1.7",
-              }}
-              style={{
-                width: 50,
-                height: 50,
-                backgroundColor: colores.base_1_1,
-                borderRadius: 100,
-                resizeMode: "stretch",
-              }}
-            />
+            {correo === "sistemaligafutleagueshub@gmail.com" ||
+            correo === "" ? (
+              <Avatar.Icon
+                size={50}
+                icon="account"
+                style={{ backgroundColor: colores.domin_2_5 }}
+                color={colores.domin_1_1}
+              />
+            ) : (
+              <Avatar.Image
+                size={50}
+                source={{
+                  uri: img,
+                }}
+                // style={{
+                //   width: 50,
+                //   height: 50,
+                //   backgroundColor: colores.base_1_1,
+                //   borderRadius: 100,
+                //   resizeMode: "stretch",
+                // }}
+              />
+            )}
           </TouchableOpacity>
         </View>
       )}

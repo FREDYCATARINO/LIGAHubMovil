@@ -11,13 +11,18 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from "react-native";
+import formStyle from "../../style/formStyles";
+//import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 //import { TextInput } from "react-native-paper";
 import WebView from "react-native-webview";
 import { useRef, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import FONTS from "../../style/fonts";
 import { useFonts } from "expo-font";
+
 import {
   Oswald_400Regular,
   Oswald_700Bold,
@@ -36,8 +41,15 @@ import { Checkbox } from "react-native-paper";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../config/api";
+import { useForm, Controller, set } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
 
-const Admin3 = ({ navigation }) => {
+const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
+  const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
+
   const [modalVisible1, setModalVisible1] = useState(false);
   const [modalVisible2, setModalVisible2] = useState(false);
   const [modalVisible3, setModalVisible3] = useState(false);
@@ -52,15 +64,157 @@ const Admin3 = ({ navigation }) => {
   const [falloT, setFalloT] = useState("");
   const [estado, setEstado] = useState("");
 
+  const [formVis, setFormVis] = useState(false);
+  const [image, setImage] = useState(null);
+
   const ordenEstados = ["En Juego", "En Espera", "Finalizado"];
+
+  const torneo = yup.object().shape({
+    nombreTorneo: yup.string().required("El nombre es requerido"),
+    descripcion: yup
+      .string()
+      .max(500, "Tamaño de descripción excedido")
+      .required("La descripción del torneo es requerida"),
+    fechaInicio: yup
+      .string()
+      .required("La fecha de inicio es requerida")
+      .test("es-futura", "La fecha debe ser hoy o en el futuro", (value) => {
+        const fechaIngresada = new Date(value);
+        const fechaActual = new Date();
+        fechaActual.setHours(0, 0, 0, 0); // Elimina la hora para comparar solo la fecha
+        return fechaIngresada >= fechaActual;
+      }),
+    minEquipos: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Se requiere un número entero")
+      .min(2, "Debe ser al menos 2")
+      .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
+      .required("Este campo es obligatorio")
+      .test("max-min", "Debe ser menor o igual al máximo", function (value) {
+        return value <= this.parent.maxEquipos;
+      }),
+    maxEquipos: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Se requiere un número entero")
+      .min(2, "Debe ser al menos 2")
+      .test("es-par", "El número debe ser par", (value) => value % 2 === 0)
+      .required("Este campo es obligatorio")
+      .test("min-max", "Debe ser mayor o igual al mínimo", function (value) {
+        return value >= this.parent.minEquipos;
+      }),
+    equiposLiguilla: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Debe ser un número entero")
+      .required("Debes especificar cuántos pasan a liguilla"),
+
+    vueltas: yup
+      .number()
+      .typeError("Debe ser un número")
+      .integer("Debe ser un número entero")
+      .required("Se requieren las vueltas"),
+    premio: yup.string().required("Se requiere especificar premio"),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: yupResolver(torneo),
+    mode: "onChange",
+  });
+
+  const onSubmit = async (data) => {
+    console.log(data);
+    if (!image || typeof image !== "string" || !image.startsWith("file://")) {
+      console.log("Error: No hay imagen seleccionada.");
+      return Alert.alert("Error", "Debes seleccionar una imagen válida.");
+    }
+
+    await registrarTorneo(data, image);
+  };
+
+  const [showInicio, setShowInicio] = useState(false);
+  const [showFin, setShowFin] = useState(false);
+
+  const [fechaInicio, setFechaInicio] = useState(new Date());
+
+  const [show, setShow] = useState(false);
+
+  const formatDate = (date) => {
+    // Convierte la fecha en formato YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Asegura dos dígitos
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleConfirm = (date, onChange, value) => {
+    const formattedDate = formatDate(date);
+    console.log("Fecha seleccionada:", formattedDate); // Verificar qué valor se guarda
+    onChange(formattedDate);
+    setValue("fechaInicio", formattedDate, { shouldValidate: true });
+    setShow(false);
+    console.log(value);
+  };
 
   const getEstado = (nombre) => {
     for (let i = 0; i < ordenEstados.length; i++) {
-      if (nombre.includes(ordenEstados[i])) {
+      if (nombre.toLowerCase().includes(ordenEstados[i].toLowerCase())) {
         return i;
       }
     }
     return ordenEstados.length;
+  };
+
+  const registrarTorneo = async (data, image) => {
+    const formData = new FormData();
+    console.log(data);
+
+    formData.append(
+      "torneo",
+      JSON.stringify({
+        nombreTorneo: "Ultra Torneo",
+        descripcion: "Torneo anual con los mejores equipos de la UEFA.",
+        fechaInicio: "2025-05-11",
+        maxEquipos: 16,
+        minEquipos: 8,
+        equiposLiguilla: 4,
+        premio: "1000 pesos y medallas individuales de oro para cada jugador",
+        vueltas: 2,
+      })
+    );
+
+    formData.append("imagen", {
+      uri: image,
+      name: "arbitro.png",
+      type: "image/png",
+    });
+
+    try {
+      const tokData = await getToken();
+      const response = await axios.post(
+        "http://192.168.1.67:8080/api/torneos",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "multipart/form-data",
+          },
+          transformRequest: (data) => data, // Devuelve directamente el FormData
+        }
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.log("At");
+      console.log(error);
+      console.error("Error:", error.response.data || error || error.response);
+    }
   };
 
   const getEstadoType = (name) => {
@@ -132,6 +286,15 @@ const Admin3 = ({ navigation }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout();
+          return;
+        }
         if (e.res.message) setFalloT(e.res.message);
         else setFalloT("Error al obtener torneos");
       })
@@ -184,10 +347,47 @@ const Admin3 = ({ navigation }) => {
   const sectionOneRef = useRef(null);
 
   const handleScroll = () => {
+    setFormVis(!formVis);
     if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 500, animated: true }); // Ajusta 'y' a la posición deseada
+      scrollViewRef.current.scrollTo({ y: 450, animated: true }); // Ajusta 'y' a la posición deseada
     }
   };
+
+  // Función para abrir la galería
+  const openGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permiso denegado",
+        "Necesitas permitir el acceso a la galería."
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const imageUri = result.assets[0].uri;
+      console.log(
+        "Uri seleccionada:",
+        imageUri,
+        " Imagen seleccionada: ",
+        result.assets[0]
+      ); // Depuración
+      setImage(imageUri);
+      // setForm({ ...form, imagen: imageUri });
+      // setValue("imagen", imageUri); // Actualiza react-hook-form
+      // trigger("imagen"); // Valida la imagen
+    }
+  };
+
+  useEffect(() => {
+    console.log("Errores en el formulario:", errors);
+  }, [errors]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -260,17 +460,14 @@ const Admin3 = ({ navigation }) => {
                     stylesAdmin3.box,
                     getEstilo(tor.nombreTorneo, tor.motivoFinalizacion),
                   ]}
+                  onPress={() =>
+                    tor.esliguilla ? showModal3(tor.nombreTorneo, tor) : null
+                  }
+                  key={tor.id}
                 >
-                  <View style={stylesAdmin3.boxHeader}>
-                    <Text
-                      style={[
-                        stylesAdmin3.textHead1,
-                        FONTS.oswaldNegrita,
-                        // tor.estado === "Cancelado" && stylesAdmin3.redText,
-                        // tor.estado === "En curso" && stylesAdmin3.greenText,
-                      ]}
-                    >
-                      En liguilla: {tor.equiposLiguilla}
+                  <View style={stylesAdmin3.boxHeader} key={tor.id}>
+                    <Text style={[stylesAdmin3.textHead1, FONTS.oswaldNegrita]}>
+                      A liguilla: {tor.equiposLiguilla}
                     </Text>
                     <Text style={[stylesAdmin3.textHead2, FONTS.oswald]}>
                       {tor.fechaInicio}
@@ -310,48 +507,63 @@ const Admin3 = ({ navigation }) => {
                     </View>
                   ) : (
                     <View>
-                      <Text style={[FONTS.oswald, stylesAdmin3.torneoDet]}>
-                        {getEstadoType(tor.nombreTorneo) === "Finalizado"
-                          ? `Ganador: ${tor.ganador}`
-                          : "--"}
-                      </Text>
+                      {getEstadoType(tor.nombreTorneo) === "Finalizado" ? (
+                        <Text style={[FONTS.oswald, stylesAdmin3.torneoDet]}>
+                          Ganador: {tor.ganador}
+                        </Text>
+                      ) : null}
                     </View>
                   )}
-                  <View style={stylesAdmin3.botonRow}>
-                    <TouchableOpacity
-                      style={stylesAdmin3.botTorneo}
-                      onPress={() =>
-                        getEstadoType(tor.nombreTorneo) === "En Juego"
-                          ? alert("Hola")
-                          : showModal3(tor.nombreTorneo, tor)
-                      }
-                    >
+                  {tor.esliguilla ? (
+                    <View style={stylesAdmin3.successBack}>
                       <Text
-                        style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}
+                        style={[FONTS.oswaldNegrita, stylesAdmin3.successText]}
                       >
-                        {getEstadoType(tor.nombreTorneo) === "En Juego"
-                          ? "Editar"
-                          : "Detalles"}
+                        En liguilla
                       </Text>
-                    </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={stylesAdmin3.botonRow}>
+                      <TouchableOpacity
+                        style={stylesAdmin3.botTorneo}
+                        onPress={() =>
+                          getEstadoType(tor.nombreTorneo) === "En Juego"
+                            ? alert("Hola")
+                            : showModal3(tor.nombreTorneo, tor)
+                        }
+                      >
+                        <Text
+                          style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}
+                        >
+                          {getEstadoType(tor.nombreTorneo) === "En Juego"
+                            ? "Editar"
+                            : "Detalles"}
+                        </Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={stylesAdmin3.botTorneo}
-                      onPress={() =>
-                        tor.estado === "En Juego"
-                          ? showModal1(tor.nombreTorneo)
-                          : showModal2(tor.nombreTorneo)
-                      }
-                    >
-                      <Text
-                        style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}
-                      >
-                        {getEstadoType(tor.nombreTorneo) === "En Juego"
-                          ? "Cancelar"
-                          : "Remover"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                      {getEstadoType(tor.nombreTorneo) ===
+                      "Finalizado" ? null : (
+                        <TouchableOpacity
+                          style={stylesAdmin3.botTorneo}
+                          onPress={() =>
+                            tor.estado === "En Juego"
+                              ? showModal1(tor.nombreTorneo)
+                              : showModal2(tor.nombreTorneo)
+                          }
+                        >
+                          <Text
+                            style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}
+                          >
+                            {getEstadoType(tor.nombreTorneo) === "En Espera"
+                              ? "Iniciar"
+                              : getEstadoType(tor.nombreTorneo) === "En Juego"
+                              ? "Cancelar"
+                              : "Remover"}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })
@@ -389,100 +601,265 @@ const Admin3 = ({ navigation }) => {
             <Text style={stylesAdmin3.text}>5</Text>
           </TouchableOpacity> */}
         </ScrollView>
-        <View ref={sectionOneRef}></View>
-        <Text
-          style={[
-            styles.TextField,
-            stylesAdmin3.title,
-            FONTS.nunitoNegrita,
-            { paddingVertical: 15, paddingHorizontal: 5 },
-          ]}
-        >
-          Nuevo torneo
-        </Text>
-        <View style={stylesAdmin3.form}>
-          <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-            Logo del torneo
-          </Text>
-          <View style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}>
-            <Image
-              source={require("../../assets/EquiposLogos/LogoDefault.png")}
-              style={{ width: 150, height: 150, resizeMode: "contain" }}
-            />
-            <TouchableOpacity style={stylesAdmin3.botTorneo}>
-              <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-                Elegir una imagen
+        {!formVis ? null : (
+          <View ref={sectionOneRef}>
+            <Text
+              style={[
+                styles.TextField,
+                stylesAdmin3.title,
+                FONTS.nunitoNegrita,
+                { paddingVertical: 15, paddingHorizontal: 5 },
+              ]}
+            >
+              Nuevo torneo
+            </Text>
+            <View style={stylesAdmin3.form}>
+              <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                Logo del torneo
               </Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
-            Datos del torneo
-          </Text>
-          <TextInput
-            placeholder="Nombre del torneo"
-            placeholderTextColor={colores.domin_2_2}
-            style={stylesAdmin3.input}
-          />
-          <TextInput
-            placeholder="Descripción del torneo"
-            placeholderTextColor={colores.domin_2_2}
-            multiline
-            numberOfLines={4}
-            style={[stylesAdmin3.input, { height: 120 }]}
-          />
-          <TextInput
-            placeholder="Premio disputado"
-            placeholderTextColor={colores.domin_2_2}
-            keyboardType="decimal-pad"
-            style={stylesAdmin3.input}
-          />
-          <View style={{ flexDirection: "row", width: "100$", gap: 5 }}>
-            <TextInput
-              placeholder="Fecha de inicio"
-              placeholderTextColor={colores.domin_2_2}
-              style={[stylesAdmin3.input, { width: "49%" }]}
-            />
-            <TextInput
-              placeholder="Fecha de fin"
-              placeholderTextColor={colores.domin_2_2}
-              style={[stylesAdmin3.input, { width: "49%" }]}
-            />
-          </View>
-          <View style={{ flexDirection: "row", width: "100$", gap: 5 }}>
-            <TextInput
-              placeholder="Máximo de equipos"
-              placeholderTextColor={colores.domin_2_2}
-              keyboardType="numeric"
-              style={[stylesAdmin3.input, { width: "49%" }]}
-            />
-            <TextInput
-              placeholder="Mínimo de equipos"
-              placeholderTextColor={colores.domin_2_2}
-              keyboardType="numeric"
-              style={[stylesAdmin3.input, { width: "49%" }]}
-            />
-          </View>
-        </View>
-        {/*<View style={stylesAdmin3.grid}>
+              <View
+                style={{ alignItems: "center", gap: 5, paddingVertical: 5 }}
+              >
+                <Image
+                  source={
+                    image
+                      ? { uri: image }
+                      : require("../../assets/EquiposLogos/LogoDefault.png")
+                  }
+                  style={{
+                    width: 175,
+                    height: 175,
+                    resizeMode: "stretch",
+                    borderRadius: 15,
+                  }}
+                />
+                <TouchableOpacity
+                  style={stylesAdmin3.botTorneo}
+                  onPress={openGallery}
+                >
+                  <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                    Elegir una imagen
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[FONTS.oswald, { alignSelf: "flex-start" }]}>
+                Datos del torneo
+              </Text>
+              <Controller
+                control={control}
+                name="nombreTorneo"
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TextInput
+                      placeholder="Nombre del torneo"
+                      placeholderTextColor={colores.domin_2_2}
+                      style={stylesAdmin3.input}
+                      value={value}
+                      onChangeText={(text) => onChange(text)}
+                    />
+                    {errors.nombreTorneo && (
+                      <Text style={formStyle.errText}>
+                        {errors.nombreTorneo.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <Controller
+                control={control}
+                name="descripcion"
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TextInput
+                      placeholder="Descripción del torneo"
+                      placeholderTextColor={colores.domin_2_2}
+                      multiline
+                      numberOfLines={4}
+                      value={value}
+                      onChangeText={(text) => onChange(text)}
+                      style={[stylesAdmin3.input, { height: 120 }]}
+                    />
+                    {errors.descripcion && (
+                      <Text style={[formStyle.errText]}>
+                        {errors.descripcion.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <Controller
+                control={control}
+                name="premio"
+                render={({ field: { onChange, value } }) => (
+                  <>
+                    <TextInput
+                      placeholder="Premio disputado"
+                      placeholderTextColor={colores.domin_2_2}
+                      value={value}
+                      onChangeText={(text) => onChange(text)}
+                      style={stylesAdmin3.input}
+                    />
+                    {errors.premio && (
+                      <Text style={[formStyle.errText]}>
+                        {errors.premio.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              />
+              <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
+                <Controller
+                  control={control}
+                  name="fechaInicio"
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          {
+                            backgroundColor: colores.domin_2_2,
+                            borderRadius: 5,
+                            width: "19%",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          },
+                        ]}
+                        onPress={() => setShow(true)}
+                      >
+                        <Ionicons name="calendar" size={24} color={"white"} />
+                      </TouchableOpacity>
+
+                      <View style={{ flexDirection: "column", width: "79%" }}>
+                        <TextInput
+                          placeholder="Seleccionar fecha"
+                          placeholderTextColor={colores.domin_2_2}
+                          value={value}
+                          style={[stylesAdmin3.input]}
+                          readOnly={true}
+                        />
+
+                        {/* <Text style={styles.fechaTexto}>
+                    {value || "Seleccionar Fecha"}{" "}
+                  </Text> */}
+
+                        {errors.fechaInicio && (
+                          <Text style={[formStyle.errText]}>
+                            {errors.fechaInicio.message}
+                          </Text>
+                        )}
+                      </View>
+
+                      <DateTimePickerModal
+                        isVisible={show}
+                        mode="date"
+                        themeVariant="dark" // Usa el tema oscuro en iOS
+                        accentColor={colores.domin_1_1}
+                        textColor={colores.domin_1_1}
+                        onConfirm={(date) =>
+                          handleConfirm(date, onChange, value)
+                        }
+                        onCancel={() => setShow(false)}
+                      />
+                    </>
+                  )}
+                />
+              </View>
+              <View style={{ flexDirection: "row", width: "100%", gap: 5 }}>
+                <Controller
+                  control={control}
+                  name="maxEquipos"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={{ flexDirection: "column", width: "33%" }}>
+                      <TextInput
+                        placeholder="Máximo de equipos"
+                        placeholderTextColor={colores.domin_2_2}
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, {}]}
+                      />
+                      {errors.maxEquipos && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.maxEquipos.message}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="minEquipos"
+                  style={{ flexDirection: "column" }}
+                  render={({ field: { onChange, value } }) => (
+                    <View style={{ flexDirection: "column", width: "33%" }}>
+                      <TextInput
+                        placeholder="Mínimo de equipos"
+                        placeholderTextColor={colores.domin_2_2}
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, {}]}
+                      />
+                      {errors.minEquipos && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.minEquipos.message}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="vueltas"
+                  style={{ flexDirection: "column" }}
+                  render={({ field: { onChange, value } }) => (
+                    <View style={{ flexDirection: "column", width: "31%" }}>
+                      <TextInput
+                        placeholder="Vueltas"
+                        placeholderTextColor={colores.domin_2_2}
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={(text) => onChange(text)}
+                        style={[stylesAdmin3.input, {}]}
+                      />
+                      {errors.vueltas && (
+                        <Text style={[formStyle.errText]}>
+                          {errors.vueltas.message}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                />
+              </View>
+            </View>
+            {/*<View style={stylesAdmin3.grid}>
           <View style={stylesAdmin3.card}>Hola</View>
           <View style={stylesAdmin3.card}>Hola</View>
           <View style={stylesAdmin3.card}>Hola</View>
           <View style={stylesAdmin3.card}>Hola</View>
         </View>*/}
-        <View
-          style={{
-            alignItems: "center",
-            gap: 5,
-            paddingVertical: 5,
-            width: "100%",
-          }}
-        >
-          <TouchableOpacity style={stylesAdmin3.botTorneo}>
-            <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
-              Crear Torneo
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <View
+              style={{
+                gap: 5,
+                paddingVertical: 5,
+                width: "100%",
+                alignSelf: "center",
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  stylesAdmin3.botTorneo,
+                  { opacity: isValid ? 1 : 0.5, width: 150 },
+                ]}
+                onPress={async () => registrarTorneo("Waa", image)}
+                disabled={isValid}
+              >
+                <Text style={[FONTS.oswald, stylesAdmin3.botonTorneoText]}>
+                  Crear Torneo
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <Modal
@@ -905,6 +1282,16 @@ const stylesAdmin3 = StyleSheet.create({
     borderRadius: 3,
     width: "100%",
     alignItems: "center",
+  },
+  successBack: {
+    padding: 5,
+    borderRadius: 3,
+    width: "100%",
+    alignItems: "center",
+  },
+  successText: {
+    color: colores.acento_3_1,
+    fontSize: 25,
   },
   input: {
     borderColor: colores.domin_2_2,

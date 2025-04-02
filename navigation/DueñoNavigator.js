@@ -8,12 +8,14 @@ import colores from "../style/colors";
 import { StyleSheet } from "react-native";
 import DuenoBar from "./DuenoAppbar";
 import { useContext } from "react";
+import api from "../config/api";
 import {
   Image,
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
@@ -30,8 +32,14 @@ const Drawer = createDrawerNavigator();
 
 const DueñoNavigator = () => {
   const { setToken } = useContext(TokenContext);
-  const { getToken, decodeToken } = useContext(AuthContext);
+  const { getToken, decodeToken, getUserId, getUserEmail, getUserRole } =
+    useContext(AuthContext);
   const { logout, removeToken, removeUser } = useContext(AuthContext);
+
+  const [correo, setCorreo] = useState("");
+  const [rol, setRol] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [imagen, setImagen] = useState("");
 
   const [tokenData, setTokenData] = useState("");
   const [expire, setExpire] = useState(false);
@@ -48,13 +56,19 @@ const DueñoNavigator = () => {
     const fetchToken = async () => {
       try {
         setLoadData(true);
+        const dueId = await getUserId();
         const fetchedToken = await getToken();
+        const rol = await getUserRole();
+        const correo = await getUserEmail();
         if (fetchedToken) {
           setTokenData(fetchedToken);
           setToken(fetchedToken);
           tokenRef.current = fetchedToken;
           console.log(fetchedToken, "obtenido");
           validateToken(fetchedToken);
+          setRol(rol);
+          setCorreo(correo);
+          getUserData(dueId, fetchedToken);
           setNoData(false);
         } else {
           console.log("Token no encontrado o está vacío.");
@@ -66,6 +80,25 @@ const DueñoNavigator = () => {
       } finally {
         setLoadData(false);
       }
+    };
+
+    const getUserData = async (id, tok) => {
+      await api
+        .get(`/api/duenos/porusuario/${id}`,{
+          headers: {
+            Authorization: `Bearer ${tok}`,
+            "Content-Type": "application/json",
+          }
+        })
+        .then((res) => {
+          setNombre(res.data.nombreCompleto);
+          setImagen(res.data.imagenUrl);
+        })
+        .catch((err) => {
+          console.error(err);
+          Alert.alert("Error", "Hubo un error al recuperar tus datos");
+          return;
+        });
     };
 
     const validateToken = (token) => {
@@ -135,7 +168,14 @@ const DueñoNavigator = () => {
         drawerContentStyle: { backgroundColor: colores.base_3_5 },
         drawerActiveBackgroundColor: colores.domin_1_4,
         header: ({ navigation, route }) => (
-          <DuenoBar navigation={navigation} title={route.name} />
+          <DuenoBar
+            navigation={navigation}
+            title={route.name}
+            correo={correo}
+            rol={rol}
+            name={nombre}
+            img={imagen}
+          />
         ),
       }}
     >

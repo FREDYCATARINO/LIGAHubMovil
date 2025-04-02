@@ -48,7 +48,8 @@ const colores = {
     acento_4_1: "#FFC300",
 
     blanco: "#ffffff",
-    negro: "000000"
+    negro: "000000",
+    light: "#f8f9fa"
 }; //f3f6f8 lordIcon
 
 export default colores;

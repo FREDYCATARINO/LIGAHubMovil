@@ -28,6 +28,9 @@ const ErrorComponent = ({ reintentar, valor }) => {
       }}
     >
       <Image source={require('../assets/error_bot.png')} style={{width: '75%', height: 250}} />
+      <Text style={[{ fontSize: 25 }, FONTS.nunitoNegrita]}>
+        ¡E-error del sistema!
+      </Text>
       <Text style={[{ fontSize: 20 }, FONTS.oswald]}>
         Algo salió mal, intentalo nuevamente
       </Text>

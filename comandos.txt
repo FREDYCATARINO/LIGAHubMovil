@@ -2,11 +2,12 @@ npm install @lottiefiles/dotlottie-react@^0.6.5
 npm install lottie-ios@3.1.8 --save
 npm install lottie-react-native
 npm install @react-native-community/checkbox@^0.5.17    
-npm install @react-native-community/datetimepicker@^3.0.0
+npm install @react-native-community/datetimepicker@^3.0.0 //Lo desinstale
+npm install react-native-modal-datetime-picker  //Para probar este
 npm install @react-native-picker/picker@^2.11.0 
 npm install @react-navigation/native @react-navigation/native-stack @react-navigation/drawer react-native-screens react-native-safe-area-context react-native-gesture-handler react-native-reanimated react-native-vector-icons
 npm i axios 
->npm install lottie-ios@^4.5.1  
+npm install lottie-ios@^4.5.1  
 npm install react-native-calendars@^1.1309.1 
 npm install react-native-dotenv@^3.4.11   
 npm install react-native-gesture-handler@~2.20.2  

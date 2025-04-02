@@ -8,11 +8,11 @@ const CustomDrawerContent = (props) => {
   return (
     <View style={{ flex: 1, backgroundColor: colores.base_1_1 }}>
       <View style={styles.header}>
-        <View style={styles.leave}>
+        {/* <View style={styles.leave}>
           <TouchableOpacity onPress={() => props.navigation.closeDrawer()}>
             <Ionicons name="close" size={30} color="white" />
           </TouchableOpacity>
-        </View>
+        </View> */}
         <View style={styles.imgTitle}>
           <Image source={require("../components/logo.png")} style={styles.image} />
           <Text style={[styles.Titles, styles.title]}>Menú</Text>

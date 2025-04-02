@@ -95,6 +95,15 @@ const EqiposScreen = ({ navigation, route }) => {
       })
       .catch((e) => {
         console.error(e, e.res.message);
+        if (err.response.status === 403) {
+          console.log("⚠️ Token expirado, redirigiendo a login...");
+          Alert.alert(
+            "Sesión expirada",
+            "Por favor, inicia sesión nuevamente."
+          );
+          logout()
+          return;
+        }
         if (e.res.message) setFallo(e.res.message);
         else setFallo("Error al obtener jugadores");
       })
@@ -205,9 +214,6 @@ const EqiposScreen = ({ navigation, route }) => {
                           Expulsado: {jugador.expulsado ? "Si" : "No"}
                         </Text>
                       </View>
-                      <Text style={[FONTS.oswald, stylesTeamDet.font18]}>
-                        # de camiseta: {jugador.numeroCamiseta}
-                      </Text>
                     </View>
                     <View
                       style={
@@ -445,9 +451,10 @@ const stylesTeamDet = StyleSheet.create({
   },
   playerNameText: { fontSize: 20, textAlign: "center" },
   playerDataRow: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 5,
     width: "100%",
+    alignItems: 'center',
     margin: 5,
   },
   font16: { fontSize: 16 },
