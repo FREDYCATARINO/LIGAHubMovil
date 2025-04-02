@@ -458,47 +458,6 @@ const stylesSignup = StyleSheet.create({
   },
 });
 
-const stylesSignup = StyleSheet.create({
-  modalTitle: {
-    width: "100%",
-    fontSize: 20,
-    textAlign: "center",
-    marginBottom: 5,
-  },
-  modalItem: {
-    borderRadius: 5,
-    width: "100%",
-    padding: 5,
-    marginVertical: 3,
-    paddingRight: 8,
-  },
-  modalItemActive: {
-    backgroundColor: colores.domin_2_5,
-    opacity: 0.5,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 250,
-  },
-  closeButton: {
-    marginTop: 10,
-    backgroundColor: "#FF3B30",
-    padding: 10,
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    color: "white",
-    fontSize: 16,
-  },
-});
+
 
 export default RegisterScreen;
