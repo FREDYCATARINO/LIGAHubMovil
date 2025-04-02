@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useContext } from "react";
-import { SafeAreaView, View, Text, Image, TextInput, TouchableOpacity, ScrollView, Alert } from "react-native";
+import React, { useState, useEffect, useContext, useCallback } from "react";
+import { SafeAreaView, View, Text, Image, TextInput, TouchableOpacity, ScrollView, Alert, RefreshControl } from "react-native";
 import { Checkbox } from "react-native-paper";
 import { Picker } from "@react-native-picker/picker";
 import { StyleSheet } from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import axios from "axios";
 import { AuthContext } from '../../context/AuthContext';
 import FONTS from "../../style/fonts";
 import colores from "../../style/colors";
@@ -12,7 +11,7 @@ import api from '../../config/api';
 
 const Arbitro2 = ({ navigation, route }) => {
   const { partido } = route.params;
-  const { api_url, getToken, getUserId } = useContext(AuthContext);
+  const { getToken } = useContext(AuthContext);
   
   // Estados para el marcador
   const [golesLocal, setGolesLocal] = useState(0);
@@ -35,37 +34,65 @@ const Arbitro2 = ({ navigation, route }) => {
   const [penalesVisitante, setPenalesVisitante] = useState(0);
   const [criterioDesempate, setCriterioDesempate] = useState("NORMAL");
   
-  // Estado para equipo seleccionado
-  const [teamSelected, setTeamSelected] = useState(null);
-  const [playerSelected, setPlayerSelected] = useState(null);
-  const [tarjeta, setTarjeta] = useState(null);
-  const [motivoTarjeta, setMotivoTarjeta] = useState("");
+  // Estados para secciones plegables
+  const [localCollapsed, setLocalCollapsed] = useState(false);
+  const [visitanteCollapsed, setVisitanteCollapsed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Cargar jugadores al montar el componente
+
+  // Función para cargar jugadores
+  const cargarJugadores = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const token = await getToken();
+      
+      const [resLocal, resVisitante] = await Promise.all([
+        api.get(`/api/jugadores/porEquipo/${partido.equipoLocal.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        api.get(`/api/jugadores/porEquipo/${partido.equipoVisitante.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+      
+      setJugadoresLocal(resLocal.data);
+      setJugadoresVisitante(resVisitante.data);
+      setEstadisticasLocal([]);
+      setEstadisticasVisitante([]);
+    } catch (err) {
+      Alert.alert("Error", "No se pudieron cargar los jugadores");
+      console.error("Error al cargar jugadores:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [partido.id, getToken]);
+
+  // Efecto para cargar jugadores
   useEffect(() => {
-    const cargarJugadores = async () => {
-      try {
-        const token = await getToken();
-        
-        const [resLocal, resVisitante] = await Promise.all([
-          api.get(`/api/jugadores/porEquipo/filtrados/${partido.equipoLocal.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          api.get(`/api/jugadores/porEquipo/filtrados/${partido.equipoVisitante.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
-        
-        setJugadoresLocal(resLocal.data);
-        setJugadoresVisitante(resVisitante.data);
-      } catch (err) {
-        Alert.alert("Error", "No se pudieron cargar los jugadores");
-        console.error("Error al cargar jugadores:", err);
-      }
-    };
-    
     cargarJugadores();
-  }, []);
+    limpiarEstados()
+  }, [cargarJugadores]);
+
+  const limpiarEstados = () => {
+    setGolesLocal(0);
+    setGolesVisitante(0);
+    setAutogolesLocal(0);
+    setAutogolesVisitante(0);
+    setPenalesLocal(0);
+    setPenalesVisitante(0);
+    setEstadisticasLocal([]);
+    setEstadisticasVisitante([]);
+    setPartidoDefault(false);
+    setGanadorDefault("local");
+    setCriterioDesempate("NORMAL");
+    setLocalCollapsed(false);
+    setVisitanteCollapsed(false);
+  };
+
+  // Función para manejar el refresh
+  const onRefresh = useCallback(() => {
+    cargarJugadores();
+  }, [cargarJugadores]);
 
   // Manejar selección de jugador
   const manejarCheckbox = (jugador, equipo, activo) => {
@@ -195,6 +222,19 @@ const Arbitro2 = ({ navigation, route }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
+      // Limpiar estados después de registrar
+      setGolesLocal(0);
+      setGolesVisitante(0);
+      setAutogolesLocal(0);
+      setAutogolesVisitante(0);
+      setPenalesLocal(0);
+      setPenalesVisitante(0);
+      setEstadisticasLocal([]);
+      setEstadisticasVisitante([]);
+      setPartidoDefault(false);
+      setGanadorDefault("local");
+      setCriterioDesempate("NORMAL");
+      
       Alert.alert("Éxito", "Resultado registrado correctamente");
       navigation.goBack();
     } catch (err) {
@@ -206,7 +246,7 @@ const Arbitro2 = ({ navigation, route }) => {
     }
   };
 
-  // Renderizar jugadores (adaptado para móvil)
+  // Renderizar jugadores
   const renderJugadores = (jugadores, equipo) => {
     return jugadores.map(jugador => {
       const estad = (equipo === "local" ? estadisticasLocal : estadisticasVisitante)
@@ -287,12 +327,19 @@ const Arbitro2 = ({ navigation, route }) => {
     });
   };
 
-  // Resto del código de renderizado (header, marcador, etc.)
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View>
-
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colores.primary]}
+            tintColor={colores.primary}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -300,7 +347,7 @@ const Arbitro2 = ({ navigation, route }) => {
           </TouchableOpacity>
           <Text style={styles.headerText}>Registrar Resultado</Text>
         </View>
-
+<View style={styles.card}>
         {/* Info del partido */}
         <View style={styles.matchInfo}>
           <Image 
@@ -359,7 +406,7 @@ const Arbitro2 = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Opciones de desempate (solo para liguilla vuelta) */}
+        {/* Opciones de desempate */}
         {partido.tipoPartido === "LIGUILLA" && partido.idaVuelta === "VUELTA" && (
           <View style={styles.desempateContainer}>
             <Text style={styles.sectionTitle}>Criterio de desempate:</Text>
@@ -419,8 +466,6 @@ const Arbitro2 = ({ navigation, route }) => {
           )}
         </View>
         </View>
-
-        
         {/* Botones de acción */}
         <View style={styles.buttonsContainer}>
           <TouchableOpacity 
@@ -439,23 +484,46 @@ const Arbitro2 = ({ navigation, route }) => {
         </View>
 
         {/* Lista de jugadores */}
-        <View style={styles.jugadoresContainer}>
-          <Text style={styles.sectionTitle}>
-            Jugadores {partido.equipoLocal.nombreEquipo}
-          </Text>
-          {renderJugadores(jugadoresLocal, "local")}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => setLocalCollapsed(!localCollapsed)}
+          >
+            <Text style={styles.sectionTitle}>
+              Jugadores {partido.equipoLocal.nombreEquipo}
+            </Text>
+            <Icon 
+              name={localCollapsed ? "keyboard-arrow-down" : "keyboard-arrow-up"} 
+              size={24} 
+              color={colores.text} 
+            />
+          </TouchableOpacity>
           
-          <Text style={styles.sectionTitle}>
-            Jugadores {partido.equipoVisitante.nombreEquipo}
-          </Text>
-          {renderJugadores(jugadoresVisitante, "visitante")}
+          {!localCollapsed && renderJugadores(jugadoresLocal, "local")}
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => setVisitanteCollapsed(!visitanteCollapsed)}
+          >
+            <Text style={styles.sectionTitle}>
+              Jugadores {partido.equipoVisitante.nombreEquipo}
+            </Text>
+            <Icon 
+              name={visitanteCollapsed ? "keyboard-arrow-down" : "keyboard-arrow-up"} 
+              size={24} 
+              color={colores.text} 
+            />
+          </TouchableOpacity>
+          
+          {!visitanteCollapsed && renderJugadores(jugadoresVisitante, "visitante")}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-// Estilos (agregar al final del archivo)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -469,6 +537,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    
+    
   },
   headerText: {
     ...FONTS.oswaldBold,
@@ -480,7 +550,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  card: {
+   paddingTop: 30,
+    borderRadius: 10,
     marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowRadius: 2,
+    elevation: 5,
+    backgroundColor:"white"
   },
   teamLogo: {
     width: 60,
@@ -543,11 +622,23 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
   },
+  section: {
+    backgroundColor: colores.white,
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: 'hidden',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: colores.backgroundLight,
+  },
   sectionTitle: {
     ...FONTS.oswaldBold,
-    fontSize: 18,
-    color: colores.domin_2_2,
-    marginBottom: 10,
+    fontSize: 16,
+    color: colores.text,
   },
   picker: {
     height: 50,
@@ -563,11 +654,13 @@ const styles = StyleSheet.create({
   },
   defaultContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colores.white,
-    borderRadius: 10,
+    alignItems: 'center', // Alinea verticalmente los elementos al centro
+    justifyContent: 'flex-start', // Esto alinea el contenido a la izquierda
+  borderRadius: 10,
     padding: 15,
     marginBottom: 15,
+    width: '60%',
+    alignSelf: 'flex-start', // Esto asegura que el contenedor en sí se alinee a la izquierda
   },
   defaultText: {
     ...FONTS.oswald,
@@ -575,9 +668,8 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   smallPicker: {
-    width: 150,
-    height: 40,
-    marginLeft: 10,
+    
+    width: '100%',
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -585,7 +677,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   saveButton: {
-    backgroundColor: colores.domin_2_2,
+    backgroundColor: "#E53935",
     padding: 15,
     borderRadius: 10,
     flex: 1,
@@ -593,27 +685,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonText: {
-    ...FONTS.oswaldBold,
-    color: colores.white,
     fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold'  
   },
   cancelButton: {
-    backgroundColor: colores.danger,
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 14,
     flex: 1,
     marginLeft: 10,
     alignItems: 'center',
+    backgroundColor:"#bababa"
+
   },
   cancelButtonText: {
-    ...FONTS.oswaldBold,
-    color: colores.white,
+
     fontSize: 16,
-  },
-  jugadoresContainer: {
-    backgroundColor: colores.white,
-    borderRadius: 10,
-    padding: 15,
   },
   jugadorCard: {
     flexDirection: 'row',
