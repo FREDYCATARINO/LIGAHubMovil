@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  RefreshControl,
 } from "react-native";
 import api from "../../config/api";
 //import DateTimePicker from '@react-native-community/datetimepicker';
@@ -26,6 +27,7 @@ import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 
 const Admin7 = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const [form, setForm] = useState({
     nombre: "",
     fechaInicio: new Date(),
@@ -151,6 +153,14 @@ const Admin7 = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setReload(!reload)}
+            colors={[colores.domin_1_1]}
+            tintColor={colores.domin_1_1}
+          />
+        }
       >
         <Text
           style={[

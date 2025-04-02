@@ -15,6 +15,7 @@ import {
   Alert,
   Modal,
   Switch,
+  RefreshControl
 } from "react-native";
 import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,6 +40,7 @@ const API_URL = API_URL_LOCAL;
 import * as FileSystem from "expo-file-system";
 
 const Admin5 = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const [form, setForm] = useState({
     nombre: "",
     correo: "",
@@ -344,6 +346,14 @@ const Admin5 = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         nestedScrollEnabled={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setReload(!reload)}
+            colors={[colores.domin_1_1]}
+            tintColor={colores.domin_1_1}
+          />
+        }
       >
         <View
           style={{

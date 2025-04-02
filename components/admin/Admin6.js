@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  RefreshControl,
 } from "react-native";
 import { Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,8 @@ import { AuthContext } from "../../context/AuthContext";
 
 const Admin6 = ({ navigation }) => {
   const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const [tipoPago, setTipoPago] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
@@ -166,6 +169,14 @@ const Admin6 = ({ navigation }) => {
     <ScrollView
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => setReload(!reload)}
+          colors={[colores.domin_1_1]}
+          tintColor={colores.domin_1_1}
+        />
+      }
     >
       <Text
         style={[
@@ -429,7 +440,7 @@ const Admin6 = ({ navigation }) => {
             autoPlay
             loop
             style={styles.icon}
-            speed={fallo === "Error al obtener pagos" ? .5 : 1}
+            speed={fallo === "Error al obtener pagos" ? 0.5 : 1}
             color={colores.base_3_1}
           />
           <Text
@@ -445,9 +456,7 @@ const Admin6 = ({ navigation }) => {
               },
             ]}
           >
-            {fallo === "Error al obtener pagos"
-              ? "¡Oh oh!"
-              : "¡Yuju!"}
+            {fallo === "Error al obtener pagos" ? "¡Oh oh!" : "¡Yuju!"}
           </Text>
           <Text
             style={[

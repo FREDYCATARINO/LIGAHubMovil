@@ -12,6 +12,7 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { Alert } from "react-native";
 import formStyle from "../../style/formStyles";
@@ -51,6 +52,8 @@ import axios from "axios";
 
 const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
   const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const [modalVisible1, setModalVisible1] = useState(false);
   const [modalVisible2, setModalVisible2] = useState(false);
@@ -708,7 +711,7 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
       // setValue("imagen", imageUri); // Actualiza react-hook-form
       // trigger("imagen"); // Valida la imagen
       triggerAll();
-      console.log(errors)
+      console.log(errors);
     }
   };
 
@@ -722,6 +725,14 @@ const Admin3 = ({ navigation, mode = "date", display = "default" }) => {
         contentContainerStyle={styles.scrollContent}
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setReload(!reload)}
+            colors={[colores.domin_1_1]}
+            tintColor={colores.domin_1_1}
+          />
+        }
       >
         <View
           style={{

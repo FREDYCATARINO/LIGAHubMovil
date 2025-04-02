@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  RefreshControl,
 } from "react-native";
 import { useState } from "react";
 import MapView from "react-native-maps";
@@ -35,6 +36,7 @@ import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 
 const Admin4 = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const { getUserId, getUserRole, getToken } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
   const [vis, setVis] = useState(false);
@@ -44,6 +46,7 @@ const Admin4 = ({ navigation }) => {
 
   const [idCancha, setIdCancha] = useState({});
   const [modalCancha, setModalCancha] = useState(false);
+  const [loadBtn, setLoadBtn] = useState(false);
 
   const [lugar, setLugar] = useState("");
   const [elecc, setElecc] = useState("");
@@ -124,6 +127,7 @@ const Admin4 = ({ navigation }) => {
   });
 
   const crearCampo = async (data) => {
+    setLoadBtn(true);
     try {
       const res = await api.post(
         `/api/campos`,
@@ -148,6 +152,7 @@ const Admin4 = ({ navigation }) => {
       }
       Alert.alert("¡Éxito!", "Campo registrado exitosamente");
       setReload(!reload);
+      setVis(false);
     } catch (err) {
       console.error(err, err.res.message);
       if (err.response.status === 403) {
@@ -159,6 +164,8 @@ const Admin4 = ({ navigation }) => {
         logout();
         return;
       }
+    } finally {
+      setLoadBtn(false);
     }
   };
 
@@ -229,6 +236,7 @@ const Admin4 = ({ navigation }) => {
   const updateCampo = async (data) => {
     console.log(data, "Wey");
     const token = await getToken();
+    setLoadBtn(true);
     try {
       const res = await api.put(
         `/api/campos/${data.id || id}`,
@@ -257,6 +265,7 @@ const Admin4 = ({ navigation }) => {
       removeEdicion();
       setCampoEdit({});
       setCanchasEdit([]);
+      setVis(false);
     } catch (err) {
       console.error(err, err.response.message, err.toJSON());
       if (err.response.status === 403) {
@@ -268,6 +277,8 @@ const Admin4 = ({ navigation }) => {
         logout();
         return;
       }
+    } finally {
+      setLoadBtn(false);
     }
   };
 
@@ -409,10 +420,10 @@ const Admin4 = ({ navigation }) => {
         console.error("Error obteniendo ubicación:", error);
         Alert.alert("Error", "No se encontraron datos de ubicación");
       });
-      console.log(location)
+      console.log(location);
 
       if (location) {
-        console.log(location)
+        console.log(location);
         setRegion({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
@@ -732,6 +743,14 @@ const Admin4 = ({ navigation }) => {
           ref={scrollViewRef}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => setReload(!reload)}
+              colors={[colores.domin_1_1]}
+              tintColor={colores.domin_1_1}
+            />
+          }
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: false }
@@ -1523,29 +1542,33 @@ const Admin4 = ({ navigation }) => {
                                 </View>
                               ))}
                         </View>
-                        <TouchableOpacity
-                          disabled={!isValid}
-                          onPress={handleSubmit(onSubmit)}
-                          style={{
-                            width: "50%",
-                            backgroundColor: colores.domin_1_4,
-                            alignSelf: "center",
-                            alignItems: "center",
-                            padding: 10,
-                            margin: 5,
-                            borderRadius: 10,
-                            opacity: isValid ? 1 : 0.5,
-                          }}
-                        >
-                          <Text
-                            style={[
-                              FONTS.oswald,
-                              { fontSize: 15, color: colores.blanco },
-                            ]}
+                        {loadBtn ? (
+                          <ActivityIndicator size='large' color={colores.domin_1_1}/>
+                        ) : (
+                          <TouchableOpacity
+                            disabled={!isValid}
+                            onPress={handleSubmit(onSubmit)}
+                            style={{
+                              width: "50%",
+                              backgroundColor: colores.domin_1_4,
+                              alignSelf: "center",
+                              alignItems: "center",
+                              padding: 10,
+                              margin: 5,
+                              borderRadius: 10,
+                              opacity: isValid ? 1 : 0.5,
+                            }}
                           >
-                            {editando ? "Actualizar" : "Registrar"}
-                          </Text>
-                        </TouchableOpacity>
+                            <Text
+                              style={[
+                                FONTS.oswald,
+                                { fontSize: 15, color: colores.blanco },
+                              ]}
+                            >
+                              {editando ? "Actualizar" : "Registrar"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   ) : null}

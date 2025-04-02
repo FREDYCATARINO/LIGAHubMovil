@@ -12,6 +12,7 @@ import {
   FlatList,
   Modal,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Calendar } from "react-native-calendars";
@@ -42,6 +43,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { TokenContext } from "../../context/TokenContext";
 
 const Admin1 = ({ navigation, route }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const [progress, setProgress] = useState(0.25);
   const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
   const { token } = useContext(TokenContext);
@@ -107,6 +109,7 @@ const Admin1 = ({ navigation, route }) => {
   const [fechaReciente, setFechaReciente] = useState(
     "No hay partidos cercanos"
   );
+  const [reload, setReload] = useState(false);
 
   const [torneos, setTorneos] = useState([]);
   const [loadPartidos, setLoadPartidos] = useState(false);
@@ -298,7 +301,7 @@ const Admin1 = ({ navigation, route }) => {
       .finally(() => {
         setLoad1(false);
       });
-  }, []);
+  }, [reload]);
 
   const rechazarSolid = async (id) => {
     await api
@@ -381,6 +384,14 @@ const Admin1 = ({ navigation, route }) => {
         <ScrollView
           contentContainerStyle={styless.myScrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => setReload(!reload)}
+              colors={[colores.domin_1_1]}
+              tintColor={colores.domin_1_1}
+            />
+          }
         >
           <Text
             style={[
@@ -796,7 +807,7 @@ const Admin1 = ({ navigation, route }) => {
               </Text>
               <ScrollView style={{ maxHeight: 300 }}>
                 {partido.map((p) => (
-                  <View style={{ marginVertical: 10 }}>
+                  <View style={{ marginVertical: 10 }} key={p.id}>
                     <View
                       style={{
                         flexDirection: "row",
