@@ -50,6 +50,8 @@ const PerfilScreen = ({ navigation, route }) => {
     getColor();
   }, [rol]);
 
+  const [visible, setVisible] = useState(false);
+
   return (
     <GestureHandlerRootView>
       <SafeAreaView>
@@ -63,13 +65,12 @@ const PerfilScreen = ({ navigation, route }) => {
               }}
               style={{
                 width: "100%",
-                height: 150,
+                height: 175,
                 backgroundColor: colores.base_1_1,
                 resizeMode: "stretch",
               }}
             />
-            {correo === "sistemaligafutleagueshub@gmail.com" ||
-            img === "" ? (
+            {correo === "sistemaligafutleagueshub@gmail.com" || img === "" ? (
               <Avatar.Icon
                 size={150}
                 icon="account"
@@ -128,87 +129,125 @@ const PerfilScreen = ({ navigation, route }) => {
           <Text style={[FONTS.oswald, { alignSelf: "center", fontSize: 25 }]}>
             Rol: <Text style={{ color: color }}>{rol}</Text>
           </Text>
-          <View style={stylesPerfil.form}>
-            <Text style={[FONTS.oswald, { fontSize: 20 }]}>
-              Datos personales
-            </Text>
-            <TextInput
-              style={[FONTS.oswald, stylesPerfil.input, {color: colores.domin_3_1, borderColor: colores.domin_3_1}]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Correo electrónico"
-              value={correo}
-              readOnly
-            />
-            {correo === "sistemaligafutleagueshub@gmail.com" ||
-            correo === "" ? null : (
-              <TextInput
-                style={[FONTS.oswald, stylesPerfil.input]}
-                placeholderTextColor={colores.domin_2_2}
-                placeholder="Nombre"
-                value={usuario}
-              />
-            )}
-            <Text style={[FONTS.oswald, { fontSize: 20 }]}>
-              Cambiar contraseña
-            </Text>
-            <TextInput
-              style={[FONTS.oswald, stylesPerfil.input]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Contraseña Actual"
-            />
-            <TextInput
-              style={[FONTS.oswald, stylesPerfil.input]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Nueva contraseña"
-            />
-            <TextInput
-              style={[FONTS.oswald, stylesPerfil.input]}
-              placeholderTextColor={colores.domin_2_2}
-              placeholder="Confirmar contraseña"
-            />
+          <View
+            style={{
+              flexDirection: "row",
+              width: "100%",
+              gap: 10,
+              justifyContent: "center",
+              marginVertical: 10,
+            }}
+          >
             <TouchableOpacity
               style={{
-                backgroundColor: colores.base_3_1,
-                padding: 10,
+                backgroundColor: colores.domin_1_1,
+                paddingVertical: 5,
                 borderRadius: 5,
-                width: "25%",
+                width: "40%",
+                alignSelf: "center",
+                justifyContent: "center",
               }}
-              onPress={() => alert("Guardado")}
+              onPress={() => /*navigation.navigate(page)*/ {
+                setVisible(!visible);
+              }}
             >
               <Text
                 style={[
                   FONTS.oswald,
-                  { color: colores.blanco, alignSelf: "center" },
+                  { color: colores.blanco, alignSelf: "center", fontSize: 20 },
                 ]}
               >
-                Guardar
+                Editar perfil
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colores.domin_1_1,
+                paddingVertical: 5,
+                borderRadius: 5,
+                width: "40%",
+                alignSelf: "center",
+                justifyContent: "center",
+              }}
+              onPress={() => /*navigation.navigate(page)*/ {
+                logout();
+                removeToken();
+                removeUser();
+              }}
+            >
+              <Text
+                style={[
+                  FONTS.oswald,
+                  { color: colores.blanco, alignSelf: "center", fontSize: 20 },
+                ]}
+              >
+                Cerrar sesión
               </Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={{
-              backgroundColor: colores.domin_1_1,
-              paddingVertical: 10,
-              borderRadius: 5,
-              width: "90%",
-              alignSelf: "center",
-              justifyContent: "center",
-            }}
-            onPress={() => /*navigation.navigate(page)*/ {
-              logout();
-              removeToken();
-              removeUser();
-            }}
-          >
-            <Text
-              style={[
-                FONTS.oswald,
-                { color: colores.blanco, alignSelf: "center", fontSize: 20 },
-              ]}
-            >
-              Cerrar sesión
-            </Text>
-          </TouchableOpacity>
+          {visible && (
+            <View style={stylesPerfil.form}>
+              <Text style={[FONTS.oswald, { fontSize: 20 }]}>
+                Datos personales
+              </Text>
+              <TextInput
+                style={[
+                  FONTS.oswald,
+                  stylesPerfil.input,
+                  { color: colores.domin_3_1, borderColor: colores.domin_3_1 },
+                ]}
+                placeholderTextColor={colores.domin_2_2}
+                placeholder="Correo electrónico"
+                value={correo}
+                readOnly
+              />
+              {correo === "sistemaligafutleagueshub@gmail.com" ||
+              correo === "" ? null : (
+                <TextInput
+                  style={[FONTS.oswald, stylesPerfil.input]}
+                  placeholderTextColor={colores.domin_2_2}
+                  placeholder="Nombre"
+                  value={usuario}
+                />
+              )}
+              <Text style={[FONTS.oswald, { fontSize: 20 }]}>
+                Cambiar contraseña
+              </Text>
+              <TextInput
+                style={[FONTS.oswald, stylesPerfil.input]}
+                placeholderTextColor={colores.domin_2_2}
+                placeholder="Contraseña Actual"
+              />
+              <TextInput
+                style={[FONTS.oswald, stylesPerfil.input]}
+                placeholderTextColor={colores.domin_2_2}
+                placeholder="Nueva contraseña"
+              />
+              <TextInput
+                style={[FONTS.oswald, stylesPerfil.input]}
+                placeholderTextColor={colores.domin_2_2}
+                placeholder="Confirmar contraseña"
+              />
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colores.base_3_1,
+                  padding: 10,
+                  borderRadius: 5,
+                  width: "25%",
+                }}
+                onPress={() => alert("Guardado")}
+              >
+                <Text
+                  style={[
+                    FONTS.oswald,
+                    { color: colores.blanco, alignSelf: "center" },
+                  ]}
+                >
+                  Guardar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </GestureHandlerRootView>

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  RefreshControl,
 } from "react-native";
 import FONTS from "../../style/fonts";
 import { useFonts } from "expo-font";
@@ -35,15 +36,17 @@ import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 
 const Admin2 = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const [duenos, setDuenos] = useState([]);
   const [loadDuenos, setLoadDuenos] = useState(false);
   const [falloD, setFalloD] = useState("");
 
   const { getUserId, getUserRole, getToken } = useContext(AuthContext);
   const [tokData, setTokData] = useState("");
+  const [reload, setReload] = useState(false);
 
   function sendData(data) {
-    const team = data
+    const team = data;
     navigation.navigate("Ver equipo", { team });
   }
 
@@ -70,10 +73,10 @@ const Admin2 = ({ navigation }) => {
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
-            logout()
+            logout();
             return;
           }
           if (e.res.message) setFalloD(e.res.message);
@@ -82,7 +85,7 @@ const Admin2 = ({ navigation }) => {
         .finally(() => setLoadDuenos(false));
     };
     getDuenos();
-  }, []);
+  }, [reload]);
 
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
@@ -115,7 +118,18 @@ const Admin2 = ({ navigation }) => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={stylesAdmin2.container}>
-        <ScrollView contentContainerStyle={stylesAdmin2.scrollContent}>
+        <ScrollView
+          contentContainerStyle={stylesAdmin2.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => setReload(!reload)}
+              colors={[colores.domin_1_1]}
+              tintColor={colores.domin_1_1}
+            />
+          }
+        >
           <Text
             style={[
               styles.TextField,
@@ -147,11 +161,7 @@ const Admin2 = ({ navigation }) => {
                 return (
                   <TouchableOpacity
                     style={[styles3.prod]}
-                    onPress={() =>
-                      sendData(
-                        item
-                      )
-                    }
+                    onPress={() => sendData(item)}
                   >
                     <Image
                       source={{ uri: item.imagenUrl }}
@@ -291,7 +301,7 @@ const styles3 = StyleSheet.create({
     width: 120,
     height: 120,
     resizeMode: "stretch",
-    borderRadius: 100
+    borderRadius: 100,
   },
   aligned1: {
     textAlign: "center",
@@ -304,7 +314,7 @@ const styles3 = StyleSheet.create({
   aligned4: {
     textAlign: "center",
     fontSize: 15,
-    color: colores.base_2_1
+    color: colores.base_2_1,
   },
   aligned2: {
     textAlign: "center",

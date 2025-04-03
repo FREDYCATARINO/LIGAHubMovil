@@ -12,6 +12,7 @@ import {
   FlatList,
   Modal,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Calendar } from "react-native-calendars";
@@ -19,6 +20,8 @@ import styles from "../../style/style";
 import { Ionicons } from "@expo/vector-icons";
 import colores from "../../style/colors";
 import * as Progress from "react-native-progress";
+import * as Localization from "expo-localization";
+import { Card, Avatar } from "react-native-paper";
 import FONTS from "../../style/fonts";
 import { useFonts } from "expo-font";
 import api from "../../config/api";
@@ -40,13 +43,17 @@ import { AuthContext } from "../../context/AuthContext";
 import { TokenContext } from "../../context/TokenContext";
 
 const Admin1 = ({ navigation, route }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const [progress, setProgress] = useState(0.25);
   const { getUserId, getUserRole, getToken, logout } = useContext(AuthContext);
   const { token } = useContext(TokenContext);
   const [modalSolid, setModalSolid] = useState(false);
+  const [modalPartid, setModalPartid] = useState(false);
   const [torName, setTorName] = useState("");
   const [partidos, setPartidos] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
+  const [partido, setPartido] = useState([]);
+  const [day, setDay] = useState("");
 
   const [load1, setLoad1] = useState(false);
   const [load2, setLoad2] = useState(false);
@@ -102,6 +109,7 @@ const Admin1 = ({ navigation, route }) => {
   const [fechaReciente, setFechaReciente] = useState(
     "No hay partidos cercanos"
   );
+  const [reload, setReload] = useState(false);
 
   const [torneos, setTorneos] = useState([]);
   const [loadPartidos, setLoadPartidos] = useState(false);
@@ -116,7 +124,7 @@ const Admin1 = ({ navigation, route }) => {
       setTokData(tok);
       setLoadSolids(true);
       api
-        .get(`/api/solicitudes/admin`, {
+        .get(`/api/solicitudes/admin/pendientes`, {
           headers: {
             Authorization: `Bearer ${tok}`,
           },
@@ -130,7 +138,7 @@ const Admin1 = ({ navigation, route }) => {
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
@@ -162,7 +170,7 @@ const Admin1 = ({ navigation, route }) => {
           console.error(err);
           if (err.response?.status === 403) {
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
@@ -182,7 +190,7 @@ const Admin1 = ({ navigation, route }) => {
           if (err.response.status === 403) {
             console.log("⚠️ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
@@ -209,7 +217,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -231,7 +239,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -244,21 +252,21 @@ const Admin1 = ({ navigation, route }) => {
       });
 
     api
-      .get(`/api/pagos/admin/todos`, {
+      .get(`/api/pagos/admin/contarpendientes`, {
         headers: {
           Authorization: `Bearer ${tokData}`,
         },
       })
       .then((res) => {
-        if (res.data.length === 0) setTotPagos(0);
-        else setTotPagos(res.data.length);
+        if (res.data.length === "") setTotPagos(0);
+        else setTotPagos(res.data);
       })
       .catch((e) => {
         console.error(e, e.res.message);
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -282,7 +290,7 @@ const Admin1 = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -293,7 +301,7 @@ const Admin1 = ({ navigation, route }) => {
       .finally(() => {
         setLoad1(false);
       });
-  }, []);
+  }, [reload]);
 
   const rechazarSolid = async (id) => {
     await api
@@ -317,7 +325,7 @@ const Admin1 = ({ navigation, route }) => {
         if (error.response?.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -373,7 +381,18 @@ const Admin1 = ({ navigation, route }) => {
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={[styless.scrollContent]}>
-        <ScrollView contentContainerStyle={styless.myScrollContent}>
+        <ScrollView
+          contentContainerStyle={styless.myScrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => setReload(!reload)}
+              colors={[colores.domin_1_1]}
+              tintColor={colores.domin_1_1}
+            />
+          }
+        >
           <Text
             style={[
               styles.TextField,
@@ -478,7 +497,11 @@ const Admin1 = ({ navigation, route }) => {
             <Text style={[FONTS.oswaldNegrita, styless.title2]}>
               Solicitudes pendientes
             </Text>
-            <ScrollView style={styless.list} nestedScrollEnabled={true}>
+            <ScrollView
+              style={styless.list}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={false}
+            >
               {loadSolids ? (
                 <ActivityIndicator
                   size="large"
@@ -600,6 +623,7 @@ const Admin1 = ({ navigation, route }) => {
                   keyExtractor={(item) => item.id.toString()} // Usar equipoId en lugar de id
                   numColumns={3}
                   nestedScrollEnabled={true}
+                  showsVerticalScrollIndicator={false}
                   renderItem={({ item }) => {
                     return (
                       <TouchableOpacity
@@ -663,15 +687,18 @@ const Admin1 = ({ navigation, route }) => {
                     const partidosEnFecha = partidos.filter(
                       (p) => p.fechaPartido === day.dateString
                     );
-                    Alert.alert(
-                      `Partidos el ${day.dateString}:\n`,
-                      partidosEnFecha
-                        .map(
-                          (p) =>
-                            `${p.equipoLocal.nombreEquipo} vs ${p.equipoVisitante.nombreEquipo} a las ${p.hora}`
-                        )
-                        .join("\n")
-                    );
+                    setPartido(partidosEnFecha);
+                    setModalPartid(true);
+                    setDay(day.dateString);
+                    // Alert.alert(
+                    //   `Partidos el ${day.dateString}:\n`,
+                    //   partidosEnFecha
+                    //     .map(
+                    //       (p) =>
+                    //         `${p.equipoLocal.nombreEquipo} vs ${p.equipoVisitante.nombreEquipo} a las ${p.hora}`
+                    //     )
+                    //     .join("\n")
+                    // );
                   }
                 }}
                 monthFormat={"MMM yyyy"}
@@ -693,6 +720,7 @@ const Admin1 = ({ navigation, route }) => {
                     textAlign: "center",
                   },
                 }}
+                locale="es-MX"
               />
             )}
           </View>
@@ -746,12 +774,13 @@ const Admin1 = ({ navigation, route }) => {
             </View>
           </View>
         </Modal>
+
         <Modal
           animationType="fade" // Animación del modal (puede ser 'fade', 'slide', o 'none')
           transparent={true} // Hace que el fondo sea transparente
-          visible={modalSolid} // El Modal solo se muestra si modalVisible es true
+          visible={modalPartid} // El Modal solo se muestra si modalVisible es true
           onRequestClose={() => {
-            setModalSolid(false);
+            setModalPartid(false);
           }} // Cierra el modal al presionar el botón de retroceso en Android
         >
           <View
@@ -774,18 +803,99 @@ const Admin1 = ({ navigation, route }) => {
               }}
             >
               <Text style={[{ fontSize: 25 }, FONTS.oswaldNegrita]}>
-                Detalles de la solicitud
+                Partidos el {day}
               </Text>
-              <Text
-                style={[{ fontSize: 20, textAlign: "center" }, FONTS.oswald]}
-              >
-                Toneo solicitado: {torName}
-              </Text>
+              <ScrollView style={{ maxHeight: 300 }}>
+                {partido.map((p) => (
+                  <View style={{ marginVertical: 10 }} key={p.id}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          justifyContent: "center",
+                          alignItems: "center",
+                          width: 100,
+                        }}
+                      >
+                        <Avatar.Image
+                          size={36}
+                          source={{ uri: p.equipoLocal.logo }}
+                        />
+                        <Text
+                          style={[{ textAlign: "center" }, FONTS.oswald]}
+                          numberOfLines={2} // Máximo de líneas antes de cortar
+                          ellipsizeMode="tail" // Muestra "..." si el texto es muy largo
+                        >
+                          {p.equipoLocal.nombreEquipo}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          { fontSize: 25, textAlign: "center" },
+                          FONTS.oswald,
+                        ]}
+                      >
+                        VS
+                      </Text>
+                      <View
+                        style={{
+                          justifyContent: "center",
+                          alignItems: "center",
+                          width: 100,
+                        }}
+                      >
+                        <Avatar.Image
+                          size={36}
+                          source={{ uri: p.equipoVisitante.logo }}
+                        />
+                        <Text
+                          style={[{ textAlign: "center" }, FONTS.oswald]}
+                          numberOfLines={3} // Máximo de líneas antes de cortar
+                          ellipsizeMode="tail" // Muestra "..." si el texto es muy largo
+                        >
+                          {p.equipoVisitante.nombreEquipo}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 10,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={[
+                          { fontSize: 18, textAlign: "center" },
+                          FONTS.oswald,
+                        ]}
+                      >
+                        hora: {p.hora}
+                      </Text>
+                      <Text
+                        style={[
+                          { fontSize: 18, textAlign: "center" },
+                          FONTS.oswald,
+                        ]}
+                      >
+                        árbitro: {p.arbitro.nombreCompleto}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
               <TouchableOpacity
                 title="Cerrar Modal"
                 style={[styles.loginButton, { width: "50%" }]}
                 onPress={() => {
-                  setModalSolid(false);
+                  setPartido([]);
+                  setModalPartid(false);
+                  setDay("");
                 }}
               >
                 <Text style={[styles.loginText, FONTS.oswaldNegrita]}>

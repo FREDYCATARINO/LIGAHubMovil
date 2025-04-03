@@ -13,6 +13,9 @@ import {
   ActivityIndicator,
   Button,
   Alert,
+  Modal,
+  Switch,
+  RefreshControl
 } from "react-native";
 import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,7 +35,12 @@ import axios from "axios";
 
 const { width } = Dimensions.get("window");
 
+import { API_URL_LOCAL } from "@env";
+const API_URL = API_URL_LOCAL;
+import * as FileSystem from "expo-file-system";
+
 const Admin5 = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
   const [form, setForm] = useState({
     nombre: "",
     correo: "",
@@ -47,6 +55,7 @@ const Admin5 = ({ navigation }) => {
   const [fallo1, setFallo1] = useState("");
 
   const [image, setImage] = useState(null);
+  const [loadBtn, setLoadBtn] = useState(false);
 
   const [loadArbit, setLoadArbit] = useState(false);
   const [fallo2, setFallo2] = useState("");
@@ -59,12 +68,11 @@ const Admin5 = ({ navigation }) => {
       .email("Formato de correo inválido")
       .required("El correo es requerido"),
     password: yup.string().required("Contraseña requerida"),
-    imagen: yup
-      .string()
-      .nullable() // Permite valores nulos para evitar validaciones antes de seleccionar la imagen
-      .test("is-valid-image", "Debes seleccionar una imagen", (value) => {
-        return typeof value === "string" && value.startsWith("file://");
-      }),
+    imagen: yup.mixed().test("fileType", "Formato no soportado", (value) => {
+      if (!value) return false;
+      const uri = typeof value === "string" ? value : value.uri;
+      return uri && /\.(jpe?g|png)$/i.test(uri);
+    }),
   });
 
   //conectar el schema con el form
@@ -73,11 +81,47 @@ const Admin5 = ({ navigation }) => {
     handleSubmit,
     setValue,
     control,
+    reset,
+    trigger,
+    clearErrors, // ✅ Extraído correctamente desde useForm()
     formState: { errors, isValid },
   } = useForm({
     resolver: yupResolver(arbitro),
     mode: "onChange",
   });
+
+  const desactivarArbitro = async (id, name) => {
+    try {
+      const tokData = await getToken();
+      const res = await api.put(
+        `/api/arbitros/cambiarEstatus/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Registro exitoso:", res.data);
+      Alert.alert("Operación exitosa", `${res.data}`);
+      setReload(!reload);
+    } catch (err) {
+      console.error(err);
+      if (err.response.status === 400) {
+        console.log(err.response.data.message);
+        Alert.alert("Árbitro no desactivado", err.response.data.message);
+        return;
+      }
+      if (err.response.status === 403) {
+        console.log("⚠ Token expirado, redirigiendo a login...");
+        logout();
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        return;
+      }
+      Alert.alert("¡Error!", `No se pudo deshabilitar a ${name}`);
+    }
+  };
 
   const onSubmit = async (data) => {
     if (!image || typeof image !== "string" || !image.startsWith("file://")) {
@@ -86,89 +130,118 @@ const Admin5 = ({ navigation }) => {
     }
 
     await registrarArbitro(data, image);
-
-    // const formData = new FormData();
-
-    // // Agregar la imagen
-    // formData.append("imagen", {
-    //   uri: image,               // The URI of the image you picked
-    //   name: "arbitro.jpeg",     // File name (make sure it's correct)
-    //   type: "image/jpeg",       // MIME type of the image
-    // });
-
-    // // Agregar el JSON de los datos del árbitro como string
-    // formData.append(
-    //   "arbitro",
-    //   JSON.stringify({
-    //     email: data.email,
-    //     password: data.pass,
-    //     nombreCompleto: data.name,
-    //   })
-    // );
-
-    // // Log the image URI and FormData for debugging
-    // console.log("Image URI:", image);
-    // console.log("FormData content:", formData);
-
-    // setLoadArbit(true);
-
-    // try {
-    //   // Send the POST request
-    //   const res = await api.post(`/api/arbitros`, formData, {
-    //     headers: {
-    //       // Remove the 'Content-Type' header - Axios will handle this automatically
-    //       Authorization: `Bearer ${tokData}`,
-    //     },
-    //   });
-
-    //   console.log(res.data);
-    //   Alert.alert("Registro exitoso", `Árbitro ${data.name} registrado`);
-    //   setFallo2("");
-    // } catch (err) {
-    //   console.log("Error:", err.message, err.toJSON());
-    //   if (err.response) {
-    //     console.log("Error Response:", err.response.data.message);
-    //     setFallo2(err.response.data.message);
-    //     return;
-    //   }
-    //   setFallo2("Ocurrió un error al registrar al árbitro, inténtalo nuevamente");
-    // } finally {
-    //   setLoadArbit(false);
-    // }
   };
 
   useEffect(() => {
     console.log("Estado actualizado:", image);
   }, [image]);
 
-  const registrarArbitro = async (data, image) => {
-    const formData = new FormData();
-    
-    formData.append("arbitro", JSON.stringify({
-      email: "arbitro@example.com",
-      password: "123",
-      nombreCompleto: "Árbitro Test 1",
-    }));
-  
-    formData.append("imagen", {
-      uri: image,
-      name: "arbitro.png",
-      type: "image/png",
-    });
-  
+  const registrarArbitro = async (data, imageUri) => {
+    setLoadArbit(true);
     try {
-      const response = await axios.post("http://192.168.1.67:8080/api/arbitros", formData, {
-        headers: {
-          Authorization: `Bearer ${tokData}`,
-          "Content-Type": "multipart/form-data",
-        },
-        transformRequest: (data) => data, // Devuelve directamente el FormData
+      // 1. Leer la imagen como base64
+      const base64Image = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
       });
-      console.log(response.data);
+
+      // 2. Preparar el objeto de datos
+      const requestData = {
+        arbitro: {
+          email: data.email,
+          password: data.password,
+          nombreCompleto: data.nombreCompleto,
+        },
+        imagen: `data:image/jpeg;base64,${base64Image}`,
+      };
+
+      console.log("Datos a enviar:", {
+        ...requestData,
+        imagen: requestData.imagen.substring(0, 30) + "...",
+      });
+
+      // 3. Enviar la petición con timeout
+      const response = await Promise.race([
+        api.post("/api/arbitros/movil", requestData, {
+          headers: {
+            Authorization: `Bearer ${tokData}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout después de 6s")), 6000)
+        ),
+      ]);
+
+      // 4. Verificar si realmente falló (aunque el backend haya respondido)
+      if (!response.data) {
+        throw new Error("La API no devolvió datos");
+      }
+
+      console.log("Registro exitoso:", response.data);
+      Alert.alert("Éxito", "Árbitro registrado correctamente");
+
+      // 5. Actualizar el estado para recargar la lista de árbitros
+      setReload(!reload); // Esto disparará el useEffect para recargar los árbitros
+      setValue("nombreCompleto", "");
+      setValue("email", "");
+      setValue("password", "");
+      setValue("imagen", "");
+      setVis(false);
+      setImage("");
+      clearErrors();
+      reset();
     } catch (error) {
-      console.error("Error:", error.response.data || error || error.response);
+      console.error("Error completo:", error, error.toJSON());
+
+      // Verificar si es error de red pero el registro fue exitoso
+      if (error.message === "Network Error") {
+        Alert.alert(
+          "Registro posiblemente exitoso",
+          "El árbitro se registró pero no pudimos confirmarlo. Verifica la lista."
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          error.response?.data?.message || error.message || "Error al registrar"
+        );
+      }
+      console.error(e, e.res.message);
+      if (err.response.status === 403) {
+        console.log("⚠️ Token expirado, redirigiendo a login...");
+        Alert.alert("Sesión expirada ⚠️", "Por favor, inicia sesión nuevamente.");
+        logout();
+        return;
+      }
+
+      verificarRegistro(data.email);
+    } finally {
+      setLoadArbit(false);
     }
-  };  
+  };
+
+  const clearForm = () => {
+    setValue("nombreCompleto", "");
+    setValue("email", "");
+    setValue("password", "");
+    setValue("imagen", "");
+    setVis(false);
+    setImage("");
+    clearErrors();
+    reset();
+  };
+
+  // Función para verificar si realmente se registró
+  const verificarRegistro = async (email) => {
+    try {
+      const res = await api.get(`/api/arbitros?email=${email}`);
+      if (res.data) {
+        Alert.alert("Verificación", "El árbitro fue registrado exitosamente");
+        setReload(!reload); // Actualizar lista
+      }
+    } catch (e) {
+      console.log("Error al verificar:", e);
+    }
+  };
 
   useEffect(() => {
     const getAbritros = async () => {
@@ -190,17 +263,17 @@ const Admin5 = ({ navigation }) => {
         })
         .catch((e) => {
           console.error(e, e.res.message, e.res.code);
-          if (err.response.status === 403) {
-            console.log("⚠️ Token expirado, redirigiendo a login...");
+          if (e.response.status === 403) {
+            console.log("⚠ Token expirado, redirigiendo a login...");
             Alert.alert(
-              "Sesión expirada",
+              "Sesión expirada ⚠️",
               "Por favor, inicia sesión nuevamente."
             );
             logout();
             return;
           }
-          if (e.res.message) setFallo1(e.res.message);
-          else setFallo1("Error al obtener árbitros");
+          if (e.res.message) Alert.alert("Error", e.res.message);
+          Alert.alert("Error", "Error al obtener árbitros");
         })
         .finally(() => setLoadArb(false));
     };
@@ -226,11 +299,11 @@ const Admin5 = ({ navigation }) => {
 
     if (!result.canceled && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-      console.log("Imagen seleccionada:", imageUri); // Depuración
+      console.log("Imagen seleccionada:", imageUri);
       setImage(imageUri);
       setForm({ ...form, imagen: imageUri });
-      setValue("image", imageUri); // Actualiza react-hook-form
-      trigger("image"); // Valida la imagen
+      setValue("imagen", imageUri);
+      trigger("image");
     }
   };
 
@@ -258,30 +331,60 @@ const Admin5 = ({ navigation }) => {
         imageUri,
         " Imagen seleccionada: ",
         result.assets[0]
-      ); // Depuración
+      );
       setImage(imageUri);
       setForm({ ...form, imagen: imageUri });
-      setValue("imagen", imageUri); // Actualiza react-hook-form
-      trigger("imagen"); // Valida la imagen
+      setValue("imagen", imageUri);
+      trigger("imagen");
     }
   };
 
+  const [vis, setVis] = useState(false);
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text
-          style={[
-            styles.title,
-            FONTS.nunitoNegrita,
-            {
-              paddingVertical: 15,
-              paddingHorizontal: 5,
-              alignSelf: "flex-start",
-            },
-          ]}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setReload(!reload)}
+            colors={[colores.domin_1_1]}
+            tintColor={colores.domin_1_1}
+          />
+        }
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 5,
+            alignItems: "center",
+            width: "95%",
+            justifyContent: "flex-start",
+          }}
         >
-          Árbitros
-        </Text>
+          <Text
+            style={[
+              styles.title,
+              FONTS.nunitoNegrita,
+              {
+                paddingVertical: 15,
+                paddingHorizontal: 5,
+                alignSelf: "flex-start",
+              },
+            ]}
+          >
+            Árbitros
+          </Text>
+          <TouchableOpacity onPress={() => setVis(!vis)}>
+            <Ionicons
+              name="add-circle-sharp"
+              size={30}
+              color={colores.acento_2_2}
+            />
+          </TouchableOpacity>
+        </View>
         {/* <View style={styles.cardContainer}>
           {arbitros.map((arbitro, index) => (
             <View key={index} style={styles.card}>
@@ -313,6 +416,7 @@ const Admin5 = ({ navigation }) => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          nestedScrollEnabled={true}
           contentContainerStyle={{
             alignItems: "center",
             justifyContent: "center",
@@ -401,7 +505,28 @@ const Admin5 = ({ navigation }) => {
                       >
                         {item.usuario.estatus ? "Activo" : "Inactivo"}
                       </Text>
-                      <TouchableOpacity
+                      <View style={{width: 90, alignItems: 'center'}}>
+                        <Switch
+                          value={item.usuario.estatus}
+                          thumbColor={
+                            item.usuario.estatus
+                              ? colores.base_1_1
+                              : colores.base_2_5
+                          } // Color del círculo
+                          trackColor={{
+                            false: colores.domin_2_3,
+                            true: colores.acento_3_1,
+                          }} // Color de la pista
+                          onValueChange={() =>
+                            desactivarArbitro(item.id, item.nombreCompleto)
+                          }
+                          style={{
+                            transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }], // Ajustar tamaño correctamente
+                          }}
+                        />
+                      </View>
+
+                      {/* <TouchableOpacity
                         style={[
                           styles.button,
                           item.usuario.estatus
@@ -426,7 +551,7 @@ const Admin5 = ({ navigation }) => {
                             color={colores.blanco}
                           />
                         )}
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                   )}
                 />
@@ -440,180 +565,327 @@ const Admin5 = ({ navigation }) => {
             </Text>
           )}
         </ScrollView>
-        <Text style={[FONTS.nunitoNegrita, styles.registerTitle]}>
-          Registrar árbitro
-        </Text>
-        <View style={styles.formContainer}>
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-            }}
-          >
-            <Text style={[FONTS.nunitoNegrita, styles.registerTitlePic]}>
-              Foto de perfil
-            </Text>
-            <Controller
-              control={control}
-              name="imagen"
-              render={({ field: { value } }) => (
-                <>
-                  {image && (
-                    <Image
-                      source={{
-                        uri: value,
-                      }}
-                      style={styles.registerImage}
-                    />
-                  )}
-                  {errors.imagen && (
-                    <Text style={formStyle.errText}>
-                      {errors.imagen.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-            <View
+      </ScrollView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={vis}
+        onRequestClose={() => {
+          clearForm();
+        }}
+      >
+        <View style={stylesModal.modalContainer}>
+          <View style={stylesModal.modalContent}>
+            <TouchableOpacity
               style={{
-                flexDirection: "row",
-                width: "100%",
-                gap: 5,
-                marginVertical: 3,
+                alignSelf: "flex-end",
+                justifyContent: "flex-start",
+                marginTop: -10,
+                marginRight: -10,
               }}
+              onPress={() => clearForm()}
             >
-              <TouchableOpacity
-                onPress={openCamera}
-                style={{
-                  backgroundColor: colores.acento_1_2,
-                  width: "45%",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 10,
-                }}
-              >
-                <Ionicons name="camera" size={24} color={colores.blanco} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={openGallery}
-                style={{
-                  backgroundColor: colores.acento_1_2,
-                  width: "45%",
-                  height: 50,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 10,
-                }}
-              >
-                <Ionicons name="image" size={24} color={colores.blanco} />
-              </TouchableOpacity>
-            </View>
-            <Text
-              style={[
-                formStyle.errText,
-                { color: "black", textAlign: "center", width: "100%" },
-              ]}
-            >
-              Seleccionar foto
-            </Text>
-          </View>
-          <View style={styles.formFields}>
-            <Controller
-              control={control}
-              name="nombreCompleto"
-              render={({ field: { onChange, value } }) => (
-                <>
-                  <TextInput
-                    style={[styles.input, styles.inputError, FONTS.oswald]}
-                    placeholder="Nombre completo"
-                    placeholderTextColor={colores.domin_2_2}
-                    value={value}
-                    onChangeText={(text) => onChange(text)}
+              <Ionicons name="close" size={24} color={colores.negro} />
+            </TouchableOpacity>
+            <View>
+              <Text style={[FONTS.nunitoNegrita, styles.registerTitle]}>
+                Registrar árbitro
+              </Text>
+              <View style={styles.formContainer}>
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  <Text style={[FONTS.nunitoNegrita, styles.registerTitlePic]}>
+                    Foto de perfil
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="imagen"
+                    render={({ field: { value } }) => (
+                      <>
+                        {image ? (
+                          <Image
+                            source={{
+                              uri: value,
+                            }}
+                            style={styles.registerImage}
+                          />
+                        ) : (
+                          <Text
+                            style={[
+                              formStyle.errText,
+                              {
+                                color: "black",
+                                textAlign: "center",
+                                width: "100%",
+                              },
+                            ]}
+                          >
+                            Seleccionar foto
+                          </Text>
+                        )}
+                        {errors.imagen && (
+                          <Text style={formStyle.errText}>
+                            {errors.imagen.message}
+                          </Text>
+                        )}
+                      </>
+                    )}
                   />
-                  {errors.nombreCompleto && (
-                    <Text style={formStyle.errText}>
-                      {errors.nombreCompleto.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, value } }) => (
-                <>
-                  <TextInput
-                    style={[styles.input, styles.inputError, FONTS.oswald]}
-                    placeholder="Correo electrónico"
-                    placeholderTextColor={colores.domin_2_2}
-                    value={value}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    onChangeText={(text) => onChange(text)}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      width: "100%",
+                      gap: 5,
+                      marginVertical: 3,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={openCamera}
+                      style={{
+                        backgroundColor: colores.acento_1_2,
+                        width: "45%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 10,
+                      }}
+                    >
+                      <Ionicons
+                        name="camera"
+                        size={24}
+                        color={colores.blanco}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={openGallery}
+                      style={{
+                        backgroundColor: colores.acento_1_2,
+                        width: "45%",
+                        height: 50,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 10,
+                      }}
+                    >
+                      <Ionicons name="image" size={24} color={colores.blanco} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.formFields}>
+                  <Controller
+                    control={control}
+                    name="nombreCompleto"
+                    render={({ field: { onChange, value } }) => (
+                      <>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            styles.inputError,
+                            FONTS.oswald,
+                          ]}
+                          placeholder="Nombre completo"
+                          placeholderTextColor={colores.domin_2_2}
+                          value={value}
+                          onChangeText={(text) => onChange(text)}
+                        />
+                        {errors.nombreCompleto && (
+                          <Text style={formStyle.errText}>
+                            {errors.nombreCompleto.message}
+                          </Text>
+                        )}
+                      </>
+                    )}
                   />
-                  {errors.email && (
-                    <Text style={formStyle.errText}>
-                      {errors.email.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, value } }) => (
-                <>
-                  <TextInput
-                    style={[styles.input, styles.inputError, FONTS.oswald]}
-                    placeholder="Contraseña"
-                    placeholderTextColor={colores.domin_2_2}
-                    secureTextEntry
-                    value={value}
-                    keyboardType="password"
-                    onChangeText={(text) => onChange(text)}
+                  <Controller
+                    control={control}
+                    name="email"
+                    render={({ field: { onChange, value } }) => (
+                      <>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            styles.inputError,
+                            FONTS.oswald,
+                          ]}
+                          placeholder="Correo electrónico"
+                          placeholderTextColor={colores.domin_2_2}
+                          value={value}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                          onChangeText={(text) => onChange(text)}
+                        />
+                        {errors.email && (
+                          <Text style={formStyle.errText}>
+                            {errors.email.message}
+                          </Text>
+                        )}
+                      </>
+                    )}
                   />
-                  {errors.password && (
-                    <Text style={formStyle.errText}>
-                      {errors.password.message}
-                    </Text>
+                  <Controller
+                    control={control}
+                    name="password"
+                    render={({ field: { onChange, value } }) => (
+                      <>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            styles.inputError,
+                            FONTS.oswald,
+                          ]}
+                          placeholder="Contraseña"
+                          placeholderTextColor={colores.domin_2_2}
+                          secureTextEntry
+                          value={value}
+                          keyboardType="password"
+                          onChangeText={(text) => onChange(text)}
+                        />
+                        {errors.password && (
+                          <Text style={formStyle.errText}>
+                            {errors.password.message}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  />
+                  {loadArbit ? (
+                    <ActivityIndicator size="large" color={colores.domin_2_3} />
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.registerButton,
+                        { opacity: isValid ? 1 : 0.5 },
+                      ]}
+                      onPress={handleSubmit(onSubmit)}
+                      disabled={!isValid}
+                    >
+                      <Text style={[FONTS.oswald, styles.registerButtonText]}>
+                        Registrar
+                      </Text>
+                    </TouchableOpacity>
                   )}
-                </>
-              )}
-            />
-            {loadArbit ? (
-              <ActivityIndicator size="large" color={colores.domin_2_3} />
-            ) : (
-              <TouchableOpacity
-                style={[styles.registerButton, { opacity: isValid ? 1 : 0.5 }]}
-                onPress={handleSubmit(onSubmit)}
-                disabled={!isValid}
-              >
-                <Text style={[FONTS.oswald, styles.registerButtonText]}>
-                  Registrar
+                </View>
+              </View>
+              {fallo2 ? (
+                <Text
+                  style={[
+                    FONTS.nunitoNegrita,
+                    formStyle.errText,
+                    { color: colores.domin_1_1 },
+                  ]}
+                >
+                  ¡{fallo2}!
                 </Text>
-              </TouchableOpacity>
-            )}
+              ) : null}
+            </View>
           </View>
         </View>
-        {fallo2 ? (
-          <Text
-            style={[
-              FONTS.nunitoNegrita,
-              formStyle.errText,
-              { color: colores.domin_1_1 },
-            ]}
-          >
-            ¡{fallo2}!
-          </Text>
-        ) : null}
-      </ScrollView>
+      </Modal>
     </SafeAreaView>
   );
 };
+
+const stylesModal = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  button: {
+    flexDirection: "row",
+    backgroundColor: colores.domin_2_3,
+    padding: 5,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    //width: 250,
+    width: "95%",
+  },
+  modalContent2: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: 300,
+    gap: 5,
+  },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: "#FF3B30",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: "white",
+    fontSize: 16,
+  },
+  modalTitle: {
+    width: "100%",
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  modalItem: {
+    borderRadius: 5,
+    width: "100%",
+    padding: 5,
+    marginVertical: 3,
+    paddingRight: 8,
+  },
+  modalItemActive: {
+    backgroundColor: colores.domin_2_5,
+    opacity: 0.5,
+  },
+  buttonBack: {
+    flexDirection: "row",
+    backgroundColor: colores.domin_2_3,
+    padding: 5,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "50%",
+    marginBottom: 5,
+  },
+  modalButRow: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 5,
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: colores.blanco,
+    alignItems: "center",
+  },
+  modalText: {
+    textAlign: "justify",
+    paddingVertical: 10,
+  },
+  modalDato: {
+    width: "100%",
+  },
+  fotoEquipo: { width: 100, height: 100, resizeMode: "contain" },
+});
 
 const styles = StyleSheet.create({
   container: {

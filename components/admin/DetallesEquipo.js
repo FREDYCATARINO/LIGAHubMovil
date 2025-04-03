@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  RefreshControl
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
@@ -33,6 +34,9 @@ import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
 
 const EqiposScreen = ({ navigation, route }) => {
+  const [reload, setReload] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [selectedValue, setSelectedValue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [playerName, setPlayerName] = useState("");
@@ -98,21 +102,32 @@ const EqiposScreen = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
-          logout()
+          logout();
           return;
         }
         if (e.res.message) setFallo(e.res.message);
         else setFallo("Error al obtener jugadores");
       })
       .finally(() => setLoadPlayers(false));
-  }, []);
+  }, [reload]);
 
   return (
     <SafeAreaView style={stylesTeamDet.container}>
-      <ScrollView contentContainerStyle={stylesTeamDet.scrollContent}>
+      <ScrollView
+        contentContainerStyle={stylesTeamDet.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setReload(!reload)}
+            colors={[colores.domin_1_1]}
+            tintColor={colores.domin_1_1}
+          />
+        }
+      >
         <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}>
           Detalles del equipo {team.nombreEquipo}:
         </Text>
@@ -159,7 +174,11 @@ const EqiposScreen = ({ navigation, route }) => {
         <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}>
           Jugadores
         </Text>
-        <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled={true}>
+        <ScrollView
+          style={{ maxHeight: 400 }}
+          nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={false}
+        >
           {loadPlayers ? (
             <ActivityIndicator
               size="large"
@@ -330,7 +349,7 @@ const stylesTeamDet = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  titulo: { fontSize: 20, width: '95%', textAlign: 'center', marginTop:5 },
+  titulo: { fontSize: 20, width: "95%", textAlign: "center", marginTop: 5 },
   fotoEquipo: { width: 125, height: 125, resizeMode: "stretch" },
   cardDueño: {
     backgroundColor: colores.blanco,
@@ -454,7 +473,7 @@ const stylesTeamDet = StyleSheet.create({
     flexDirection: "column",
     gap: 5,
     width: "100%",
-    alignItems: 'center',
+    alignItems: "center",
     margin: 5,
   },
   font16: { fontSize: 16 },

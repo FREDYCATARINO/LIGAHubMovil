@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  RefreshControl
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
@@ -33,6 +34,9 @@ import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
 
 const EquipoScreen = ({ navigation, route }) => {
+  const [reload, setReload] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [selectedValue, setSelectedValue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [playerName, setPlayerName] = useState("");
@@ -105,7 +109,7 @@ const EquipoScreen = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -115,7 +119,7 @@ const EquipoScreen = ({ navigation, route }) => {
         else setFalloT("Error al obtener equipos");
       })
       .finally(() => setLoadTeams(false));
-  }, []);
+  }, [reload]);
 
   const getPlayers = async (id, name) => {
     setEquipoNombre("");
@@ -131,7 +135,7 @@ const EquipoScreen = ({ navigation, route }) => {
         if (err.response.status === 403) {
           console.log("⚠️ Token expirado, redirigiendo a login...");
           Alert.alert(
-            "Sesión expirada",
+            "Sesión expirada ⚠️",
             "Por favor, inicia sesión nuevamente."
           );
           logout();
@@ -152,6 +156,15 @@ const EquipoScreen = ({ navigation, route }) => {
       <ScrollView
         contentContainerStyle={stylesTeamDet.scrollContent}
         nestedScrollEnabled={true}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setReload(!reload)}
+            colors={[colores.domin_1_1]}
+            tintColor={colores.domin_1_1}
+          />
+        }
       >
         <Text
           style={[FONTS.nunitoNegrita, stylesTeamDet.titulo]}
@@ -212,7 +225,13 @@ const EquipoScreen = ({ navigation, route }) => {
           )}
         </ScrollView>
         {!isSelected ? (
-          <Text style={[FONTS.nunitoNegrita, stylesTeamDet.titulo, {marginBottom: '50%'}]}>
+          <Text
+            style={[
+              FONTS.nunitoNegrita,
+              stylesTeamDet.titulo,
+              { marginBottom: "50%" },
+            ]}
+          >
             Selecciona un equipo para ver jugadores
           </Text>
         ) : (
@@ -228,6 +247,7 @@ const EquipoScreen = ({ navigation, route }) => {
             <ScrollView
               style={{ maxHeight: 300, minHeight: 100, padding: 5 }}
               nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={false}
             >
               {loadPlayers ? (
                 <ActivityIndicator
@@ -556,7 +576,7 @@ const stylesTeamDet = StyleSheet.create({
     flexDirection: "column",
     gap: 5,
     width: "100%",
-    alignItems: 'center',
+    alignItems: "center",
     margin: 5,
   },
   font16: { fontSize: 16 },

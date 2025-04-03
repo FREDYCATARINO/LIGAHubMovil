@@ -8,24 +8,23 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#e9e9e9"
+      "backgroundColor": "#9A0000"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#e9e9e9"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#9A0000"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./img/logo1.png"
     },
-    "plugins": [
-      "expo-font"
-    ]
+    "plugins": ["expo-font", "expo-localization"],
+    "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
   }
 }

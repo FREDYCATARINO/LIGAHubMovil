@@ -57,7 +57,7 @@ const TokenProvider = ({ children }) => {
 
     fetchId();
     fetchRole();
-    fetchToken();
+    //fetchToken();
   }, []);
 
   return (
