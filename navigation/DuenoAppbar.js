@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { Card, Avatar } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import { DrawerActions } from '@react-navigation/native'; // Importación crucial
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
 
@@ -24,7 +23,8 @@ const UserAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         >
           <Ionicons
-            name="menu" // Simplificado
+            //name={"menu"}
+            name={isRoot ? "menu" : "menu"}
             size={24}
             color="white"
           />
@@ -33,7 +33,6 @@ const UserAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
         {/* Título de la pantalla actual */}
         <Text style={[styles.encabezado, FONTS.nunitoNegrita]}>{title}</Text>
 
-        {/* Botón de perfil */}
         <TouchableOpacity
           onPress={() =>
             navigation.navigate(title == "Perfil" ? "Home" : "Perfil", {
@@ -66,9 +65,7 @@ const UserAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { 
-    backgroundColor: colores.base_3_1 
-  },
+  safeArea: { backgroundColor: colores.base_3_1 },
   appBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -83,12 +80,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingLeft: 20,
   },
-  profileImage: {
-    width: 40,
-    height: 40,
-    backgroundColor: colores.base_1_1,
-    borderRadius: 20,
-    resizeMode: "cover",
+  button: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: "#FF5958",
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 
