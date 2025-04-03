@@ -95,7 +95,12 @@ const Partidos = () => {
       setError(null);
     } catch (error) {
       console.error("Error fetching matches:", error);
-      setError("Error al cargar los partidos. Intenta de nuevo.");
+    // Mensaje de error detallado
+    const errorMessage = error.response?.data?.message 
+      || (error.response?.status === 404 ? "No se encontraron partidos para este torneo" : "Error al cargar los partidos")
+      || error.message
+      || "Error desconocido al cargar partidos";
+    setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
