@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   ScrollView,
   Dimensions,
   TouchableOpacity,
-  ImageBackground, // Importa ImageBackground
-  ActivityIndicator, // Importa ActivityIndicator
-
+  ImageBackground,
+  ActivityIndicator,
+  RefreshControl
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
@@ -18,78 +18,89 @@ const ClassificationTable = () => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [torneos, setTorneos] = useState([]); // Lista de torneos iniciados
-  const [selectedTorneo, setSelectedTorneo] = useState(null); // Torneo seleccionado
-  const [currentPage, setCurrentPage] = useState(0); // Página actual
-  const itemsPerPage = 10; // Número de equipos por página
+  const [torneos, setTorneos] = useState([]);
+  const [selectedTorneo, setSelectedTorneo] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const itemsPerPage = 10;
 
-  // Obtener la lista de torneos iniciados
-  useEffect(() => {
-    const fetchTorneos = async () => {
-      try {
-        const response = await api.get("/api/torneos/iniciados");
-        setTorneos(response.data);
-        setError(null); // Limpiar errores
-      } catch (error) {
-        console.error("Error fetching torneos:", error);
-        setError("Error al cargar los torneos. Intenta de nuevo."); // Mostrar mensaje de error
-      }
-    };
-
-    fetchTorneos();
+  // Función para cargar torneos
+  const fetchTorneos = useCallback(async () => {
+    try {
+      const response = await api.get("/api/torneos/iniciados");
+      setTorneos(response.data);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching torneos:", error);
+      setError("Error al cargar los torneos. Intenta de nuevo.");
+    }
   }, []);
 
-  // Obtener la tabla de clasificación según el torneo seleccionado
+  // Función para cargar la clasificación
+  const fetchClassification = useCallback(async (torneoId) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/api/tabla-clasificacion/${torneoId}`);
+      
+      const sortedTeams = response.data.sort((a, b) => {
+        if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+        const difA = a.golesAFavor - a.golesEnContra;
+        const difB = b.golesAFavor - b.golesEnContra;
+        if (difB !== difA) return difB - difA;
+        if (b.golesAFavor !== a.golesAFavor) return b.golesAFavor - a.golesAFavor;
+        if (a.golesEnContra !== b.golesEnContra) return a.golesEnContra - b.golesEnContra;
+        if (b.partidosGanados !== a.partidosGanados) return b.partidosGanados - a.partidosGanados;
+        return a.partidosPerdidos - b.partidosPerdidos;
+      });
+
+      setTeams(sortedTeams);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching classification table:", error);
+      setError("Error al cargar la tabla de clasificación. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Carga inicial de torneos
+  useEffect(() => {
+    fetchTorneos();
+  }, [fetchTorneos]);
+
+  // Carga de clasificación cuando cambia el torneo
   useEffect(() => {
     if (selectedTorneo) {
-      setLoading(true); // Activar el estado de carga
-      const fetchClassificationTable = async () => {
-        try {
-          const response = await api.get(`/api/tabla-clasificacion/${selectedTorneo}`);
-          console.log("Respuesta de la API:", response.data);
-
-          // Ordenar los equipos según los criterios especificados
-          const sortedTeams = response.data.sort((a, b) => {
-            if (b.puntos !== a.puntos) return b.puntos - a.puntos;
-            const difA = a.golesAFavor - a.golesEnContra;
-            const difB = b.golesAFavor - b.golesEnContra;
-            if (difB !== difA) return difB - difA;
-            if (b.golesAFavor !== a.golesAFavor) return b.golesAFavor - a.golesAFavor;
-            if (a.golesEnContra !== b.golesEnContra) return a.golesEnContra - b.golesEnContra;
-            if (b.partidosGanados !== a.partidosGanados) return b.partidosGanados - a.partidosGanados;
-            return a.partidosPerdidos - b.partidosPerdidos;
-          });
-
-          setTeams(sortedTeams);
-          setError(null);
-        } catch (error) {
-          console.error("Error fetching classification table:", error);
-          setError("Error al cargar la tabla de clasificación. Intenta de nuevo.");
-        } finally {
-          setLoading(false); // Desactivar el estado de carga
-        }
-      };
-
-      fetchClassificationTable();
+      fetchClassification(selectedTorneo);
     } else {
-      setTeams([]); // Limpiar equipos si no hay torneo seleccionado
-      setLoading(false); // Desactivar el estado de carga
+      setTeams([]);
+      setLoading(false);
     }
-  }, [selectedTorneo]);
+  }, [selectedTorneo, fetchClassification]);
 
-  // Calcular los equipos que se deben mostrar en la página actual
+  // Función para el refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    if (selectedTorneo) {
+      fetchClassification(selectedTorneo);
+    } else {
+      fetchTorneos();
+    }
+    setCurrentPage(0);
+  }, [selectedTorneo, fetchClassification, fetchTorneos]);
+
+  // Resto del código permanece exactamente igual...
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const displayedTeams = teams.slice(startIndex, endIndex);
 
-  // Función para avanzar a la siguiente página
   const handleNextPage = () => {
     if (endIndex < teams.length) {
       setCurrentPage(currentPage + 1);
     }
   };
 
-  // Función para retroceder a la página anterior
   const handlePreviousPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
@@ -97,22 +108,28 @@ const ClassificationTable = () => {
   };
 
   return (
-    <ImageBackground
-      source={require("../../assets/fondo.jpg")} // Ruta de la imagen de fondo
-      style={styles.backgroundImage}
-      resizeMode="cover" // Ajusta la imagen al tamaño de la pantalla
-    >
-      <ScrollView contentContainerStyle={styles.container}>
+    
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#FF5958"]}
+            tintColor="#FF5958"
+          />
+        }
+      >
+        {/* Todo el resto del JSX permanece exactamente igual */}
         <Text style={styles.title}>Tabla de clasificación</Text>
 
-        {/* Selector de torneos */}
         <View style={styles.pickerContainer}>
           <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
           <Picker
             selectedValue={selectedTorneo}
             onValueChange={(itemValue) => {
               setSelectedTorneo(itemValue);
-              setCurrentPage(0); // Reiniciar la página al cambiar de torneo
+              setCurrentPage(0);
             }}
             style={styles.picker}
           >
@@ -127,18 +144,15 @@ const ClassificationTable = () => {
           </Picker>
         </View>
 
-        {/* Mensaje de error */}
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {/* Indicador de carga */}
-        {loading && (
+        {loading && !refreshing && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007BFF" />
             <Text style={styles.loadingText}>Cargando tabla de clasificación...</Text>
           </View>
         )}
 
-        {/* Tabla de clasificación */}
         {!loading && displayedTeams.length > 0 ? (
           <>
             <ScrollView horizontal={true} style={styles.horizontalScroll}>
@@ -177,7 +191,6 @@ const ClassificationTable = () => {
               </View>
             </ScrollView>
 
-            {/* Botones de paginación */}
             <View style={styles.paginationContainer}>
               <TouchableOpacity
                 style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
@@ -205,14 +218,14 @@ const ClassificationTable = () => {
           !loading && <Text style={styles.noMatchesText}>No hay equipos disponibles.</Text>
         )}
 
-        {/* Pie de página con las abreviaturas */}
         <Text style={styles.footer}>
           • JJ: Juegos Jugados • JG: Juegos Ganados • JE: Juegos Empatados • JP: Juegos Perdidos • GF: Goles a Favor • GC: Goles en Contra • DIF: Diferencia de Goles • PTS: Puntos
         </Text>
       </ScrollView>
-    </ImageBackground>
+ 
   );
 };
+
 
 const styles = StyleSheet.create({
   backgroundImage: {
@@ -229,7 +242,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 10,
     marginBottom: 10,
-    color: "white",
+    color: "black",
     padding: 10,
     borderRadius: 5,
   },
@@ -243,7 +256,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "white",
+    color: "black",
   },
   picker: {
     width: "100%",
