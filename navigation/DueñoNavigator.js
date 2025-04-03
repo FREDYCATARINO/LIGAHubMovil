@@ -21,13 +21,14 @@ import { AuthContext, AuthProvider } from "../context/AuthContext";
 import { TokenContext, TokenProvider } from "../context/TokenContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ErrorComponent from "../components/ErrorComponent";
-import MisPagosScreen from '../screens/dueno/MisPagos'; // Pantalla de pagos
-import Credenciales from '../screens/dueno/Credenciales'; // Pantalla de credenciales
-import MiEquipoScreen from '../screens/dueno/MiEquipo'; // Pantalla de equipo
+import MisPagosScreen from "../screens/dueno/MisPagos"; // Pantalla de pagos
+import Credenciales from "../screens/dueno/Credenciales"; // Pantalla de credenciales
+import MiEquipoScreen from "../screens/dueno/MiEquipo"; // Pantalla de equipo
 import HistorialPagos from "../screens/dueno/HistorialPagos";
 import DetalleEquipo from "../screens/dueno/DetalleEquipo";
 import DetallePago from "../screens/dueno/DetallePago";
-import MisJugadores from "../screens/dueno/MisJugadores"
+import MisJugadores from "../screens/dueno/MisJugadores";
+import PerfilScreen from "../screens/Perfil";
 const Drawer = createDrawerNavigator();
 
 const DueñoNavigator = () => {
@@ -84,11 +85,11 @@ const DueñoNavigator = () => {
 
     const getUserData = async (id, tok) => {
       await api
-        .get(`/api/duenos/porusuario/${id}`,{
+        .get(`/api/duenos/porusuario/${id}`, {
           headers: {
             Authorization: `Bearer ${tok}`,
             "Content-Type": "application/json",
-          }
+          },
         })
         .then((res) => {
           setNombre(res.data.nombreCompleto);
@@ -188,7 +189,7 @@ const DueñoNavigator = () => {
           ),
         }}
       />
-      
+
       <Drawer.Screen
         name="Mis Pagos"
         component={MisPagosScreen}
@@ -216,7 +217,7 @@ const DueñoNavigator = () => {
           ),
         }}
       />
-     <Drawer.Screen
+      <Drawer.Screen
         name="Historial de pagos"
         component={HistorialPagos}
         options={{
@@ -228,25 +229,28 @@ const DueñoNavigator = () => {
       <Drawer.Screen
         name="Detalle Pagos"
         component={DetalleEquipo}
-        options={
-          {drawerItemStyle:{display:"none"}}
-        }
+        options={{ drawerItemStyle: { display: "none" } }}
       />
-        <Drawer.Screen
+      <Drawer.Screen
         name="Historial de Pagos"
         component={DetallePago}
-        options={
-          {drawerItemStyle:{display:"none"}}
-        }
-      /> 
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
       <Drawer.Screen
-      name="Mis Jugadores"
-      component={MisJugadores}
-      options={
-        {drawerItemStyle:{display:"none"}}
-      }
-    />
-  
+        name="Mis Jugadores"
+        component={MisJugadores}
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
+      <Drawer.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="briefcase" size={size} color={color} />
+          ),
+          drawerItemStyle: { display: "none" },
+        }}
+      />
     </Drawer.Navigator>
   );
 };
