@@ -479,7 +479,7 @@ const Admin5 = ({ navigation }) => {
                   data={arbitros}
                   keyExtractor={(item, index) => item.id}
                   nestedScrollEnabled={true}
-                  renderItem={({ item }) => (
+                  renderItem={({ item, index }) => (
                     <View style={styles.row}>
                       <Text
                         style={[
@@ -488,7 +488,7 @@ const Admin5 = ({ navigation }) => {
                           FONTS.nunitoNegrita,
                         ]}
                       >
-                        {index}
+                        {index + 1}
                       </Text>
                       <Text style={[styles.cell, FONTS.nunitoNegrita]}>
                         {item.nombreCompleto}
