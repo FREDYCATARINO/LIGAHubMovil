@@ -142,7 +142,6 @@ const ResultadoDePartidos = () => {
       
       setError(null);
     } catch (error) {
-      console.error("Error fetching torneos:", error);
       setError("Error al cargar los torneos. Intenta de nuevo.");
     } finally {
       setLoading(false);
@@ -159,7 +158,6 @@ const ResultadoDePartidos = () => {
       setMatches(partidosJugados);
       setError(null);
     } catch (error) {
-      console.error("Error fetching matches:", error);
       setError("Error al cargar los partidos. Intenta de nuevo.");
     } finally {
       setLoading(false);

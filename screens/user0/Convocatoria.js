@@ -22,11 +22,33 @@ const Convocatoria = () => {
       setLoading(true);
       setError(null);
       const response = await api.get("/api/convocatorias/activa");
-      console.log("Respuesta de la API:", response.data);
       setImageUrl(response.data);
-    } catch (error) {
-      console.error("Error fetching convocatoria:", error);
-      setError("Error al cargar la convocatoria. Intenta de nuevo.");
+    }catch (error) {
+      
+      let errorMessage = "Error al cargar la convocatoria";
+      
+      // 1. Primero verificamos problemas de conexión
+      if (error.request && !error.response) {
+        errorMessage = "Problema de conexión. Verifica tu internet e inténtalo nuevamente.";
+      
+      // 2. Luego verificamos si es el caso de datos vacíos
+      } else if (error.message === 'NO_DATA') {
+        errorMessage = "No hay convocatorias en este momento";
+      
+      // 3. Para otros errores (excluyendo específicamente el 403)
+      } else if (error.response?.status !== 403) {
+        // Solo mostramos mensajes de error que no sean 403
+        errorMessage = error.response?.data?.message 
+                     || (error.response?.status === 404 ? "No se encontraron convocatorias" : "Error al obtener datos")
+                     || error.message
+                     || "Error desconocido";
+      }
+      
+      // Solo establecemos el error si no es 403
+      if (!error.response || error.response.status !== 403) {
+        setErrorGoleadores(errorMessage);
+      }
+      
     } finally {
       setLoading(false);
       setRefreshing(false);

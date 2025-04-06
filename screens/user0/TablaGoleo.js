@@ -31,7 +31,6 @@ const TablaGoleo = () => {
       setTorneos(response.data);
       setErrorTorneos(null);
     } catch (error) {
-      console.error("Error fetching torneos:", error);
       setErrorTorneos("Error al cargar los torneos. Intenta de nuevo.");
     }
   }, []);
@@ -42,19 +41,51 @@ const TablaGoleo = () => {
     
     setLoadingGoleadores(true);
     setErrorGoleadores(null);
+    
     try {
       const response = await api.get(`/api/jugadorestadisticas/torneo/${selectedTorneo}`);
+      
+      // Verificación de datos vacíos (array vacío o null/undefined)
+      if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
+        throw new Error('NO_DATA');
+      }
+      
       setGoleadores(response.data);
-      setCurrentPage(0); // Resetear a primera página al cambiar torneo
+      setCurrentPage(0);
+      
     } catch (error) {
-      console.error("Error fetching goleadores:", error);
-      setErrorGoleadores("Error al cargar los goleadores. Intenta de nuevo.");
+      
+      let errorMessage = "Error al cargar los goleadores";
+      
+      // 1. Primero verificamos problemas de conexión
+      if (error.request && !error.response) {
+        errorMessage = "Problema de conexión. Verifica tu internet e inténtalo nuevamente.";
+      
+      // 2. Luego verificamos si es el caso de datos vacíos
+      } else if (error.message === 'NO_DATA') {
+        errorMessage = "No hay datos de goleadores disponibles para este torneo";
+      
+      // 3. Para otros errores (excluyendo específicamente el 403)
+      } else if (error.response?.status !== 403) {
+        // Solo mostramos mensajes de error que no sean 403
+        errorMessage = error.response?.data?.message 
+                     || (error.response?.status === 404 ? "No se encontraron estadísticas" : "Error al obtener datos")
+                     || error.message
+                     || "Error desconocido";
+      }
+      
+      // Solo establecemos el error si no es 403
+      if (!error.response || error.response.status !== 403) {
+        setErrorGoleadores(errorMessage);
+      }
+      
+      setGoleadores([]);
+      
     } finally {
       setLoadingGoleadores(false);
       setRefreshing(false);
     }
-  }, [selectedTorneo]);
-
+}, [selectedTorneo]);
   // Función para manejar el refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
