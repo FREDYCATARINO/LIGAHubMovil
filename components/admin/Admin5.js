@@ -445,7 +445,7 @@ const Admin5 = ({ navigation }) => {
                     FONTS.oswaldNegrita,
                   ]}
                 >
-                  ID
+                  #
                 </Text>
                 <Text style={[styles.headerCell, FONTS.oswaldNegrita]}>
                   Nombre Completo
@@ -477,9 +477,9 @@ const Admin5 = ({ navigation }) => {
               <View style={{ maxHeight: 200, padding: 5 }}>
                 <FlatList
                   data={arbitros}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={(item, index) => item.id}
                   nestedScrollEnabled={true}
-                  renderItem={({ item }) => (
+                  renderItem={({ item, index }) => (
                     <View style={styles.row}>
                       <Text
                         style={[
@@ -488,7 +488,7 @@ const Admin5 = ({ navigation }) => {
                           FONTS.nunitoNegrita,
                         ]}
                       >
-                        {item.id}
+                        {index + 1}
                       </Text>
                       <Text style={[styles.cell, FONTS.nunitoNegrita]}>
                         {item.nombreCompleto}
