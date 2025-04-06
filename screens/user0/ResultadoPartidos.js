@@ -14,8 +14,6 @@ import { Picker } from "@react-native-picker/picker";
 import api from "../../config/api";
 
 const MatchCard = ({ match }) => {
-
-
   const getScoreDisplay = () => {
     if (!match.jugado) return { mainScore: "VS", showSecondary: false };
     
@@ -49,17 +47,12 @@ const MatchCard = ({ match }) => {
 
   return (
     <View style={styles.card}>
-      {/* Nombre del torneo */}
       <Text style={styles.torneoText}>
         {match.tipoPartido}
       </Text>
-
-      {/* Fecha y hora */}
       <Text style={styles.date}>
         {match.fechaPartido} - {match.hora}
       </Text>
-
-      {/* Equipos y marcador */}
       <View style={styles.teamsContainer}>
         <View style={styles.teamContainer}>
           <Image
@@ -88,16 +81,12 @@ const MatchCard = ({ match }) => {
           <Text style={styles.teamName}>{match.equipoVisitante?.nombreEquipo}</Text>
         </View>
       </View>
-
-      {/* Detalles adicionales */}
       <Text style={styles.field}>
         Cancha: {match.cancha?.descripcion}
       </Text>
       <Text style={styles.field}>
         Árbitro: {match.arbitro?.nombreCompleto}
       </Text>
-
-      {/* Estado del partido */}
       <Text style={[styles.status, styles.finalizado]}>
         Finalizado
       </Text>
@@ -105,25 +94,57 @@ const MatchCard = ({ match }) => {
   );
 };
 
+const TournamentWinnerCard = ({ torneo }) => {
+  if (!torneo.ganador) return null;
+
+  return (
+    <View style={styles.winnerCard}>
+      <Text style={styles.winnerTitle}>¡Torneo Finalizado!</Text>
+      <Text style={styles.winnerSubtitle}>Campeón:</Text>
+      
+      <View style={styles.winnerTeamContainer}>
+        <Image
+          source={{ uri: torneo.ganador.logo || "https://via.placeholder.com/80" }}
+          style={styles.winnerTeamLogo}
+        />
+        <Text style={styles.winnerTeamName}>{torneo.ganador.nombreEquipo}</Text>
+      </View>
+      
+      <Text style={styles.tournamentName}>{torneo.nombreTorneo}</Text>
+      {torneo.premio && (
+        <Text style={styles.prizeText}>Premio: {torneo.premio}</Text>
+      )}
+    </View>
+  );
+};
+
 const ResultadoDePartidos = () => {
-  const [torneos, setTorneos] = useState([]);
-  const [selectedTorneo, setSelectedTorneo] = useState(null);
+  const [activeTorneos, setActiveTorneos] = useState([]);
+  const [finishedTorneos, setFinishedTorneos] = useState([]);
+  const [selectedActiveTorneo, setSelectedActiveTorneo] = useState(null);
+  const [selectedFinishedTorneo, setSelectedFinishedTorneo] = useState(null);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFinishedTournaments, setShowFinishedTournaments] = useState(false);
   const itemsPerPage = 10;
 
   const fetchTorneos = useCallback(async () => {
     try {
-      const response = await api.get("/api/torneos/iniciados");
-      setTorneos(response.data);
-      setError(null);
+      setLoading(true);
+      const activeResponse = await api.get("/api/torneos/iniciados");
+      setActiveTorneos(activeResponse.data);
       
+      const finishedResponse = await api.get("/api/torneos/finalizados");
+      setFinishedTorneos(finishedResponse.data);
+      
+      setError(null);
     } catch (error) {
-      console.error("Error fetching torneos:", error);
       setError("Error al cargar los torneos. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -136,9 +157,7 @@ const ResultadoDePartidos = () => {
       const partidosJugados = response.data.filter((partido) => partido.jugado);
       setMatches(partidosJugados);
       setError(null);
-      console.log(response.data);
     } catch (error) {
-      console.error("Error fetching matches:", error);
       setError("Error al cargar los partidos. Intenta de nuevo.");
     } finally {
       setLoading(false);
@@ -151,23 +170,27 @@ const ResultadoDePartidos = () => {
   }, [fetchTorneos]);
 
   useEffect(() => {
-    if (selectedTorneo) {
-      fetchMatches(selectedTorneo);
+    if (showFinishedTournaments && selectedFinishedTorneo) {
+      fetchMatches(selectedFinishedTorneo);
+    } else if (!showFinishedTournaments && selectedActiveTorneo) {
+      fetchMatches(selectedActiveTorneo);
     } else {
       setMatches([]);
       setLoading(false);
     }
-  }, [selectedTorneo, fetchMatches]);
+  }, [selectedActiveTorneo, selectedFinishedTorneo, showFinishedTournaments, fetchMatches]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    if (selectedTorneo) {
-      fetchMatches(selectedTorneo);
+    if (showFinishedTournaments && selectedFinishedTorneo) {
+      fetchMatches(selectedFinishedTorneo);
+    } else if (!showFinishedTournaments && selectedActiveTorneo) {
+      fetchMatches(selectedActiveTorneo);
     } else {
       fetchTorneos();
     }
     setCurrentPage(0);
-  }, [selectedTorneo, fetchMatches, fetchTorneos]);
+  }, [selectedActiveTorneo, selectedFinishedTorneo, showFinishedTournaments, fetchMatches, fetchTorneos]);
 
   const displayedMatches = matches.slice(
     currentPage * itemsPerPage,
@@ -186,87 +209,331 @@ const ResultadoDePartidos = () => {
     }
   };
 
+  const toggleTournamentView = () => {
+    setShowFinishedTournaments(!showFinishedTournaments);
+    setSelectedActiveTorneo(null);
+    setSelectedFinishedTorneo(null);
+    setMatches([]);
+  };
+
   return (
-   
-      <ScrollView 
-        contentContainerStyle={styles.container}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#FF5958"]}
-            tintColor="#FF5958"
-          />
-        }
-      >
-        <View style={styles.pickerContainer}>
-          <Text style={styles.pickerLabel}>Selecciona un torneo:</Text>
-          <Picker
-            selectedValue={selectedTorneo}
-            onValueChange={(itemValue) => {
-              setSelectedTorneo(itemValue);
-              setCurrentPage(0);
-            }}
-            style={styles.picker}
-          >
-            <Picker.Item label="Selecciona un torneo" value={null} />
-            {torneos.map((torneo) => (
-              <Picker.Item
-                key={torneo.id}
-                label={torneo.nombreTorneo}
-                value={torneo.id}
-              />
-            ))}
-          </Picker>
+    <ScrollView 
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#FF5958"]}
+          tintColor="#FF5958"
+        />
+      }
+    >
+      {/* Selector de vista (Activos/Finalizados) */}
+      <View style={styles.viewSelector}>
+        <TouchableOpacity
+          style={[styles.viewOption, !showFinishedTournaments && styles.activeViewOption]}
+          onPress={() => setShowFinishedTournaments(false)}
+        >
+          <Text style={[styles.viewOptionText, !showFinishedTournaments && styles.activeViewOptionText]}>
+            Torneos Activos
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewOption, showFinishedTournaments && styles.activeViewOption]}
+          onPress={() => setShowFinishedTournaments(true)}
+        >
+          <Text style={[styles.viewOptionText, showFinishedTournaments && styles.activeViewOptionText]}>
+            Torneos Finalizados
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      {loading && !refreshing && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007BFF" />
+          <Text style={styles.loadingText}>Cargando datos...</Text>
         </View>
+      )}
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+      {showFinishedTournaments ? (
+        <>
+          <Text style={styles.sectionTitle}>Torneos Finalizados</Text>
 
-        {loading && !refreshing && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007BFF" />
-            <Text style={styles.loadingText}>Cargando partidos...</Text>
-          </View>
-        )}
-
-        {!loading && displayedMatches.length > 0 ? (
-          displayedMatches.map((match, index) => (
-            <MatchCard key={index} match={match} />
-          ))
-        ) : (
-          !loading && <Text style={styles.noMatchesText}>No hay partidos finalizados disponibles.</Text>
-        )}
-
-        {!loading && matches.length > itemsPerPage && (
-          <View style={styles.paginationContainer}>
-            <TouchableOpacity
-              style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
-              onPress={handlePreviousPage}
-              disabled={currentPage === 0}
+          {/* Picker para seleccionar torneo finalizado */}
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedFinishedTorneo}
+              onValueChange={(itemValue) => {
+                setSelectedFinishedTorneo(itemValue);
+                setSelectedActiveTorneo(null);
+                setCurrentPage(0);
+              }}
+              style={styles.picker}
             >
-              <Text style={styles.paginationButtonText}>Anterior</Text>
-            </TouchableOpacity>
-            <Text style={styles.pageText}>
-              Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                (currentPage + 1) * itemsPerPage >= matches.length && styles.disabledButton,
-              ]}
-              onPress={handleNextPage}
-              disabled={(currentPage + 1) * itemsPerPage >= matches.length}
-            >
-              <Text style={styles.paginationButtonText}>Siguiente</Text>
-            </TouchableOpacity>
+              <Picker.Item label="Selecciona un torneo finalizado" value={null} />
+              {finishedTorneos.map((torneo) => (
+                <Picker.Item
+                  key={torneo.id}
+                  label={torneo.nombreTorneo}
+                  value={torneo.id}
+                />
+              ))}
+            </Picker>
           </View>
-        )}
-      </ScrollView>
+
+          {/* Mostrar solo el torneo finalizado seleccionado */}
+          {selectedFinishedTorneo && (
+            <View style={styles.tournamentContainer}>
+              {finishedTorneos
+                .filter(torneo => torneo.id === selectedFinishedTorneo)
+                .map(torneo => (
+                  <React.Fragment key={torneo.id}>
+                    <TournamentWinnerCard torneo={torneo} />
+                    
+                    {/* Botón para cargar partidos (opcional, puedes eliminarlo si prefieres carga automática) */}
+                   
+                  </React.Fragment>
+                ))
+              }
+
+              {/* Lista de partidos */}
+              {loading ? (
+                <ActivityIndicator size="small" color="#007BFF" />
+              ) : matches.length > 0 ? (
+                <>
+                  {displayedMatches.map((match) => (
+                    <MatchCard key={`${match.id}-${match.fechaPartido}`} match={match} />
+                  ))}
+
+                  {/* Paginación */}
+                  {matches.length > itemsPerPage && (
+                    <View style={styles.paginationContainer}>
+                      <TouchableOpacity
+                        style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
+                        onPress={handlePreviousPage}
+                        disabled={currentPage === 0}
+                      >
+                        <Text style={styles.paginationButtonText}>Anterior</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.pageText}>
+                        Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
+                      </Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.paginationButton,
+                          (currentPage + 1) * itemsPerPage >= matches.length && styles.disabledButton,
+                        ]}
+                        onPress={handleNextPage}
+                        disabled={(currentPage + 1) * itemsPerPage >= matches.length}
+                      >
+                        <Text style={styles.paginationButtonText}>Siguiente</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.noMatchesText}>
+                  No hay partidos finalizados disponibles para este torneo.
+                </Text>
+              )}
+            </View>
+          )}
+        </>
+      ) : (
+        <>
+          <Text style={styles.sectionTitle}>Torneos Activos</Text>
+          
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedActiveTorneo}
+              onValueChange={(itemValue) => {
+                setSelectedActiveTorneo(itemValue);
+                setSelectedFinishedTorneo(null);
+                setCurrentPage(0);
+              }}
+              style={styles.picker}
+            >
+              <Picker.Item label="Selecciona un torneo activo" value={null} />
+              {activeTorneos.map((torneo) => (
+                <Picker.Item
+                  key={torneo.id}
+                  label={torneo.nombreTorneo}
+                  value={torneo.id}
+                />
+              ))}
+            </Picker>
+          </View>
+  
+          {!loading && selectedActiveTorneo && (
+            <>
+              {displayedMatches.length > 0 ? (
+                <>
+                  {displayedMatches.map((match) => (
+                    <MatchCard key={`${match.id}-${match.fechaPartido}`} match={match} />
+                  ))}
+  
+                  {matches.length > itemsPerPage && (
+                    <View style={styles.paginationContainer}>
+                      <TouchableOpacity
+                        style={[styles.paginationButton, currentPage === 0 && styles.disabledButton]}
+                        onPress={handlePreviousPage}
+                        disabled={currentPage === 0}
+                      >
+                        <Text style={styles.paginationButtonText}>Anterior</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.pageText}>
+                        Página {currentPage + 1} de {Math.ceil(matches.length / itemsPerPage)}
+                      </Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.paginationButton,
+                          (currentPage + 1) * itemsPerPage >= matches.length && styles.disabledButton,
+                        ]}
+                        onPress={handleNextPage}
+                        disabled={(currentPage + 1) * itemsPerPage >= matches.length}
+                      >
+                        <Text style={styles.paginationButtonText}>Siguiente</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.noMatchesText}>No hay partidos finalizados disponibles.</Text>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </ScrollView>
   );
-};
+}
+
 
 const styles = StyleSheet.create({
- 
+  container: {
+    padding: 15,
+    backgroundColor: '#f5f5f5',
+
+  },
+  viewSelector: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#e0e0e0',
+  },
+  
+  viewOption: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+  },
+  activeViewOption: {
+    backgroundColor: '#FF5958',
+  },
+  viewOptionText: {
+    color: '#555',
+    fontWeight: 'bold',
+  },
+  activeViewOptionText: {
+    color: 'white',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  pickerContainer: {
+    marginBottom: 15,
+  },
+  pickerLabel: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: '#555',
+  },
+  picker: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  winnerCard: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  winnerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 5,
+  },
+  winnerSubtitle: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 10,
+  },
+  winnerTeamContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  winnerTeamLogo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  winnerTeamName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  tournamentName: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  prizeText: {
+    fontSize: 14,
+    color: 'white',
+    fontStyle: 'italic',
+  },
+  selectButton: {
+    backgroundColor: '#FF5958',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  selectButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   container: {
     padding: 10,
     alignItems: "center",
@@ -276,7 +543,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginVertical: 10,
     borderRadius: 8,
-    width: "90%",
+    width: "95%",
     shadowRadius: 10,
     elevation: 3,
     alignItems: "center",
@@ -373,7 +640,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "90%",
+    width: "100%",
     marginTop: 20,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 5,

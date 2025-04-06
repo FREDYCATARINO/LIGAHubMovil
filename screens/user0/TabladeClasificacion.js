@@ -31,38 +31,50 @@ const ClassificationTable = () => {
       setTorneos(response.data);
       setError(null);
     } catch (error) {
-      console.error("Error fetching torneos:", error);
       setError("Error al cargar los torneos. Intenta de nuevo.");
     }
   }, []);
 
   // Función para cargar la clasificación
   const fetchClassification = useCallback(async (torneoId) => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/api/tabla-clasificacion/${torneoId}`);
-      
-      const sortedTeams = response.data.sort((a, b) => {
-        if (b.puntos !== a.puntos) return b.puntos - a.puntos;
-        const difA = a.golesAFavor - a.golesEnContra;
-        const difB = b.golesAFavor - b.golesEnContra;
-        if (difB !== difA) return difB - difA;
-        if (b.golesAFavor !== a.golesAFavor) return b.golesAFavor - a.golesAFavor;
-        if (a.golesEnContra !== b.golesEnContra) return a.golesEnContra - b.golesEnContra;
-        if (b.partidosGanados !== a.partidosGanados) return b.partidosGanados - a.partidosGanados;
-        return a.partidosPerdidos - b.partidosPerdidos;
-      });
+  try {
+    setLoading(true);
+    const response = await api.get(`/api/tabla-clasificacion/${torneoId}`);
+  
 
-      setTeams(sortedTeams);
-      setError(null);
-    } catch (error) {
-      console.error("Error fetching classification table:", error);
-      setError("Error al cargar la tabla de clasificación. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    const sortedTeams = response.data.sort((a, b) => {
+      if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+      const difA = a.golesAFavor - a.golesEnContra;
+      const difB = b.golesAFavor - b.golesEnContra;
+      if (difB !== difA) return difB - difA;
+      if (b.golesAFavor !== a.golesAFavor) return b.golesAFavor - a.golesAFavor;
+      if (a.golesEnContra !== b.golesEnContra) return a.golesEnContra - b.golesEnContra;
+      if (b.partidosGanados !== a.partidosGanados) return b.partidosGanados - a.partidosGanados;
+      return a.partidosPerdidos - b.partidosPerdidos;
+    });
+
+    setTeams(sortedTeams);
+    setError(null);
+  } catch (error) {    
+    let errorMessage = "Error al cargar la tabla de clasificación. Intenta de nuevo.";
+    if (error.response) {
+      if (error.response.status === 403) {
+        errorMessage = "No hay estadísticas disponibles para mostrar.";
+      } else if (error.response.status === 500) {
+        errorMessage = "Error en el servidor. Por favor, inténtalo más tarde.";
+      }
+    } else if (error.request) {
+      errorMessage = "Problema de conexión. Verifica tu internet e inténtalo de nuevo.";
+    } else {
+      errorMessage = "Ocurrió un error inesperado.";
     }
-  }, []);
+
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, []);
 
   // Carga inicial de torneos
   useEffect(() => {

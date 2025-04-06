@@ -79,7 +79,6 @@ const Partidos = () => {
       setTorneos(response.data);
       setError(null);
     } catch (error) {
-      console.error("Error fetching torneos:", error);
       setError("Error al cargar los torneos. Intenta de nuevo.");
     }
   }, []);
@@ -94,7 +93,6 @@ const Partidos = () => {
       setMatches(response.data);
       setError(null);
     } catch (error) {
-      console.error("Error fetching matches:", error);
     // Mensaje de error detallado
     const errorMessage = error.response?.data?.message 
       || (error.response?.status === 404 ? "No se encontraron partidos para este torneo" : "Error al cargar los partidos")
