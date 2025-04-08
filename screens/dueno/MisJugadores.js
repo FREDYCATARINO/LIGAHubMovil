@@ -22,6 +22,7 @@ import api from '../../config/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 const NUM_COLUMNS = 2;
@@ -48,6 +49,18 @@ const MisJugadores = ({ route }) => {
     fechaNacimiento: '',
   });
   const [fotoUri, setFotoUri] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+const [selectedDate, setSelectedDate] = useState(new Date());
+
+const handleDateChange = (event, date) => {
+  setShowDatePicker(false);
+  if (date) {
+    setSelectedDate(date);
+    // Formatear la fecha como "AAAA-MM-DD" para guardarla en formData
+    const formattedDate = date.toISOString().split('T')[0];
+    handleChange('fechaNacimiento', formattedDate);
+  }
+};
 
   const fetchJugadores = useCallback(async () => {
     try {
@@ -169,7 +182,8 @@ const MisJugadores = ({ route }) => {
       }
 
       const token = await getToken();
-      
+      console.log('Token:', token); // Verifica que el token sea correcto
+
       const base64Image = await FileSystem.readAsStringAsync(fotoUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -218,70 +232,82 @@ const MisJugadores = ({ route }) => {
 
   const handleUpdate = async () => {
     try {
-      if (!formData.nombreCompleto?.trim()) throw new Error('Debes ingresar el nombre completo');
-      if (!formData.numeroCamiseta?.trim()) throw new Error('Debes ingresar el número de camiseta');
-      if (!formData.fechaNacimiento?.trim()) throw new Error('Debes ingresar la fecha de nacimiento');
-
+      const errors = [];
+      if (!formData.nombreCompleto?.trim()) errors.push('Nombre completo requerido');
+      if (!formData.numeroCamiseta?.trim()) errors.push('Número de camiseta requerido');
+      if (!formData.fechaNacimiento?.trim()) errors.push('Fecha de nacimiento requerida');
+      if (!equipoId) errors.push('Equipo no asignado');
+  
+      if (errors.length > 0) {
+        throw new Error(errors.join('\n'));
+      }
+  
       const token = await getToken();
-      
-      let base64Image = '';
+  
+      let imagenData = null;
       if (fotoUri && fotoUri !== selectedPlayer.fotoJugador) {
         try {
           const fileInfo = await FileSystem.getInfoAsync(fotoUri);
           if (!fileInfo.exists) throw new Error('La imagen seleccionada no existe');
-
-          base64Image = await FileSystem.readAsStringAsync(fotoUri, {
+  
+          const base64Image = await FileSystem.readAsStringAsync(fotoUri, {
             encoding: FileSystem.EncodingType.Base64,
           });
+          imagenData = `data:image/jpeg;base64,${base64Image}`;
         } catch (imageError) {
           console.error('Error procesando imagen:', imageError);
           Alert.alert('Error', 'No se pudo procesar la imagen');
           return;
         }
       }
-
+  
       const requestData = {
         nombreCompleto: formData.nombreCompleto.trim(),
         fechaNacimiento: formData.fechaNacimiento.trim(),
         numero_camiseta: formData.numeroCamiseta.trim(),
-        idEquipo: equipoId,
-        ...(base64Image && { imagen: `data:image/jpeg;base64,${base64Image}` })
+        idEquipo: Number(equipoId),
+        ...(imagenData && { imagen: imagenData }),
       };
-
-      const response = await api.put(`/api/jugadores/movil/${selectedPlayer.id}`, {
-      
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar jugador');
-      }
-
-      const data = await response.json();
-
-      setJugadores(jugadores.map(j => 
-        j.id === selectedPlayer.id ? { 
-          ...data,
-          fotoJugador: fotoUri || selectedPlayer.fotoJugador
-        } : j
-      ));
-      
+  
+      const response = await api.put(
+        `/api/jugadores/movil/${selectedPlayer.id}`,
+        requestData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+  
+      setJugadores(
+        jugadores.map(j =>
+          j.id === selectedPlayer.id
+            ? {
+                ...response.data,
+                fotoJugador: fotoUri || j.fotoJugador,
+                equipo: { id: equipoId, nombre: equipoNombre }
+              }
+            : j
+        )
+      );
+  
       Alert.alert('Éxito', 'Jugador actualizado correctamente');
       setShowEditModal(false);
       resetForm();
-      
     } catch (error) {
-      console.error('Error completo:', {
-        error: error.message,
-        response: error.response?.data
+      console.error('Error detallado:', {
+        message: error.message,
+        response: error.response?.data,
+        request: error.config?.data
       });
-      
-      Alert.alert('Error', error.message || 'Error al actualizar jugador');
+  
+      Alert.alert(
+        'Error al actualizar',
+        error.response?.data?.message || 
+        error.message || 
+        'Revise los datos e intente nuevamente'
+      );
     }
   };
 
@@ -431,12 +457,22 @@ const MisJugadores = ({ route }) => {
       />
       
       <Text style={styles.label}>Fecha de Nacimiento</Text>
-      <TextInput
-        style={styles.input}
-        value={formData.fechaNacimiento}
-        onChangeText={(text) => handleChange('fechaNacimiento', text)}
-        placeholder="AAAA-MM-DD"
-      />
+  <TouchableOpacity 
+    style={styles.dateInput}
+    onPress={() => setShowDatePicker(true)}
+  >
+    <Text>{selectedDate.toLocaleDateString()}</Text>
+  </TouchableOpacity>
+  
+  {showDatePicker && (
+    <DateTimePicker
+      value={selectedDate}
+      mode="date"
+      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+      onChange={handleDateChange}
+      maximumDate={new Date()} // Para que no puedan seleccionar fechas futuras
+    />
+  )}
       
       <Text style={styles.label}>Foto del Jugador</Text>
       
@@ -533,13 +569,23 @@ const MisJugadores = ({ route }) => {
                 keyboardType="numeric"
               />
               
-              <Text style={styles.label}>Fecha de Nacimiento</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.fechaNacimiento}
-                onChangeText={(text) => handleChange('fechaNacimiento', text)}
-                placeholder="AAAA-MM-DD"
-              />
+               <Text style={styles.label}>Fecha de Nacimiento</Text>
+  <TouchableOpacity 
+    style={styles.dateInput}
+    onPress={() => setShowDatePicker(true)}
+  >
+    <Text>{selectedDate.toLocaleDateString()}</Text>
+  </TouchableOpacity>
+  
+  {showDatePicker && (
+    <DateTimePicker
+      value={selectedDate}
+      mode="date"
+      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+      onChange={handleDateChange}
+      maximumDate={new Date()} // Para que no puedan seleccionar fechas futuras
+    />
+  )}
               
               <Text style={styles.label}>Foto del Jugador</Text>
               <TouchableOpacity onPress={selectPhoto}>
@@ -662,6 +708,13 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     paddingHorizontal: 5,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 15,
+    marginBottom: 15,
   },
   jugadorCard: {
     backgroundColor: 'white',
