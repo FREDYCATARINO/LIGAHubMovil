@@ -11,6 +11,7 @@ import { Card, Avatar } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import colores from "../style/colors";
 import FONTS from "../style/fonts";
+import { DrawerActions } from "@react-navigation/native";
 
 const UserAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
   isRoot === true;
@@ -20,11 +21,15 @@ const UserAppBar = ({ navigation, title, isRoot, correo, rol, name, img }) => {
       <View style={styles.appBar}>
         {/* Botón para abrir el menú */}
         <TouchableOpacity
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          onPress={() =>
+            isRoot
+              ? navigation.dispatch(DrawerActions.openDrawer())
+              : navigation.goBack()
+          }
         >
           <Ionicons
             //name={"menu"}
-            name={isRoot ? "menu" : "menu"}
+            name={isRoot ? "menu" : "arrow-back"}
             size={24}
             color="white"
           />

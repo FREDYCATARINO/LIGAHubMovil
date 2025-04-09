@@ -173,6 +173,7 @@ const DueñoNavigator = () => {
           <DuenoBar
             navigation={navigation}
             title={route.name}
+            isRoot={route.name !== "Equipos" && route.name !== "Perfil"}
             correo={correo}
             rol={rol}
             name={nombre}
