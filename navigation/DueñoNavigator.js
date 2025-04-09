@@ -9,6 +9,7 @@ import { StyleSheet } from "react-native";
 import DuenoBar from "./DuenoAppbar";
 import { useContext } from "react";
 import api from "../config/api";
+import NoTokenComponent from "../components/NoTokenComponent";
 import {
   Image,
   View,
