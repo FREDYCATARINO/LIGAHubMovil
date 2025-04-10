@@ -364,7 +364,9 @@ const Admin6 = ({ navigation }) => {
                         alignSelf: "center",
                         alignItems: "center",
                         borderRadius: 10,
+                        opacity: pago.estatusPago ? 1 : 0,
                       }}
+                      disabled={!pago.estatusPago}
                       onPress={() => {
                         setId(pago.id);
                         setModalVisible1(true);

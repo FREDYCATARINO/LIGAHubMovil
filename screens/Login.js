@@ -99,6 +99,7 @@ const Login = ({ navigation }) => {
             value={email}
             autoCapitalize="none"
             onChangeText={setEmail}
+            cursorColor={colores.domin_1_1}
           />
         </View>
 
@@ -112,6 +113,7 @@ const Login = ({ navigation }) => {
             style={[styles.input, FONTS.oswald]}
             placeholder="Contraseña"
             secureTextEntry
+            cursorColor={colores.domin_1_1}
             value={password}
             keyboardType="password"
             autoCapitalize="none"
